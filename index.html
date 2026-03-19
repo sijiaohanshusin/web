@@ -1,15 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-CN" class="scroll-smooth">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>哈尔滨工程大学电子科技协会 | HEU ESTA</title>
+    <title>网站建设中 | 哈尔滨工程大学电子科技协会 | HEU ESTA</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <!-- 引入 Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
     <script>
         tailwind.config = {
             theme: {
@@ -18,567 +15,146 @@
                         sans: ['"Noto Sans SC"', 'sans-serif'],
                     },
                     colors: {
-                        'heu-blue': '#003366', // 哈工程深蓝
-                        'tech-blue': '#0ea5e9', // 科技蓝
-                        'dark-bg': '#0f172a',
+                        'heu-blue': '#003366',
+                        'tech-blue': '#0ea5e9',
                     }
                 }
             }
         }
     </script>
     <style>
-        /* 自定义滚动条 */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #3b82f6;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #2563eb;
-        }
-        
-        .animate-fade-in-up {
-            animation: fadeInUp 0.8s ease-out forwards;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
         .tech-grid-bg {
             background-image: radial-gradient(#1e293b 1px, transparent 1px);
             background-size: 40px 40px;
         }
-
-        /* 选项卡样式 */
-        .tab-active {
-            border-bottom: 2px solid #003366;
-            color: #003366;
-            font-weight: 700;
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.1; }
+            50% { opacity: 0.3; }
         }
-        .tab-inactive {
-            color: #64748b;
-        }
-        .tab-inactive:hover {
-            color: #003366;
+        .animate-pulse-slow {
+            animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
     </style>
 </head>
-<body class="font-sans bg-slate-50 text-slate-800 antialiased">
+<body class="font-sans bg-[#0f172a] text-slate-100 min-h-screen flex flex-col justify-center items-center overflow-hidden relative">
+    
+    <!-- 背景装饰 -->
+    <div class="absolute inset-0 tech-grid-bg opacity-20"></div>
+    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] opacity-10 animate-pulse-slow"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-600 rounded-full mix-blend-screen filter blur-[100px] opacity-10 animate-pulse-slow" style="animation-delay: 1.5s;"></div>
 
-    <!-- 导航栏 -->
-    <nav class="fixed w-full z-50 bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-200 transition-all duration-300" id="navbar">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <!-- Logo -->
-                <div class="flex items-center cursor-pointer" onclick="window.scrollTo(0,0)">
-                    <!-- 修改：去掉了文字 span，将图片高度从 h-8 调整为 h-12 (48px) 以放大显示 -->
-                    <img src="image_6662db.png" alt="HEU ESTA Logo" class="h-12 w-auto">
-                </div>
-
-                <!-- Desktop Menu -->
-                <div class="hidden md:flex space-x-6 lg:space-x-8">
-                    <a href="#home" class="text-slate-600 hover:text-heu-blue font-medium transition text-sm lg:text-base">首页</a>
-                    <a href="#about" class="text-slate-600 hover:text-heu-blue font-medium transition text-sm lg:text-base">科协简介</a>
-                    <a href="#departments" class="text-slate-600 hover:text-heu-blue font-medium transition text-sm lg:text-base">部门与技术</a>
-                    <a href="#training" class="text-slate-600 hover:text-heu-blue font-medium transition text-sm lg:text-base">培训路线</a>
-                    <a href="#resources" class="text-slate-600 hover:text-heu-blue font-medium transition text-sm lg:text-base">资源与帮助</a>
-                    <a href="#contact" class="px-4 py-2 bg-heu-blue text-white rounded-full hover:bg-blue-800 transition font-medium shadow-lg shadow-blue-900/20 text-sm lg:text-base">加入我们</a>
-                </div>
-
-                <!-- Mobile Menu Button -->
-                <div class="md:hidden flex items-center">
-                    <button id="mobile-menu-btn" class="text-slate-600 hover:text-heu-blue focus:outline-none">
-                        <i data-lucide="menu" class="w-6 h-6"></i>
-                    </button>
-                </div>
-            </div>
+    <div class="relative z-10 max-w-4xl px-4 text-center">
+        <!-- Logo -->
+        <div class="mb-10 flex justify-center drop-shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+            <img src="image_6662db.png" alt="HEU ESTA Logo" class="h-32 w-auto animate-pulse">
         </div>
 
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-200">
-            <div class="px-4 pt-2 pb-4 space-y-1">
-                <a href="#home" class="block px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md">首页</a>
-                <a href="#about" class="block px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md">科协简介</a>
-                <a href="#departments" class="block px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md">部门与技术</a>
-                <a href="#training" class="block px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md">培训路线</a>
-                <a href="#resources" class="block px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md">资源与帮助</a>
-                <a href="#contact" class="block px-3 py-2 text-heu-blue font-bold">加入我们</a>
-            </div>
-        </div>
-    </nav>
+        <!-- 主容器 -->
+        <div class="relative p-8 md:p-12 bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden mb-10">
+            <!-- 装饰角 -->
+            <div class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-blue-500 rounded-tl-lg opacity-50"></div>
+            <div class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-blue-500 rounded-tr-lg opacity-50"></div>
+            <div class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-blue-500 rounded-bl-lg opacity-50"></div>
+            <div class="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-blue-500 rounded-br-lg opacity-50"></div>
 
-    <!-- Hero Section (保持不变) -->
-    <section id="home" class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-slate-900">
-        <div class="absolute inset-0 tech-grid-bg opacity-20"></div>
-        <div class="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-
-        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 class="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-6 animate-fade-in-up" style="animation-delay: 0.1s;">
-                哈尔滨工程大学<br>
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">电子科技协会</span>
+            <h1 class="text-3xl md:text-5xl font-bold tracking-tight mb-2">
+                网站建设中
             </h1>
-            <p class="mt-4 max-w-2xl mx-auto text-xl text-slate-300 animate-fade-in-up" style="animation-delay: 0.3s;">
-                立足实践，开拓创新。
-                <br class="hidden md:block">在科协，技术就是生命。
-            </p>
-            <div class="mt-10 flex justify-center gap-4 animate-fade-in-up" style="animation-delay: 0.5s;">
-                <a href="#training" class="px-8 py-3 border border-slate-600 text-white rounded-lg hover:bg-white/10 transition font-medium">
-                    查看培训路线
-                </a>
-                <a href="#contact" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:from-blue-700 hover:to-cyan-600 transition font-medium shadow-lg shadow-blue-500/30 flex items-center">
-                    立即加入 <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
-                </a>
+            <div class="flex items-center justify-center gap-2 mb-6 text-blue-400 font-mono text-xl md:text-2xl">
+                <span>&gt;</span>
+                <span id="typing-text"></span>
+                <span class="w-3 h-6 bg-blue-500 animate-pulse"></span>
             </div>
-            
-            <div class="mt-16 grid grid-cols-2 gap-8 md:grid-cols-4 border-t border-slate-700/50 pt-10 animate-fade-in-up" style="animation-delay: 0.7s;">
-                <div>
-                    <div class="text-3xl font-bold text-white">1995</div>
-                    <div class="text-sm text-slate-400 mt-1">成立年份</div>
+
+            <!-- 动态进度条 -->
+            <div class="max-w-xs mx-auto mb-8">
+                <div class="flex justify-between text-[10px] text-slate-500 uppercase tracking-widest mb-2 font-mono">
+                    <span>System Booting</span>
+                    <span id="progress-val">85%</span>
                 </div>
-                <div>
-                    <div class="text-3xl font-bold text-white">30+</div>
-                    <div class="text-sm text-slate-400 mt-1">年技术传承</div>
+                <div class="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full w-[85%] animate-[progress_2s_ease-in-out_infinite]"></div>
                 </div>
-                <div>
-                    <div class="text-3xl font-bold text-white">TOP</div>
-                    <div class="text-sm text-slate-400 mt-1">校内顶尖社团</div>
+            </div>
+
+            <!-- 备案状态 (缩小化) -->
+            <div class="flex flex-wrap justify-center gap-6 text-sm">
+                <div class="flex items-center gap-2 text-green-400/80">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    <span>ICP备案已通过</span>
                 </div>
-                <div>
-                    <div class="text-3xl font-bold text-white">∞</div>
-                    <div class="text-sm text-slate-400 mt-1">无限可能</div>
+                <div class="flex items-center gap-2 text-amber-400/80">
+                    <i data-lucide="shield-check" class="w-4 h-4 animate-bounce"></i>
+                    <span>公安备案进行中</span>
                 </div>
             </div>
         </div>
-    </section>
 
-    <!-- 关于我们 (整合部分简介) -->
-    <section id="about" class="py-20 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="lg:grid lg:grid-cols-2 lg:gap-16 items-center">
-                <div class="mb-10 lg:mb-0">
-                    <div class="inline-block px-3 py-1 text-xs font-semibold tracking-wider text-blue-600 uppercase bg-blue-100 rounded-full mb-4">
-                        About HEU ESTA
-                    </div>
-                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-6">纯粹的技术性团体</h2>
-                    
-                    <div class="prose prose-slate text-slate-600 leading-relaxed space-y-4">
-                        <p>
-                            哈尔滨工程大学电子科技协会（HEU ESTA），简称“信通科协”，成立于1995年。我们以培养基础扎实、思维开阔的技术性人才为目标。
-                        </p>
-                        <p>
-                            我们坚持<span class="text-heu-blue font-semibold">“高年级引领低年级”</span>的人才培养模式。在科协，你不是一个人在战斗。从焊接第一个电阻到完成复杂的嵌入式系统，学长学姐将与你并肩同行。
-                        </p>
-                        <blockquote class="border-l-4 border-blue-500 pl-4 italic bg-slate-50 py-2 pr-2 rounded-r">
-                            在电子科技协会，技术就是生命，是所有科协人共同追求的目标。
-                        </blockquote>
-                        <!-- 新增：视频说明文字 -->
-                        <div class="flex items-center gap-2 text-sm text-slate-500 mt-4">
-                            <i data-lucide="play-circle" class="w-4 h-4 text-blue-500"></i>
-                            <span>观看右侧（或下方）视频，快速了解2025招新动态</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="relative">
-                    <!-- 背景装饰 -->
-                    <div class="absolute inset-0 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-2xl transform rotate-3 opacity-20"></div>
-                    
-                    <!-- Bilibili 视频容器 (16:9 比例) -->
-                    <div class="relative rounded-2xl shadow-2xl w-full aspect-video overflow-hidden transform transition hover:-translate-y-2 duration-300 bg-slate-900 group">
-                        <iframe src="https://player.bilibili.com/player.html?bvid=BV1AhnGzVEsD&page=1&high_quality=1&danmaku=0" 
-                                scrolling="no" 
-                                border="0" 
-                                frameborder="no" 
-                                framespacing="0" 
-                                allowfullscreen="true" 
-                                class="absolute top-0 left-0 w-full h-full z-10">
-                        </iframe>
-                    </div>
-                    
-                    <!-- 视频下方的标签装饰 -->
-                    <div class="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-lg border border-slate-100 hidden md:block z-20">
-                        <div class="flex items-center gap-3">
-                            <div class="bg-pink-100 p-2 rounded-full text-pink-500">
-                                <i data-lucide="video" class="w-6 h-6"></i>
-                            </div>
-                            <div>
-                                <p class="text-xs text-slate-500">Bilibili</p>
-                                <p class="font-bold text-slate-800">2025 招新宣传片</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- 简介 -->
+        <p class="text-slate-400 text-sm md:text-base max-w-xl mx-auto mb-10 leading-relaxed font-light">
+            HEU ESTA 官方网站正在进行系统重构与内容合规性调整。<br>
+            在这段“待机”时间里，技术传承从未停歇。
+        </p>
+
+        <!-- 联系方式 -->
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <a href="https://space.bilibili.com/70859324" target="_blank" class="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition flex items-center justify-center gap-2 group text-sm">
+                <i data-lucide="tv" class="w-4 h-4 text-pink-400 group-hover:rotate-12 transition"></i>
+                <span>Bilibili 官方动态</span>
+            </a>
+            <button onclick="navigator.clipboard.writeText('1015304209'); alert('招新QQ群号：1015304209 已复制');" class="px-6 py-3 bg-blue-600/90 hover:bg-blue-500 text-white rounded-full shadow-lg shadow-blue-900/20 transition flex items-center justify-center gap-2 text-sm font-medium">
+                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                <span>加入招新群 (1015304209)</span>
+            </button>
         </div>
-    </section>
+    </div>
 
-    <!-- 部门与技术栈 (整合了原“硬件/软件基础知识”板块) -->
-            </div>
-        </div>
-    </section>
+    <style>
+        @keyframes progress {
+            0% { transform: translateX(-100%); }
+            50% { transform: translateX(0); }
+            100% { transform: translateX(100%); }
+        }
+    </style>
 
-    <!-- 培训路线 (整合原“培训安排”表格) -->
-    <section id="training" class="py-20 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold text-slate-900">年度培训路线图</h2>
-                <p class="mt-4 text-xl text-slate-600">从零基础到独当一面，我们为你规划好了每一步</p>
-            </div>
-
-            <!-- Tab 切换按钮 -->
-            <div class="flex justify-center mb-10">
-                <div class="flex space-x-8 border-b border-slate-200">
-                    <button id="btn-hw" class="pb-4 px-4 text-lg font-medium transition-colors duration-300 tab-active" onclick="switchTab('hw')">硬件方向</button>
-                    <button id="btn-sw" class="pb-4 px-4 text-lg font-medium transition-colors duration-300 tab-inactive" onclick="switchTab('sw')">软件方向</button>
-                </div>
-            </div>
-
-            <!-- 硬件路线内容 -->
-            <div id="content-hw" class="max-w-4xl mx-auto">
-                <div class="space-y-8">
-                    <!-- 大一上 -->
-                    <div class="relative pl-8 border-l-2 border-blue-200">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-500"></div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-2">大一上学期：基础夯实</h3>
-                        <div class="bg-slate-50 rounded-xl p-6 border border-slate-100">
-                            <ul class="space-y-4">
-                                <li class="flex items-start">
-                                    <span class="bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded mt-0.5">入门</span>
-                                    <span><strong>自制音乐盒 & PCB 初步绘制</strong>：动手焊接，通过实践了解电路板结构。</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <span class="bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded mt-0.5">进阶</span>
-                                    <span><strong>运算放大器与滤波器</strong>：学习运放原理，制作滤波器，掌握模拟电路基础。</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- 大一下 -->
-                    <div class="relative pl-8 border-l-2 border-blue-200">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-500"></div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-2">大一下学期：综合实践</h3>
-                        <div class="bg-slate-50 rounded-xl p-6 border border-slate-100">
-                            <ul class="space-y-4">
-                                <li class="flex items-start">
-                                    <span class="bg-green-100 text-green-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded mt-0.5">合作</span>
-                                    <span><strong>寒假合作任务</strong>：开学后验收，通常涉及跨部门合作。</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <span class="bg-green-100 text-green-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded mt-0.5">项目</span>
-                                    <span><strong>万用表的制作</strong>：从原理图到成品，通过制作万用表深入理解测量原理。</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- 暑期与选拔 -->
-                    <div class="relative pl-8 border-l-2 border-dashed border-slate-300">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-400"></div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-2">第一次面试 & 暑期集训</h3>
-                        <p class="text-slate-600 mb-2">通过第一次面试的同学将进入高强度的暑假培训，备战电赛。电赛结束后进行最终考核，通过者正式留任实验室。</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 软件路线内容 (默认隐藏) -->
-            <div id="content-sw" class="max-w-4xl mx-auto hidden">
-                <div class="space-y-8">
-                    <!-- 前置 -->
-                    <div class="relative pl-8 border-l-2 border-indigo-200">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-500"></div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-2">入门前置：C语言基础</h3>
-                        <p class="text-slate-600 mb-2">完成 C 语言培训题目的 80% (截止到11月底)，与学长交流后，方可进入单片机学习阶段。</p>
-                    </div>
-
-                    <!-- 大一上 -->
-                    <div class="relative pl-8 border-l-2 border-indigo-200">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-500"></div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-2">大一上学期：STM32 单片机入门</h3>
-                        <div class="bg-slate-50 rounded-xl p-6 border border-slate-100">
-                            <ul class="space-y-3">
-                                <li class="flex items-center"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-indigo-500"></i> 自制音乐盒 (全体参加)</li>
-                                <li class="flex items-center"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-indigo-500"></i> STM32 GPIO 与 时钟树</li>
-                                <li class="flex items-center"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-indigo-500"></i> 定时器 (Timer) 与 中断 (NVIC)</li>
-                                <li class="flex items-center"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-indigo-500"></i> 串口通信 (UART) 与 LCD 屏幕显示</li>
-                                <li class="flex items-center"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-indigo-500"></i> ADC 模数转换 与 DMA 数据传输</li>
-                                <li class="flex items-center"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-indigo-500"></i> 常用通信协议 (I2C, SPI)</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- 大一下 -->
-                    <div class="relative pl-8 border-l-2 border-indigo-200">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-500"></div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-2">大一下学期：进阶与拓展</h3>
-                        <div class="bg-slate-50 rounded-xl p-6 border border-slate-100">
-                            <p class="mb-2 text-sm text-slate-500">* 前期任务优秀者可申请 MSPM0 学习板</p>
-                            <ul class="space-y-4">
-                                <li class="flex items-start">
-                                    <span class="bg-indigo-100 text-indigo-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded mt-0.5">任务</span>
-                                    <span><strong>寒假合作任务</strong>：综合运用所学知识。</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <span class="bg-indigo-100 text-indigo-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded mt-0.5">项目</span>
-                                    <span><strong>万用表制作</strong>：配合硬件部完成代码编写与调试。</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                     <!-- 暑期与选拔 -->
-                     <div class="relative pl-8 border-l-2 border-dashed border-slate-300">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-400"></div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-2">第一次面试 & 暑期集训</h3>
-                        <p class="text-slate-600 mb-2">筛选进入暑期集训，备战电赛。</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 资源与帮助 (整合原“学习资源”与“提问智慧”) -->
-    <section id="resources" class="py-20 bg-slate-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- 资源导航 -->
-                <div class="lg:col-span-2">
-                    <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center">
-                        <i data-lucide="book-open" class="w-6 h-6 mr-2 text-heu-blue"></i> 学习资源导航
-                    </h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <!-- 硬件资源 -->
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                            <h3 class="font-bold text-lg mb-4 text-blue-700">硬件开发</h3>
-                            <ul class="space-y-3 text-sm">
-                                <li><a href="https://www.szlcsc.com/" target="_blank" class="flex items-center hover:text-blue-600 transition"><i data-lucide="shopping-cart" class="w-4 h-4 mr-2"></i> 立创商城 (元器件查询)</a></li>
-                                <li><a href="https://oshwhub.com/" target="_blank" class="flex items-center hover:text-blue-600 transition"><i data-lucide="share-2" class="w-4 h-4 mr-2"></i> 立创开源广场 (寻找灵感)</a></li>
-                                <li><a href="https://www.ti.com.cn/" target="_blank" class="flex items-center hover:text-blue-600 transition"><i data-lucide="external-link" class="w-4 h-4 mr-2"></i> TI (德州仪器) 官网</a></li>
-                                <li><a href="https://www.semiee.com/" target="_blank" class="flex items-center hover:text-blue-600 transition"><i data-lucide="search" class="w-4 h-4 mr-2"></i> 半导小芯 (查手册)</a></li>
-                            </ul>
-                        </div>
-                        <!-- 软件资源 -->
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                            <h3 class="font-bold text-lg mb-4 text-indigo-700">软件 & 综合</h3>
-                            <ul class="space-y-3 text-sm">
-                                <li><a href="https://www.bilibili.com/" target="_blank" class="flex items-center hover:text-pink-500 transition"><i data-lucide="tv" class="w-4 h-4 mr-2"></i> Bilibili (视频教程首选)</a></li>
-                                <li><a href="https://csdiy.wiki/" target="_blank" class="flex items-center hover:text-indigo-600 transition"><i data-lucide="graduation-cap" class="w-4 h-4 mr-2"></i> CS自学指南</a></li>
-                                <li><a href="https://github.com/" target="_blank" class="flex items-center hover:text-slate-900 transition"><i data-lucide="github" class="w-4 h-4 mr-2"></i> GitHub (开源代码)</a></li>
-                                <li><a href="https://www.st.com.cn/" target="_blank" class="flex items-center hover:text-blue-600 transition"><i data-lucide="cpu" class="w-4 h-4 mr-2"></i> ST (意法半导体)</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 提问的智慧 -->
-                <div class="lg:col-span-1">
-                    <div class="bg-gradient-to-br from-heu-blue to-blue-800 rounded-2xl p-8 text-white h-full relative overflow-hidden">
-                        <div class="absolute top-0 right-0 -mr-6 -mt-6 w-24 h-24 bg-white opacity-10 rounded-full"></div>
-                        <h3 class="text-xl font-bold mb-4 flex items-center">
-                            <i data-lucide="help-circle" class="w-6 h-6 mr-2"></i> 提问必读
-                        </h3>
-                        <p class="text-blue-100 text-sm leading-relaxed mb-6">
-                            在学会解决问题前，首先需要学会提出问题。如何提出有意义的问题，不浪费自己和他人的时间？
-                        </p>
-                        <a href="https://github.com/ryanhanwu/How-To-Ask-Questions-The-Smart-Way/blob/main/README-zh_CN.md" target="_blank" class="inline-block w-full text-center bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm text-white font-medium py-3 rounded-lg transition mb-3">
-                            阅读《提问的智慧》
-                        </a>
-                        <p class="text-xs text-blue-300 text-center mt-4">
-                            善用搜索引擎 (Google/DeepSeek) 往往能解决 90% 的问题。
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 科创成果 (保持不变) -->
-    <section id="achievements" class="py-20 bg-slate-900 text-white relative overflow-hidden">
-        <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-            <div class="absolute w-64 h-64 bg-blue-600 rounded-full mix-blend-overlay filter blur-3xl opacity-20 top-10 left-10"></div>
-            <div class="absolute w-64 h-64 bg-cyan-600 rounded-full mix-blend-overlay filter blur-3xl opacity-20 bottom-10 right-10"></div>
-        </div>
-
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div class="flex flex-col md:flex-row justify-between items-end mb-12">
-                <div>
-                    <h2 class="text-3xl font-bold">我们的荣耀</h2>
-                    <p class="mt-2 text-slate-400">三十年技术积淀，镌刻属于科协人的光辉一面</p>
-                </div>
-                <div class="hidden md:flex space-x-2 text-sm text-slate-400 mt-4 md:mt-0">
-                   <span class="px-3 py-1 bg-slate-800 rounded-full border border-slate-700">挑战杯</span>
-                   <span class="px-3 py-1 bg-slate-800 rounded-full border border-slate-700">全国电赛</span>
-                   <span class="px-3 py-1 bg-slate-800 rounded-full border border-slate-700">Intel杯</span>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- 奖项卡片 -->
-                <div class="bg-slate-800/50 backdrop-blur-sm p-6 rounded-xl border border-slate-700 hover:border-blue-500 transition group">
-                    <div class="text-yellow-400 mb-4"><i data-lucide="trophy" class="w-8 h-8"></i></div>
-                    <h3 class="text-lg font-bold mb-2">全国大学生电子设计竞赛</h3>
-                    <p class="text-slate-400 text-sm mb-4">TI杯模拟专题邀请赛 / 国家级奖项斩获者</p>
-                </div>
-                <div class="bg-slate-800/50 backdrop-blur-sm p-6 rounded-xl border border-slate-700 hover:border-blue-500 transition group">
-                    <div class="text-yellow-400 mb-4"><i data-lucide="cpu" class="w-8 h-8"></i></div>
-                    <h3 class="text-lg font-bold mb-2">Intel杯 / 嵌入式邀请赛</h3>
-                    <p class="text-slate-400 text-sm mb-4">嵌入式系统专题邀请赛优异成绩</p>
-                </div>
-                <div class="bg-slate-800/50 backdrop-blur-sm p-6 rounded-xl border border-slate-700 hover:border-blue-500 transition group">
-                    <div class="text-yellow-400 mb-4"><i data-lucide="flame" class="w-8 h-8"></i></div>
-                    <h3 class="text-lg font-bold mb-2">挑战杯</h3>
-                    <p class="text-slate-400 text-sm mb-4">科技创新与创业计划大赛多项荣誉</p>
-                </div>
-                <div class="bg-slate-800/50 backdrop-blur-sm p-6 rounded-xl border border-slate-700 hover:border-blue-500 transition group">
-                    <div class="text-yellow-400 mb-4"><i data-lucide="lightbulb" class="w-8 h-8"></i></div>
-                    <h3 class="text-lg font-bold mb-2">其他科创赛事</h3>
-                    <p class="text-slate-400 text-sm mb-4">在各类技术竞赛中不断突破自我</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 加入我们 / CTA -->
-    <section id="contact" class="py-24 bg-white">
-        <div class="max-w-4xl mx-auto px-4 text-center">
-            <div class="bg-gradient-to-br from-heu-blue to-blue-600 rounded-3xl p-10 md:p-16 text-white shadow-2xl relative overflow-hidden">
-                <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-                <div class="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-
-                <h2 class="text-3xl md:text-4xl font-bold mb-6 relative z-10">加入信通科协，成为技术精英</h2>
-                <p class="text-blue-100 text-lg mb-8 max-w-2xl mx-auto relative z-10">
-                    无论你是零基础的小白，还是有经验的大神，HEU ESTA 都欢迎你。
-                </p>
-                
-                <div class="flex flex-col md:flex-row gap-4 justify-center items-center relative z-10">
-                    <button onclick="navigator.clipboard.writeText('1015304209'); alert('招新QQ群号：1015304209 已复制到剪贴板');" class="px-8 py-4 bg-white text-heu-blue font-bold rounded-xl shadow-lg hover:bg-blue-50 transition transform hover:-translate-y-1 w-full md:w-auto flex items-center justify-center">
-                        <i data-lucide="message-circle" class="w-5 h-5 mr-2"></i> 招新QQ群：1015304209
-                    </button>
-                    <button class="px-8 py-4 bg-blue-700 text-white font-bold rounded-xl shadow-inner border border-blue-500 hover:bg-blue-800 transition transform hover:-translate-y-1 w-full md:w-auto flex items-center justify-center cursor-default">
-                        <i data-lucide="map-pin" class="w-5 h-5 mr-2"></i> 地点：21B 1068
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="bg-slate-900 border-t border-slate-800 text-slate-400 py-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div class="col-span-1 md:col-span-2">
-                    <div class="flex items-center space-x-2 text-white text-xl font-bold mb-4">
-                        <i data-lucide="cpu" class="w-6 h-6"></i>
-                        <span>HEU ESTA</span>
-                    </div>
-                    <p class="text-sm leading-relaxed max-w-xs mb-6">
-                        哈尔滨工程大学电子科技协会 (信通科协)<br>
-                        成立于1995年，纯粹的技术性团体。
-                    </p>
-                    <div class="flex space-x-4">
-                        <a href="https://space.bilibili.com/70859324" target="_blank" class="hover:text-pink-400 transition flex items-center gap-1">
-                            <i data-lucide="tv-2" class="w-5 h-5"></i> <span class="text-sm">Bilibili</span>
-                        </a>
-                    </div>
-                </div>
-                
-                <div>
-                    <h4 class="text-white font-semibold mb-4">快速链接</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="#home" class="hover:text-blue-400 transition">首页</a></li>
-                        <li><a href="#training" class="hover:text-blue-400 transition">培训路线</a></li>
-                        <li><a href="#resources" class="hover:text-blue-400 transition">资源与帮助</a></li>
-                        <li><a href="http://www.hrbeu.edu.cn/" target="_blank" class="hover:text-blue-400 transition">哈工程官网</a></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h4 class="text-white font-semibold mb-4">联系我们</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li class="flex items-start"><i data-lucide="map-pin" class="w-4 h-4 mr-2 mt-1"></i> 21B 1068</li>
-                        <li class="flex items-center"><i data-lucide="users" class="w-4 h-4 mr-2"></i> QQ: 1015304209</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="border-t border-slate-800 mt-12 pt-8 text-center text-sm">
-                <p>&copy; 1995-2025 Harbin Engineering University Electronic Science and Technology Association. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
-
-    <!-- JavaScript -->
     <script>
         // Initialize Icons
         lucide.createIcons();
 
-        // Mobile Menu
-        const btn = document.getElementById('mobile-menu-btn');
-        const menu = document.getElementById('mobile-menu');
-        btn.addEventListener('click', () => {
-            menu.classList.toggle('hidden');
-        });
-
-        // Navbar Scroll Effect
-        const navbar = document.getElementById('navbar');
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 10) {
-                navbar.classList.add('shadow-sm');
+        // Typing Animation
+        const text = "UNDER CONSTRUCTION";
+        let i = 0;
+        function type() {
+            if (i < text.length) {
+                document.getElementById("typing-text").innerHTML += text.charAt(i);
+                i++;
+                setTimeout(type, 150);
             } else {
-                navbar.classList.remove('shadow-sm');
-            }
-        });
-
-        // Scroll Animation
-        const observerOptions = {
-            root: null,
-            rootMargin: '0px',
-            threshold: 0.1
-        };
-        const observer = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('animate-fade-in-up');
-                    observer.unobserve(entry.target);
-                }
-            });
-        }, observerOptions);
-
-        // Tab Switching Logic for Training Section
-        function switchTab(type) {
-            const btnHw = document.getElementById('btn-hw');
-            const btnSw = document.getElementById('btn-sw');
-            const contentHw = document.getElementById('content-hw');
-            const contentSw = document.getElementById('content-sw');
-
-            if (type === 'hw') {
-                btnHw.classList.add('tab-active');
-                btnHw.classList.remove('tab-inactive');
-                btnSw.classList.add('tab-inactive');
-                btnSw.classList.remove('tab-active');
-                
-                contentHw.classList.remove('hidden');
-                contentSw.classList.add('hidden');
-            } else {
-                btnSw.classList.add('tab-active');
-                btnSw.classList.remove('tab-inactive');
-                btnHw.classList.add('tab-inactive');
-                btnHw.classList.remove('tab-active');
-                
-                contentSw.classList.remove('hidden');
-                contentHw.classList.add('hidden');
+                setTimeout(() => {
+                    document.getElementById("typing-text").innerHTML = "";
+                    i = 0;
+                    type();
+                }, 3000);
             }
         }
+        type();
+    </script>
+
+    <!-- 页脚 -->
+    <footer class="absolute bottom-6 left-0 w-full text-center space-y-2">
+        <div class="text-slate-600 text-[10px] tracking-[0.2em] uppercase">
+            &copy; 1995-2026 HEU ESTA. All rights reserved.
+        </div>
+        <div class="text-slate-500 text-xs hover:text-blue-400 transition-colors">
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+                皖ICP备2026006667号
+            </a>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
     </script>
 </body>
 </html>

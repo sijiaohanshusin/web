@@ -1,81 +1,100 @@
-# **哈尔滨工程大学电子科技协会 (HEU ESTA) 官网**
+# 哈尔滨工程大学电子科技协会官网
 
-**立足实践，开拓创新。在科协，技术就是生命。**
+这是哈尔滨工程大学电子科技协会（HEU ESTA）的静态官网仓库。当前线上版本为备案期间使用的临时首页，域名为 [heuesta.cn](https://heuesta.cn)。
 
-这是一个为 **哈尔滨工程大学电子科技协会 (HEU ESTA)** 设计的全新官方网站。项目采用现代化的单页设计（Single Page Application 风格），旨在展示协会风采、发布培训路线以及整合学习资源。
+## 技术栈
 
-## **✨ 项目亮点**
+- HTML5
+- Tailwind CSS（CDN）
+- Vanilla JavaScript
+- Lucide Icons
+- Google Fonts
 
-* **⚡️ 极速加载**：纯静态页面，无后端依赖，基于 CDN 加载资源。  
-* **📱 响应式设计**：基于 Tailwind CSS，完美适配桌面端、平板和移动端。  
-* **🎨 现代化 UI**：采用深色极客风与清爽白底交替，配合流畅的滚动动画。  
-* **🛠 干货整合**：内置可视化的年度培训路线图（时间轴/Tab切换）及常用工具栈介绍。  
-* **📺 多媒体集成**：内嵌 Bilibili 宣传视频播放器，支持高清播放。
+## 仓库结构
 
-## **🛠️ 技术栈**
+- `index.html`
+  线上首页入口文件
+- `image_6662db.png`
+  协会会标图片
+- `ops/`
+  服务器自动同步脚本与 `systemd` 配置样例
 
-本项目为了保持轻量和易于维护（方便低年级同学快速接手），采用了无构建工具的开发模式：
+以下内容不参与线上站点发布：
 
-* **HTML5**: 语义化标签结构。  
-* **Tailwind CSS (CDN)**: 使用 CDN 直接引入，无需 npm install 或复杂的构建流程即可修改样式。  
-* **Vanilla JavaScript**: 原生 JS 实现简单的交互（如导航栏滚动、Tab 切换、移动端菜单）。  
-* **Lucide Icons**: 轻量级图标库。  
-* **Google Fonts**: 使用 Noto Sans SC 作为主要字体。
+- `index_v1.html`
+- `科协招新综述/`
+- `*.pem`
 
-## **📂 目录结构**
+## 本地预览
 
-HEU-ESTA-Website/  
-├── index.html          \# 网站主入口文件（所有代码都在这里）  
-├── image\_6662db.png    \# 协会 Logo 图片  
-└── README.md           \# 项目说明文档
+直接在浏览器中打开 `index.html` 即可预览。
 
-## **🚀 快速开始**
+如果需要实时刷新，推荐在 VS Code 中使用 `Live Server`。
 
-### **本地开发**
+## 线上部署
 
-1. 克隆仓库到本地：  
-   git clone \[https://github.com/你的用户名/你的仓库名.git\](https://github.com/你的用户名/你的仓库名.git)
+线上环境当前采用：
 
-2. 直接双击打开 index.html 即可在浏览器中预览。  
-3. 推荐使用 VS Code 安装 **Live Server** 插件，右键选择 "Open with Live Server" 以获得实时热更新体验。
+- 阿里云 Ubuntu 24.04
+- Nginx
+- Cloudflare 代理
+- Let's Encrypt HTTPS 证书
 
-### **部署**
+站点根目录：
 
-本项目是纯静态网页，非常适合部署在 **GitHub Pages** 或 **Gitee Pages**。
+```text
+/var/www/heuesta.cn/public
+```
 
-1. 在 GitHub 仓库中，点击 **Settings** \-\> **Pages**。  
-2. 在 **Build and deployment** 下，选择 main 分支作为 Source。  
-3. 点击 Save，几分钟后你将获得一个免费的 https://yourname.github.io/repo 域名。
+Nginx 配置：
 
-## **📝 内容修改指南**
+```text
+/etc/nginx/sites-enabled/heuesta.cn
+```
 
-### **1\. 修改招新宣传视频**
+## GitHub 自动同步发布
 
-找到 index.html 中的 \#about 部分，定位到 \<iframe\> 标签，修改 bvid 参数即可：
+服务器已改为定时从 GitHub 拉取并同步到站点目录，不再依赖本地手动上传。
 
-\<\!-- 修改 bvid 后面的字符串为你新视频的 BV 号 \--\>  
-\<iframe src="\[https://player.bilibili.com/player.html?bvid=BV1AhnGzVEsD\](https://player.bilibili.com/player.html?bvid=BV1AhnGzVEsD)&..." ...\>\</iframe\>
+同步逻辑：
 
-### **2\. 修改图片/Logo**
+1. 服务器将仓库克隆到 `/opt/heuesta/repo`
+2. 定时执行 `git pull --ff-only origin main`
+3. 使用 `rsync` 将生产文件同步到 `/var/www/heuesta.cn/public`
+4. 排除不应公开的文件和目录
+5. 自动校验并重载 Nginx
 
-* **Logo**: 替换根目录下的 image\_6662db.png，或者在 HTML 中修改 \<img src="..."\> 的路径。  
-* **背景图/插图**: 目前使用的是 Unsplash 的占位图链接，你可以将其替换为本地图片路径（建议新建一个 assets/ 文件夹存放）。
+服务器上的关键文件：
 
-### **3\. 更新培训路线**
+```text
+/usr/local/bin/heuesta-sync.sh
+/etc/systemd/system/heuesta-sync.service
+/etc/systemd/system/heuesta-sync.timer
+```
 
-找到 \#training 部分，内容被包裹在 id="content-hw" (硬件) 和 id="content-sw" (软件) 中，直接修改文本即可。
+手动触发一次同步：
 
-## **🤝 贡献指南**
+```bash
+sudo systemctl start heuesta-sync.service
+```
 
-欢迎协会的同学们提交 PR 完善这个网站！
+查看定时器状态：
 
-1. Fork 本仓库  
-2. 新建 Feat\_xxx 分支  
-3. 提交代码  
-4. 新建 Pull Request
+```bash
+sudo systemctl status heuesta-sync.timer
+sudo systemctl list-timers --all | grep heuesta-sync
+```
 
-## **📄 许可证**
+## 更新流程
 
-本项目开源，供哈尔滨工程大学电子科技协会内部使用及技术交流。
+推荐的日常维护方式：
 
-**HEU ESTA © 1995-2025**
+1. 在本地修改 `index.html` 或相关静态资源
+2. 提交并推送到 GitHub `main`
+3. 等待服务器定时同步，或手动执行一次同步服务
+
+## 注意事项
+
+- 当前 `frps` 已从 `443` 改到 `7443`
+- 如果 Minecraft 穿透客户端仍在使用旧端口，需要同步改为 `7443`
+- 如果未来新增线上静态资源，请放在仓库中并确保未被 `ops/heuesta-sync.sh` 的排除规则过滤
