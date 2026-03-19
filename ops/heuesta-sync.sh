@@ -41,6 +41,10 @@ rsync -a --delete \
     --exclude "*.pem" \
     "$SOURCE_DIR/" "$WEB_ROOT/"
 
+rm -f "$WEB_ROOT/.gitignore" "$WEB_ROOT/.gitattributes" "$WEB_ROOT/README.md" "$WEB_ROOT/index_v1.html"
+rm -rf "$WEB_ROOT/ops" "$WEB_ROOT/科协招新综述"
+find "$WEB_ROOT" -maxdepth 1 -type f -name "*.pem" -delete
+
 find "$WEB_ROOT" -type d -exec chmod 755 {} +
 find "$WEB_ROOT" -type f -exec chmod 644 {} +
 
