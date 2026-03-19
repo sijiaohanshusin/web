@@ -33,6 +33,7 @@ rsync -a --delete "$extracted_dir/" "$SOURCE_DIR/"
 rsync -a --delete \
     --exclude ".git/" \
     --exclude ".gitignore" \
+    --exclude ".gitattributes" \
     --exclude "README.md" \
     --exclude "ops/" \
     --exclude "index_v1.html" \

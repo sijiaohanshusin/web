@@ -15,6 +15,8 @@
 - `index_v1.html`
 - `科协招新综述/`
 - `*.pem`
+- `.gitignore`
+- `.gitattributes`
 - `README.md`
 - `ops/`
 
