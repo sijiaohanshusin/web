@@ -1,23 +1,34 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="https://github.com/sijiaohanshusin/web.git"
-BRANCH="main"
-REPO_DIR="/opt/heuesta/repo"
+REPO_ARCHIVE_URL="https://codeload.github.com/sijiaohanshusin/web/tar.gz/refs/heads/main"
+WORK_DIR="/opt/heuesta"
+SOURCE_DIR="$WORK_DIR/source"
 WEB_ROOT="/var/www/heuesta.cn/public"
 
-install -d -m 755 "$(dirname "$REPO_DIR")" "$WEB_ROOT"
+tmp_archive="$(mktemp /tmp/heuesta.XXXXXX.tar.gz)"
+tmp_dir="$(mktemp -d /tmp/heuesta-src.XXXXXX)"
 
-if [ ! -d "$REPO_DIR/.git" ]; then
-    git clone --branch "$BRANCH" --depth 1 "$REPO_URL" "$REPO_DIR"
-else
-    git -C "$REPO_DIR" fetch origin "$BRANCH"
-    current_branch="$(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD || true)"
-    if [ "$current_branch" != "$BRANCH" ]; then
-        git -C "$REPO_DIR" checkout "$BRANCH"
-    fi
-    git -C "$REPO_DIR" pull --ff-only origin "$BRANCH"
+cleanup() {
+    rm -f "$tmp_archive"
+    rm -rf "$tmp_dir"
+}
+trap cleanup EXIT
+
+install -d -m 755 "$WORK_DIR" "$SOURCE_DIR" "$WEB_ROOT"
+
+curl --fail --location --retry 5 --retry-delay 5 --connect-timeout 15 \
+    --output "$tmp_archive" "$REPO_ARCHIVE_URL"
+
+tar -xzf "$tmp_archive" -C "$tmp_dir"
+
+extracted_dir="$(find "$tmp_dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+if [ -z "$extracted_dir" ]; then
+    echo "Failed to extract GitHub archive" >&2
+    exit 1
 fi
+
+rsync -a --delete "$extracted_dir/" "$SOURCE_DIR/"
 
 rsync -a --delete \
     --exclude ".git/" \
@@ -27,7 +38,7 @@ rsync -a --delete \
     --exclude "index_v1.html" \
     --exclude "科协招新综述/" \
     --exclude "*.pem" \
-    "$REPO_DIR/" "$WEB_ROOT/"
+    "$SOURCE_DIR/" "$WEB_ROOT/"
 
 find "$WEB_ROOT" -type d -exec chmod 755 {} +
 find "$WEB_ROOT" -type f -exec chmod 644 {} +

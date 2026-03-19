@@ -5,4 +5,4 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/heuesta-sync.sh
+ExecStart=/bin/bash /usr/local/bin/heuesta-sync.sh

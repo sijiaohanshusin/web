@@ -3,7 +3,7 @@ Description=Periodically sync heuesta.cn from GitHub
 
 [Timer]
 OnBootSec=2min
-OnUnitActiveSec=5min
+OnUnitActiveSec=10min
 AccuracySec=1min
 Persistent=true
 
