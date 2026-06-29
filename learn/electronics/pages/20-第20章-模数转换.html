@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 20 章：模数转换 - ADI Electronics 中文详注 HTML</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="../index.html">← 返回总目录</a>
+    <span>Analog Devices Electronics I & II 中文学习版</span>
+  </header>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">ADI 原文 / 中文译读 / 工程注释 / 图片</p>
+      <h1>第 20 章：模数转换</h1>
+      <p class="source">原始标题：Chapter 20: Analog to Digital Conversion · 来源：<a href="https://wiki.analog.com/university/courses/electronics/text/chapter-20">https://wiki.analog.com/university/courses/electronics/text/chapter-20</a></p>
+      <div class="notice">
+        <strong>说明：</strong>这是面向学习的中文详注 HTML，不是 ADI 官方中文译本。页面保留原文句子，并在每句下方给出中文译读和术语注释；涉及公式、参数和器件选择时，请回到 ADI 原文与对应数据手册复核。
+      </div>
+    </section>
+    <section class="note-section">
+      <h2>本章中文详解<small>重写讲义版</small></h2>
+      <div class="note-content"><h1>第 20 章：模数转换</h1>
+<blockquote>
+<p>中文学习笔记，依据 <a href="https://wiki.analog.com/university/courses/electronics/text/chapter-20">ADI 原章节</a> 重述并补充工程注释。不是逐句翻译，也不替代 ADI 原文与器件数据手册。</p>
+</blockquote>
+<h2>本章定位</h2>
+<p>本章解释 ADC 的基本操作、关键规格与四类常见架构。理解 ADC 的最好方式是把它拆成采样、比较/量化、编码三件事，再看各架构如何在速度、分辨率、延迟和功耗之间取舍。</p>
+<h2>学习目标</h2>
+<ul>
+<li>能用物理直觉说明主要电路或器件的工作过程。</li>
+<li>能写出本章核心近似式，并说明近似成立的条件。</li>
+<li>能识别输入范围、输出余量、功耗、噪声或稳定性中的主要限制。</li>
+<li>能阅读原理图并完成数量级检查。</li>
+</ul>
+<h2>原章小节索引</h2>
+<ul>
+<li>20.1 What they do</li>
+<li>20.2 Basic Operation</li>
+<li>20.3 Understanding Key Specifications</li>
+<li>20.4 ADC Classifications</li>
+<li>20.5 How It Works - Flash Architecture</li>
+<li>20.6 How It Works - Pipeline Architecture</li>
+<li>20.7 How It Works - SAR Architecture</li>
+<li>20.8 How It Works - Sigma-Delta Architecture</li>
+</ul>
+<h2>采样与量化</h2>
+<p>采样保持在某个时刻冻结输入，量化把连续幅度映射到有限码字。量化误差在理想条件下位于 ±0.5 LSB，但实际还叠加噪声、失调、非线性和参考误差。</p>
+<h2>关键规格</h2>
+<p>分辨率是码数，不等于准确度。需要同时看 INL、DNL、SNR、SINAD、SFDR、有效位数、输入带宽、采样率、延迟和功耗。</p>
+<h2>Flash</h2>
+<p>用 $2^N-1$ 个比较器并行比较输入与阈值，速度极高、延迟很低，代价是面积、功耗和输入电容迅速增加。常用于低至中分辨率超高速场合。</p>
+<h2>Pipeline</h2>
+<p>每级粗量化并放大残差交给下一级，通过数字校正组合结果。吞吐率高，但输入到码输出存在多个时钟周期的固定延迟。</p>
+<h2>SAR</h2>
+<p>内部 DAC 与比较器执行二分搜索，从最高位到最低位逐步逼近。其能效高、延迟可预测，适合中高速数据采集；驱动器必须满足采样电容的建立需求。</p>
+<h2>Sigma-Delta</h2>
+<p>调制器以高采样率把量化噪声整形到带外，数字滤波与抽取获得高分辨率结果。它带宽较窄且数字滤波带来延迟，工频抑制和低频精密测量是典型优势。</p>
+<h2>核心公式与使用条件</h2>
+<ul>
+<li>奈奎斯特条件：$f_s&gt;2B$（工程上还需留滤波过渡带）</li>
+<li>$LSB=FS/2^N$</li>
+<li>$ENOB=(SINAD-1.76)/6.02$</li>
+<li>理想量化误差范围约为 $[-0.5,0.5]$ LSB</li>
+</ul>
+<blockquote>
+<p>公式默认采用理想或一阶模型。用于实际设计前，应补入器件容差、温度范围、频率依赖和数据手册保证值。</p>
+</blockquote>
+<h2>常见误区</h2>
+<ul>
+<li>把采样率直接当作可用输入带宽。</li>
+<li>只看 ENOB，不看 SFDR 和延迟。</li>
+<li>SAR 前端 RC 未在采样时间内建立。</li>
+</ul>
+<h2>设计检查清单</h2>
+<ol>
+<li>先标出所有电压极性、电流方向与直流工作点。</li>
+<li>验证器件处于假设的工作区，并检查输入/输出合规范围。</li>
+<li>对最大、最小电源与温度角点重复计算。</li>
+<li>计算功耗、噪声或带宽时写清单位和积分带宽。</li>
+<li>用仿真或实验验证瞬态、稳定性及最坏容差。</li>
+</ol>
+<h2>配图</h2>
+<p><img alt="图 1：ADI 原教材图示" src="../assets/chapter-20/chptr20-f8.gif" /></p>
+<p><em>图 1：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<p><img alt="图 2：ADI 原教材图示" src="../assets/chapter-20/chptr20-f7.gif" /></p>
+<p><em>图 2：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<p><img alt="图 3：ADI 原教材图示" src="../assets/chapter-20/chptr20-f10.gif" /></p>
+<p><em>图 3：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<p><img alt="图 4：ADI 原教材图示" src="../assets/chapter-20/chptr20-f2.gif" /></p>
+<p><em>图 4：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<h2>复习题</h2>
+<ol>
+<li>用自己的话说明“采样与量化”解决的核心问题。</li>
+<li>针对“Sigma-Delta”，列出一个计算中必须检查的边界条件。</li>
+<li>选取本章一幅图，沿信号或能量流向逐节点解释其工作过程。</li>
+</ol>
+<h2>来源与署名</h2>
+<ul>
+<li>来源：<a href="https://wiki.analog.com/university/courses/electronics/text/chapter-20">ADI 原章节</a>。</li>
+<li>原始教材及图片：Analog Devices, Inc.，用于非商业教育学习；保留 ADI 署名。</li>
+<li>本文中文讲解为重新组织的学习笔记；如与原文或最新数据手册不一致，以原始资料和器件数据手册为准。</li>
+</ul></div>
+    </section>
+    <section class="source-section">
+      <h2>原文逐句译读与注释<small>按原站顺序</small></h2>
+      <h2>Chapter 20: Analog to Digital Conversion<small>模数转换</small></h2>
+<h2>20.1 What they do<small>本节译题：20.1 What they do</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>Analog-to-Digital converters (ADC) translate analog signals, real world signals like temperature, pressure, voltage, current, distance, or light intensity, into a digital representation of that signal.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This digital representation can then be processed, manipulated, computed, transmitted or stored.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr20-f1.gif</p>
+<div class="sentence-card"><div class="en"><span>原句</span>In many cases, the analog to digital conversion process is just one step within a larger measurement and control loop where digitized data is processed and then reconverted back to analog signals to drive external transducers.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 模数转换 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>模数转换</strong>：把连续模拟量转换成离散数字码，重点看采样、量化、编码和误差预算。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>These transducers can include things like motors, heaters and acoustic divers like loudspeakers.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The performance required of the ADC will reflect the performance goals of the measurement and control loop.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>ADC performance needs will also reflect the capabilities and requirements of the other signal processing elements in the loop.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr20-f2.gif</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 20.2 Measurement and Control Loop</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>20.2 Basic Operation<small>本节译题：20.2 Basic Operation</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>An ADC samples an analog waveform at uniform time intervals and assigns a digital value to each sample.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The digital value appears on the converter’s output in a binary coded format.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The value is obtained by dividing the sampled analog input voltage by the reference voltage and them multiplying by the number of digital codes.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The resolution of converter is set by the number of binary bits in the output code.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr20-f3.gif</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 20.3 Digital output code</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>An ADC carries out two processes, sampling and quantization.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The ADC represents an analog signal, which has infinite resolution, as a digital code that has finite resolution.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The ADC produces 2N digital values where N represents the number of binary output bits.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The analog input signal will fall between the quantization levels because the converter has finite resolution resulting in an inherent uncertainty or quantization error.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>That error determines the maximum dynamic range of the converter.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr20-f4.gif</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 20.4 Quantization Process</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The sampling process represents a continuous time domain signal with values measured at discrete and uniform time intervals.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This process determines the maximum bandwidth of the sampled signal in accordance with the Nyquist Theory.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This theory states that the signal frequency must be less than or equal to one half the sampling frequency to prevent aliasing.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Aliasing is a condition in which frequency signals outside the desired signal band will, through the sampling process, appear within the bandwidth of interest.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>However, this aliasing process can be exploited in communications systems design to down-convert a high frequency signal to a lower frequency.</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 上述概念，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This technique is known as under-sampling.</div><div class="zh"><span>中文译读</span>可译为“这种对象/现象称为……”。本句是在给 一个术语 下定义；后文遇到该词时要回到这个定义。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>A criterion for under-sampling is that the ADC has sufficient input bandwidth and dynamic range to acquire the highest frequency signal of interest.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr20-f5.gif</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 20.5 Sampling Process</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Sampling and quantization are important concepts because they establish the performance limits of an ideal ADC.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In an ideal ADC, the code transitions are exactly 1 least significant bit (LSB) apart.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>So, for an N-bit ADC, there are 2N codes and 1 LSB = FS/2N, where FS is the full-scale analog input voltage.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>However, ADC operation in the real world is also affected by non-ideal effects, which produce errors beyond those dictated by converter resolution and sample rate.</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 上述概念，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>These errors are reflected in a number of AC and DC performance specifications associated with ADCs.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr20-f6.gif</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 20.6 Transfer Function for an Ideal ADC</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Any analog input in this range gives the same digital output code.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>20.3 Understanding Key Specifications<small>本节译题：20.3 Understanding Key Specifications</small></h2>
+<div class="table-wrap"><table><tr><th>Specification and terms, units of measure</th><th>Meaning</th><th>Significance</th></tr>
+<tr><td>DC specifications</td><td></td><td></td></tr>
+<tr><td>Resolution or bits</td><td>Number of bits representing an analog signal, generally ranging from 6 to 24.</td><td>Determines how small an input can be resolved.</td></tr>
+<tr><td></td></tr>
+<tr><td>Conversion speed or rate, ksamples/s or Msamples/s</td><td>The number of repetitive conversions per second for a full-scale change to specified resolution and linearity</td><td>Determines the fastest sampling capability of the ADC</td></tr>
+<tr><td>Least significant bit (LSB)</td><td>The right-most bit in an ADC output code. LSB size is a function of converter resolution.</td><td>Not a specification, but a common term.</td></tr>
+<tr><td>Most significant bit (MSB)</td><td>The left-most bit in an ADC output code.</td><td>Not a specification, but a common term.</td></tr>
+<tr><td>Differential nonlinearity (DNL), expressed in terms of LSB</td><td>The deviation from the ideal (1 LSB) code width between any two adjacent codes. In an ideal converter, every code is exactly the same size and DNL is zero.</td><td>DNL, INL, offset error, and gain error specify how accurately the data represents the signal across the entire internal and external range.</td></tr>
+<tr><td>Integral nonlinearity (INL), expressed in terms of LSB</td></tr>
+<tr><td>(also referred to as</td></tr>
+<tr><td>&quot;relative accuracy error&quot;)</td></tr>
+<tr><td></td><td>The deviation of an actual code transition point from its ideal position on a straight line drawn between the end points of the transfer function.</td><td>The narrowing or widening of code widths caused by DNL can lead to &quot;missing codes&quot; and add noise and frequency spurs beyond the effects of quantization.</td></tr>
+<tr><td>Offset, expressed in terms of LSB</td><td>The difference between the ideal and actual output when the converter input is zero.</td><td>INL describes the absolute</td></tr>
+<tr><td>accuracy of a converter.</td></tr>
+<tr><td>Calculated after offset and gain errors are removed.</td></tr>
+<tr><td>Gain error/full-scale error, expressed in terms of LSB</td><td>The difference between the ideal and actual output when the converter input is at full scale.</td><td>INL produces additional harmonics and spurs in the frequency domain.</td></tr></table></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr20-f7.gif</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 20.7 ADC Transfer Function with DNL Error</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr20-f8.gif</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 20.8 ADC Transfer Function with INL Error</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="table-wrap"><table><tr><th>Specification and terms, units of measure</th><th>Meaning</th><th>Significance</th></tr>
+<tr><td>AC specifications</td><td></td><td></td></tr>
+<tr><td>Spurious-free dynamic range (SFDR), dB</td><td>The ratio of the fundamental frequency&#x27;s amplitude to that of the largest spurious signal in a given bandwidth.</td><td>Important in communications</td></tr>
+<tr><td>applications where a spur may</td></tr>
+<tr><td>interfere with a neighboring channel.</td></tr>
+<tr><td>Total harmonic distortion</td></tr>
+<tr><td>(THD), dB</td><td>The ratio of the rms sum of the first six harmonics to the amplitude of the fundamental frequency.</td><td>Harmonics are noise components related to, or generated by, a-d conversion. Harmonics can limit the dynamic performance of a converter.</td></tr>
+<tr><td>Signal-to-noise-and-distortion ratio (SINAD ), dB</td><td>The ratio of the rms signal amplitude to the mean value of the root-sum-squares (RSS) of all other spectral components including harmonics but excluding dc.</td><td>SINAD indicates the true ac linearity an ADC because it includes the effects of the 2nd and 3rd harmonics</td></tr>
+<tr><td></td></tr>
+<tr><td>Effective number of bits (ENOB)</td><td>ENOB = SINAD ...1.76 dB 6.02</td><td>ENOB specifies the dynamic</td></tr>
+<tr><td>performance of a given ADC as compared to an ideal converter.</td></tr>
+<tr><td>Signal-to-noise ratio (SNR) or signal-to-noise ratio without harmonics.</td><td>Similar to SINAD, the ratio of the rms signal amplitude to the mean value of the root-sum-squares of all other spectral components, excluding the first five harmonics and dc.</td><td>SNR indicates noise performance of a converter compared to an ideal converter.</td></tr>
+<tr><td>Analog bandwidth (full-power, small signal), kHz or MHz</td><td>The input frequency where the fundamental in an FFT of the output rolls off by 3 dB. Generally determined by the</td></tr>
+<tr><td>Converter&#x27;s sample-and-hold amplifier.</td><td>Important in IF under-sampling applications. This spec may not be compatible with the ADC&#x27;s maximum sampling rate.</td></tr>
+<tr><td>Power dissipation, mW or W</td><td>The amount of power consumed by the converter.</td><td>Important for power-sensitive applications in which battery life, temperature, or space limitations may affect power dissipation requirements.</td></tr></table></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr20-f9.gif</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 20.9 Frequency Domain Specifications</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>20.4 ADC Classifications<small>本节译题：20.4 ADC Classifications</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>Speed and accuracy are two critical measures of ADC performance.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>As such, they provide a means for broadly categorizing today’s monolithic ADCs.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>ADC chips may be loosely grouped along these lines as general-purpose, high-speed, or precision.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Converters with 8- to 14-bit resolution and conversion rates below 10 Msamples/s are typically considered general-purpose ADCs.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Those with conversion rates above 10 Msamples/s usually get the high-speed moniker, while those with 16 bits or more of resolution fall into the precision ADC category.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>These definitions, however, are somewhat arbitrary and largely reflect the current state-of-the-art.</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 上述概念，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Within these broad categories, ADCs may also be grouped according to converter architecture.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The most popular types are flash, pipelined, successive approximation- register, and sigma-delta.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Each architecture offers certain advantages with respect to conversion speed, accuracy, and other parameters.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The characteristics associated with each architecture help determine its suitability for a given application.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>ADCs have been implemented both as discrete Designs’ sometimes constructed with hybrid packaging and as monolithic designs implemented as integrated circuits (ICs).</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Much of the discussion of ADC performance within these pages relates specifically to ADCs in IC form.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Development of monolithic ADCs has been heavily influenced by process innovation, both in high-end processes such as bipolar, biCMOS, and SiGe, as well as mainstream CMOS processes.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 CMOS 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>CMOS</strong>：互补 MOS 技术，静态功耗低，是现代数字/混合信号电路基础。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Over time, the migration of ADC designs to CMOS processes with smaller geometries has increased the possibilities for performance enhancements, while also allowing higher levels of integration.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 CMOS 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>CMOS</strong>：互补 MOS 技术，静态功耗低，是现代数字/混合信号电路基础。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>That integration can increase the number of conversion channels achieved on a single die, or allow conversion- related functions to be brought on-chip.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>As a result, die size and, consequently, package size depend on the semiconductor process employed.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The process also determines supply voltage, which along with conversion speed, influences power dissipation.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>20.5 How It Works - Flash Architecture<small>本节译题：20.5 How It Works - Flash Architecture</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>In the flash or parallel ADC architecture, an array of 2N-1 comparators converts an analog signal to digital with a resolution of N bits.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 比较器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>比较器</strong>：判断两个输入大小并输出逻辑电平；不能简单把普通运放当高速比较器。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The comparators receive the analog signal on one input and a unique fraction of the reference voltage on the other.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 比较器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>比较器</strong>：判断两个输入大小并输出逻辑电平；不能简单把普通运放当高速比较器。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The reference voltage for each comparator is often a tap off a resistive voltage divider, whereby the comparators are biased in voltage increments equivalent to 1 LSB.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 比较器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>比较器</strong>：判断两个输入大小并输出逻辑电平；不能简单把普通运放当高速比较器。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The comparator array is clocked simultaneously.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 比较器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>比较器</strong>：判断两个输入大小并输出逻辑电平；不能简单把普通运放当高速比较器。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The comparators with reference voltages less than the analog input will output a digital one.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 比较器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>比较器</strong>：判断两个输入大小并输出逻辑电平；不能简单把普通运放当高速比较器。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The comparators with reference voltages greater than the analog input will output a digital zero.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 比较器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>比较器</strong>：判断两个输入大小并输出逻辑电平；不能简单把普通运放当高速比较器。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>When read together, the outputs present a &quot;thermometer code,&quot; which the output logic converts to standard binary code.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr20-f10.gif</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 20.10 Flash Architecture</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Pros:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>+ Very fast„ converts in one ADC clock cycle.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Cons:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>Requires many comparators.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 比较器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>比较器</strong>：判断两个输入大小并输出逻辑电平；不能简单把普通运放当高速比较器。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The physical limits of monolithic integration generally allow only up to 8 bits of resolution per ADC chip.\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>High input capacitance.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电容 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电容</strong>：储存电荷的能力；阻抗随频率升高而降低。。</div></div>
+</div>
+<h2>20.6 How It Works - Pipeline Architecture<small>本节译题：20.6 How It Works - Pipeline Architecture</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>This architecture divides the conversion into two or more stages.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Each stage consists of a sample-and-hold (S/H) circuit, an m-bit flash ADC, and a DAC.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The analog signal is fed to the first stage, where it’s sampled by the S/H and converted to a digital code by the flash ADC.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The code generated by the flash ADC in this stage represents the most significant bits of the ADC’s final output.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The same code is then fed to the DAC, which reconverts the code back to an analog signal that is subtracted from the original, sampled analog input signal.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The resulting difference signal or residue, is next amplified and sent on to the following stage in the pipeline, where the whole process is repeated.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The number of stages needed depends on the required resolution and the resolution of the flash ADCs used in each stage.</div><div class="zh"><span>中文译读</span>可译为“结果取决于……”。关键依赖项是 文中列出的参数，不能只看单一典型值。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In theory, the overall resolution of the ADC would be the sum of the resolutions of the flash ADCs.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>But in practice, some extra overlapping bits are required for error correction.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Pros:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>+ Not as fast as pure flash architecture, but achieves higher resolutions and dynamic range.\\ + Handles wideband inputs.\\ + Use of dither noise and averaging increases the effective resolution of the converter.\\ + Permits under sampling of wideband IF signal.</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 噪声，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span><strong>噪声</strong>：电路内部随机扰动；低噪声设计要分清电压噪声、电流噪声和电阻热噪声。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Cons:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>Pipeline delay. Total throughput can be equal to that of a flash converter (one conversion per cycle), but with a latency or pipeline delay equal to the number of stages.\\</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 上述概念，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Accuracy of conversion depends on the DAC linearity.\\</div><div class="zh"><span>中文译读</span>可译为“结果取决于……”。关键依赖项是 文中列出的参数，不能只看单一典型值。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Ill-suited to applications where conversion results must be available immediately after the sample clock.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+</div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr20-f11.gif</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 20.11 Single Pipelined Converter Stage</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>20.7 How It Works - SAR Architecture<small>本节译题：20.7 How It Works - SAR Architecture</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>The SAR converter works like a balance scale that compares an unknown weight against a series of known weights.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In lieu of weights, the SAR converter compares the analog input voltage against a series of successively smaller voltages representing each of the bits in the digital output code.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>These voltages are fractions of the full-scale input voltage (1/2, 1/4, 1/8, 1/16...1/2&lt;sup&gt;N&lt;/sup&gt;, where N=number of bits).</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The first comparison is made between the analog input voltage and a voltage representing the most significant bit (MSB).</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>If that analog input voltage is greater than the MSB voltage, the value of the MSB is set to 1, otherwise it’s set to 0.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The second comparison is made between the analog input voltage and a voltage representing the sum of the MSB and the next most significant bit.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The value of the second most significant bit is then set accordingly.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The third comparison is made between the analog input voltage and the voltage representing the sum of the three most significant bits.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>At this point, the value of the third most significant bit is set.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The process repeats until the value of the LSB is established.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Pros:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>+ Uses a single comparator to achieve high resolution, resulting in small die size for monolithic ADCs.\\ + No pipeline delay.\\ + Well-suited for non-periodic inputs.\\ + Use of dither noise and averaging increases the effective resolution of the converter.\\ + Permits under-sampling.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 比较器、噪声 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>比较器</strong>：判断两个输入大小并输出逻辑电平；不能简单把普通运放当高速比较器。；<strong>噪声</strong>：电路内部随机扰动；低噪声设计要分清电压噪声、电流噪声和电阻热噪声。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Cons:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>Requires N comparisons to achieve N-bit resolution, which is more than both flash and pipelined.\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Accuracy of conversion depends on the DAC linearity and comparator noise.</div><div class="zh"><span>中文译读</span>可译为“结果取决于……”。关键依赖项是 比较器、噪声，不能只看单一典型值。</div><div class="note"><span>补充注释</span><strong>比较器</strong>：判断两个输入大小并输出逻辑电平；不能简单把普通运放当高速比较器。；<strong>噪声</strong>：电路内部随机扰动；低噪声设计要分清电压噪声、电流噪声和电阻热噪声。。</div></div>
+</div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr20-f12.gif</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 20.12 Successive-Approximation-Register (SAR) ADC</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>20.8 How It Works - Sigma-Delta Architecture<small>本节译题：20.8 How It Works - Sigma-Delta Architecture</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>The basic elements of this architecture are an integrator, a comparator, and a one-bit DAC, which together form a sigma-delta modulator.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 比较器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>比较器</strong>：判断两个输入大小并输出逻辑电平；不能简单把普通运放当高速比较器。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The modulator subtracts the DAC from the analog input signal and then feeds the signal to the integrator.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The output of the integrator then goes to a comparator, which converts the signal to a one-bit digital output.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 比较器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>比较器</strong>：判断两个输入大小并输出逻辑电平；不能简单把普通运放当高速比较器。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The resulting bit is fed to the DAC, which produces an analog signal to be subtracted from the input signal.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The process repeats at a very fast “oversampled rate.&quot;</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The modulator produces a binary stream in which the ratio of ones to zeros is a function of the input signal’s amplitude.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>By digitally filtering and decimating this stream of one and zeroes, a binary output representing the value of the analog input is obtained.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Pros:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>+ Yields the highest precision for lower input-bandwidth applications.\\ + Permits noise shaping whereby low-frequency noise is moved to higher frequencies, outside the band of interest.\\ + Oversampling reduces requirements for anti-aliasing filtering.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 带宽、噪声 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>带宽</strong>：满足指定增益/误差条件的频率范围。；<strong>噪声</strong>：电路内部随机扰动；低噪声设计要分清电压噪声、电流噪声和电阻热噪声。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Cons:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>Latency is much greater than with other architectures.\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Oversampling and latency discourage the use of sigma-delta ADCs when digitizing multiplexed input signals.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+</div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr20-f13.gif</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 20.13 Sigma-Delta Architecture</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Return to Previous Chapter</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Go to Next Chapter</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Return to Table of Contents</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+    </section>
+    <section class="all-images"><h2>本章图片总览<small>全部已下载图片</small></h2><div class="gallery"><figure><img loading="lazy" src="../assets/chapter-20/chptr20-f1.gif" alt="chptr20-f1.gif"><figcaption>chptr20-f1.gif</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-20/chptr20-f10.gif" alt="chptr20-f10.gif"><figcaption>chptr20-f10.gif</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-20/chptr20-f11.gif" alt="chptr20-f11.gif"><figcaption>chptr20-f11.gif</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-20/chptr20-f12.gif" alt="chptr20-f12.gif"><figcaption>chptr20-f12.gif</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-20/chptr20-f13.gif" alt="chptr20-f13.gif"><figcaption>chptr20-f13.gif</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-20/chptr20-f2.gif" alt="chptr20-f2.gif"><figcaption>chptr20-f2.gif</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-20/chptr20-f3.gif" alt="chptr20-f3.gif"><figcaption>chptr20-f3.gif</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-20/chptr20-f4.gif" alt="chptr20-f4.gif"><figcaption>chptr20-f4.gif</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-20/chptr20-f5.gif" alt="chptr20-f5.gif"><figcaption>chptr20-f5.gif</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-20/chptr20-f6.gif" alt="chptr20-f6.gif"><figcaption>chptr20-f6.gif</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-20/chptr20-f7.gif" alt="chptr20-f7.gif"><figcaption>chptr20-f7.gif</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-20/chptr20-f8.gif" alt="chptr20-f8.gif"><figcaption>chptr20-f8.gif</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-20/chptr20-f9.gif" alt="chptr20-f9.gif"><figcaption>chptr20-f9.gif</figcaption></figure></div></section>
+  </main>
+</body>
+</html>
