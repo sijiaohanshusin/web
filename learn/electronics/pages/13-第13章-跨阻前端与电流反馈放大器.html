@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 13 章：跨阻前端与电流反馈放大器 - ADI Electronics 中文详注 HTML</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="../index.html">← 返回总目录</a>
+    <span>Analog Devices Electronics I & II 中文学习版</span>
+  </header>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">ADI 原文 / 中文译读 / 工程注释 / 图片</p>
+      <h1>第 13 章：跨阻前端与电流反馈放大器</h1>
+      <p class="source">原始标题：Chapter 13: Transimpedance (Transresistance) frontends · 来源：<a href="https://wiki.analog.com/university/courses/electronics/text/chapter-13">https://wiki.analog.com/university/courses/electronics/text/chapter-13</a></p>
+      <div class="notice">
+        <strong>说明：</strong>这是面向学习的中文详注 HTML，不是 ADI 官方中文译本。页面保留原文句子，并在每句下方给出中文译读和术语注释；涉及公式、参数和器件选择时，请回到 ADI 原文与对应数据手册复核。
+      </div>
+    </section>
+    <section class="note-section">
+      <h2>本章中文详解<small>重写讲义版</small></h2>
+      <div class="note-content"><h1>第 13 章：跨阻前端与电流反馈放大器</h1>
+<blockquote>
+<p>中文学习笔记，依据 <a href="https://wiki.analog.com/university/courses/electronics/text/chapter-13">ADI 原章节</a> 重述并补充工程注释。不是逐句翻译，也不替代 ADI 原文与器件数据手册。</p>
+</blockquote>
+<h2>本章定位</h2>
+<p>本章围绕电流到电压前端，并比较电流反馈放大器（CFB）与电压反馈放大器（VFB）。跨阻设计的核心是输入节点电容、反馈阻抗与噪声增益共同形成的稳定性问题。</p>
+<h2>学习目标</h2>
+<ul>
+<li>能用物理直觉说明主要电路或器件的工作过程。</li>
+<li>能写出本章核心近似式，并说明近似成立的条件。</li>
+<li>能识别输入范围、输出余量、功耗、噪声或稳定性中的主要限制。</li>
+<li>能阅读原理图并完成数量级检查。</li>
+</ul>
+<h2>原章小节索引</h2>
+<ul>
+<li>13.1 Current Feedback Amplifier Basics</li>
+<li>13.2 Differences Between CFB And VFB Op Amps</li>
+<li>Section Summary: Current Feedback (CFB) VS. Voltage Feedback (VFB)</li>
+</ul>
+<h2>跨阻转换</h2>
+<p>反相节点保持近似恒定电位，使传感器电流主要流经反馈电阻并转成输出电压。光电二极管、电缆和运放输入电容会让噪声增益随频率上升，反馈电容用于整形并保证相位余量。</p>
+<h2>电流反馈放大器基础</h2>
+<p>CFB 的反相输入是低阻电流求和节点，误差电流经跨阻级变为输出电压。其闭环带宽对电压增益的依赖通常弱于 VFB，但反馈电阻值不可任意选择。</p>
+<h2>CFB 与 VFB 的差别</h2>
+<p>VFB 主要看输入差分电压与噪声增益；CFB 主要看反相端误差电流及推荐反馈阻抗。CFB 往往具有高压摆率，但直流精度、输入偏置和噪声特征需按具体器件比较。</p>
+<h2>稳定与噪声设计</h2>
+<p>先建立传感器电容、运放输入电容和布局寄生的总值，再用噪声增益图选择反馈电容。输出噪声要同时计算电流噪声经反馈阻抗的贡献和电压噪声经噪声增益的贡献。</p>
+<h2>核心公式与使用条件</h2>
+<ul>
+<li>跨阻：$V_o=-I_{in}Z_f$</li>
+<li>反馈网络：$Z_f=R_f\parallel1/(sC_f)$</li>
+<li>输入电流噪声贡献约为 $i_n|Z_f|$</li>
+<li>反馈零/极点需与输入电容形成的噪声增益交点配合</li>
+</ul>
+<blockquote>
+<p>公式默认采用理想或一阶模型。用于实际设计前，应补入器件容差、温度范围、频率依赖和数据手册保证值。</p>
+</blockquote>
+<h2>常见误区</h2>
+<ul>
+<li>只按 $R_f$ 定增益而忽略总输入电容。</li>
+<li>在 CFB 中随意改变反馈电阻。</li>
+<li>光电二极管反向偏置电源不做噪声滤波。</li>
+</ul>
+<h2>设计检查清单</h2>
+<ol>
+<li>先标出所有电压极性、电流方向与直流工作点。</li>
+<li>验证器件处于假设的工作区，并检查输入/输出合规范围。</li>
+<li>对最大、最小电源与温度角点重复计算。</li>
+<li>计算功耗、噪声或带宽时写清单位和积分带宽。</li>
+<li>用仿真或实验验证瞬态、稳定性及最坏容差。</li>
+</ol>
+<h2>配图</h2>
+<p><img alt="图 1：ADI 原教材图示" src="../assets/chapter-13/chptr13-f1.png" /></p>
+<p><em>图 1：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<p><img alt="图 2：ADI 原教材图示" src="../assets/chapter-13/chptr13-f2.png" /></p>
+<p><em>图 2：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<p><img alt="图 3：ADI 原教材图示" src="../assets/chapter-13/chptr13-f4.png" /></p>
+<p><em>图 3：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<p><img alt="图 4：ADI 原教材图示" src="../assets/chapter-13/chptr13-f3.png" /></p>
+<p><em>图 4：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<h2>复习题</h2>
+<ol>
+<li>用自己的话说明“跨阻转换”解决的核心问题。</li>
+<li>针对“稳定与噪声设计”，列出一个计算中必须检查的边界条件。</li>
+<li>选取本章一幅图，沿信号或能量流向逐节点解释其工作过程。</li>
+</ol>
+<h2>来源与署名</h2>
+<ul>
+<li>来源：<a href="https://wiki.analog.com/university/courses/electronics/text/chapter-13">ADI 原章节</a>。</li>
+<li>原始教材及图片：Analog Devices, Inc.，用于非商业教育学习；保留 ADI 署名。</li>
+<li>本文中文讲解为重新组织的学习笔记；如与原文或最新数据手册不一致，以原始资料和器件数据手册为准。</li>
+</ul></div>
+    </section>
+    <section class="source-section">
+      <h2>原文逐句译读与注释<small>按原站顺序</small></h2>
+      <h2>Chapter 13: Transimpedance (Transresistance) frontends<small>跨阻 / 阻抗 / 电阻</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>The differential pair we studied in chapter 12, in Bipolar or FET form, is the most popular input stage for what are most often referred to as voltage feedback amplifiers (VFB).</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>They are characterized by having a relatively high input impedance at both the inverting and non-inverting input terminals.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>There is a second, alternate, type of input structure which is characterized by having a relatively low input impedance at the inverting input terminal and a high input impedance at the non-inverting input terminal.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>These amplifiers are often called transimpedance or transresistance amplifiers because they are inherently current to voltage converters (like a resistor or impedance).</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 跨阻、阻抗、电阻 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>跨阻</strong>：把输入电流转换为输出电压，常用于光电二极管前端。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。；<strong>电阻</strong>：耗散能量并限制电流的元件参数。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This low impedance current input stage leads to current feedback amplifiers (CFB).</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电流反馈、阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电流反馈</strong>：误差信号以电流形式进入内部节点，带宽与增益关系不同于传统电压反馈运放。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>These amplifiers can be considered current controlled voltage sources (CCVS) in an ideal sense.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>13.1 Current Feedback Amplifier Basics<small>电流反馈</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>The basic current feedback amplifier topology is shown in figure 13.1.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电流反馈 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电流反馈</strong>：误差信号以电流形式进入内部节点，带宽与增益关系不同于传统电压反馈运放。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Notice that within the model, a unity gain buffer connects the non-inverting input to the inverting input.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In the ideal case, the output impedance of this buffer is zero (R&lt;sub&gt;O&lt;/sub&gt; = 0), and the error signal is a small current, i, which flows into the inverting input.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The error current, i, is mirrored into a high impedance, T(s), and the voltage developed across T(s) is equal to T(s)·i.</div><div class="zh"><span>中文译读</span>可译为“二者相等/代数关系成立”。这里的核心量是 阻抗，使用时要先统一参考方向和符号。</div><div class="note"><span>补充注释</span><strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>(The quantity T(s) is generally referred to as the open-loop transimpedance gain.)</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 跨阻、阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>跨阻</strong>：把输入电流转换为输出电压，常用于光电二极管前端。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr13-f1.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 13.1 Current Feedback (CFB) Op Amp Topology</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放、电流反馈 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。；<strong>电流反馈</strong>：误差信号以电流形式进入内部节点，带宽与增益关系不同于传统电压反馈运放。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr13-e1.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Assume R&lt;sub&gt;0&lt;/sub&gt; &lt;&lt; R&lt;sub&gt;1&lt;/sub&gt; and R&lt;sub&gt;1&lt;/sub&gt;&lt;= R&lt;sub&gt;2&lt;/sub&gt; then:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr13-e2.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>At this point we are reminded that current feedback op amps are often called transimpedance op amps, because the open-loop transfer function is in fact an impedance as described above.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放、跨阻、电流反馈、阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。；<strong>跨阻</strong>：把输入电流转换为输出电压，常用于光电二极管前端。；<strong>电流反馈</strong>：误差信号以电流形式进入内部节点，带宽与增益关系不同于传统电压反馈运放。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>However, the term transimpedance amplifier is often more correctly applied to more general circuits such as current-to-voltage (I/V) converters, where either CFB or VFB op amps can be used.</div><div class="zh"><span>中文译读</span>可译为“它可用于/常用于……”。本句强调 运放、跨阻、阻抗 的用途，设计时还要检查适用条件和限制。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。；<strong>跨阻</strong>：把输入电流转换为输出电压，常用于光电二极管前端。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Therefore, some caution is warranted when the term transimpedance is encountered in a given situation.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 跨阻、阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>跨阻</strong>：把输入电流转换为输出电压，常用于光电二极管前端。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>On the other hand, the term current feedback op amp is rarely confused and is the preferred nomenclature when referring to this op amp topology.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放、电流反馈 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。；<strong>电流反馈</strong>：误差信号以电流形式进入内部节点，带宽与增益关系不同于传统电压反馈运放。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>From this simple model, several important CFB op amp characteristics can be deduced.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>• Unlike VFB op amps, CFB op amps do not have balanced inputs.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Instead, the non-inverting input is high impedance, and the inverting input is low impedance.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>• The open-loop gain of CFB op amps is measured in units of O (transimpedance gain) rather than V/V as for VFB op amps.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放、环路增益、跨阻、阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。；<strong>环路增益</strong>：开环增益与反馈因子的乘积，决定闭环精度和稳定裕量。；<strong>跨阻</strong>：把输入电流转换为输出电压，常用于光电二极管前端。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>• For a fixed value feedback resistor R&lt;sub&gt;2&lt;/sub&gt;, the closed-loop gain of a CFB can be varied by changing R&lt;sub&gt;1&lt;/sub&gt;, without significantly affecting the closed-loop bandwidth.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 环路增益、带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>环路增益</strong>：开环增益与反馈因子的乘积，决定闭环精度和稳定裕量。；<strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This can be seen by examining the simplified equation in figure 13.1.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The denominator determines the overall frequency response; and if R&lt;sub&gt;2&lt;/sub&gt; is constant, then R&lt;sub&gt;1&lt;/sub&gt; of the numerator can be changed (thereby changing the gain) without affecting the denominator-hence the bandwidth remains relatively constant.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 频率响应、带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>频率响应</strong>：电路增益和相位随频率变化的关系。；<strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The CFB topology is primarily used where the ultimate in high speed and low distortion is required.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The fundamental concept is based on the fact that in bipolar transistor circuits currents can be switched faster than voltages, all other things being equal.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 13.2 shows a simplified schematic of an example of an early IC CFB op amp, the AD846-introduced by Analog Devices in 1988.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Notice that full advantage is taken of a complementary bipolar (CB) process which provides well matched PNP and NPN transistors.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr13-f2.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 13.2: Current Feedback Op Amp (AD846 Cir.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放、电流反馈 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。；<strong>电流反馈</strong>：误差信号以电流形式进入内部节点，带宽与增益关系不同于传统电压反馈运放。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>1988)</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Transistors Q&lt;sub&gt;1&lt;/sub&gt;-Q&lt;sub&gt;2&lt;/sub&gt; buffer the non-inverting input (pin 3) and drive the inverting input (pin 2).</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Q&lt;sub&gt;5&lt;/sub&gt;-Q&lt;sub&gt;6&lt;/sub&gt; and Q&lt;sub&gt;7&lt;/sub&gt;-Q&lt;sub&gt;8&lt;/sub&gt; act as current mirrors that drive the high impedance node.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电流镜、阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电流镜</strong>：用参考支路设定电流并复制到输出支路，重点看匹配、输出阻抗和合规电压。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The C&lt;sub&gt;COMP&lt;/sub&gt; capacitor provides the dominant pole compensation; and Q&lt;sub&gt;9&lt;/sub&gt;, Q&lt;sub&gt;10&lt;/sub&gt;, Q&lt;sub&gt;11&lt;/sub&gt;, and Q&lt;sub&gt;12&lt;/sub&gt; comprise the output buffer.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In order to take full advantage of the CFB architecture, a high speed complementary bipolar (CB) IC process is generally required.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>With modern IC processes, this is readily achievable, allowing direct coupling in the signal path of the amplifier.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>13.2 Differences Between CFB And VFB Op Amps<small>运放</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>One primary difference between the CFB and VFB amps is that the CFB amplifier does not have a constant gain-bandwidth product.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>While there is a small change in bandwidth with gain, it is much less than the 6 dB/octave we see with a VFB op amp.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放、带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。；<strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This is shown in figure 13.4.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>As previously mentioned, the bandwidth of a CFB op amp is proportional to the feedback resistor.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放、带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。；<strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>For every CFB op amp there is a recommended value of feedback resistor for maximum bandwidth.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放、带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。；<strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>If you increase the value of the resistor beyond this value, you reduce the bandwidth.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>If you use a lower value of resistor below this value, the phase margin is reduced, and the amplifier may become unstable.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 相位裕量 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>相位裕量</strong>：环路增益为 1 时距离 -180° 的相位余量；越小越容易振铃或振荡。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr13-f3.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 13.4 Current Feedback Amplifier Frequency Response</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电流反馈、频率响应 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电流反馈</strong>：误差信号以电流形式进入内部节点，带宽与增益关系不同于传统电压反馈运放。；<strong>频率响应</strong>：电路增益和相位随频率变化的关系。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Gain is manipulated in a CFB op amp application by choosing the correct feedback resistor for the device (R&lt;sub&gt;2&lt;/sub&gt;), and then selecting the bottom resistor (R&lt;sub&gt;1&lt;/sub&gt;) to yield the desired closed loop gain.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放、闭环、环路增益 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。；<strong>闭环</strong>：反馈已经接入并决定实际传递关系的工作状态。；<strong>环路增益</strong>：开环增益与反馈因子的乘积，决定闭环精度和稳定裕量。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The gain relationship of R&lt;sub&gt;2&lt;/sub&gt; and R&lt;sub&gt;1&lt;/sub&gt; is identical to the case of a VFB op amp.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The optimum feedback resistor may be different for different operational conditions.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>For instance, the value will change for different package types because of the variation in parasitic capacitances.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电容 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电容</strong>：储存电荷的能力；阻抗随频率升高而降低。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 13.5 shows the optimum feedback resistor for the AD8001 op amp for various gains for the PDIP, SOIC, and SOT-23 packages.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr13-f4.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 13.5: AD8001 Optimum Feedback Resistor vs.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Package Also, a CFB amplifier should not have a capacitor in the feedback loop.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>If a capacitor is used in the feedback loop, it reduces the net feedback impedance at higher frequencies, which will cause the op amp to oscillate.</div><div class="zh"><span>中文译读</span>可译为“它可用于/常用于……”。本句强调 运放、阻抗 的用途，设计时还要检查适用条件和限制。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Stray capacitance on the inverting input will cause a similar effect and should be minimized by etching away the ground plane around this terminal.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电容 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电容</strong>：储存电荷的能力；阻抗随频率升高而降低。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>A common error in using a current feedback op amp is to connect the inverting input directly to the output in an attempt to build a unity gain voltage follower (buffer).</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运放、电流反馈 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运放</strong>：高增益差分放大器；分析时先确认是否处于负反馈线性区。；<strong>电流反馈</strong>：误差信号以电流形式进入内部节点，带宽与增益关系不同于传统电压反馈运放。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This circuit will oscillate because the equivalent feedback resistor value is zero.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The follower circuit can be stabilized by simply connecting the inverting input to the output using the recommended feedback resistor value.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Another difference between the VFB and CFB amplifiers is that the inverting input impedance of the CFB amp is low (typically 50 O to 100 O), while the non-inverting input impedance is high (typically several hundred kO).</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Therefore, the inputs of the CFB amp are not balanced, as is the case with VFB amps.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Slew rate performance is also enhanced by the CFB topology.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 压摆率 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>压摆率</strong>：输出电压变化速度上限；大信号高频时常比小信号带宽更先限制波形。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The current that is available to charge and discharge the internal compensation capacitor is available on demand.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>It is not limited to a fixed value as is often the case in VFB topologies.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>With a step input, the current is increased (current-on-demand) until the feedback loop is stabilized.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The basic current feedback amplifier has no fundamental slew-rate limit.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电流反馈 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电流反馈</strong>：误差信号以电流形式进入内部节点，带宽与增益关系不同于传统电压反馈运放。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Limits only come about from parasitic internal capacitances, and many strides have been made to reduce their effects.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电容 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电容</strong>：储存电荷的能力；阻抗随频率升高而降低。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The combination of higher bandwidths and slew rate allows CFB devices to have good distortion performance, while doing so at a lower power.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 压摆率、带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>压摆率</strong>：输出电压变化速度上限；大信号高频时常比小信号带宽更先限制波形。；<strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The distortion of an amplifier is affected by the open loop distortion of the amplifier and the loop gain of the closed-loop circuit.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 开环、环路增益 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>开环</strong>：没有闭合反馈时的高增益状态；运放开环通常极易饱和。；<strong>环路增益</strong>：开环增益与反馈因子的乘积，决定闭环精度和稳定裕量。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The amount of open-loop distortion contributed by a CFB amplifier is small due to the basic symmetry of the internal topology.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>High bandwidth is the other main contributor to low distortion.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In most configurations, a CFB amplifier has a greater bandwidth than its VFB counterpart.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>So at a given signal frequency, the faster part has greater loop-gain and therefore lower distortion.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>There are, however, certain voltage feedback structures (often referred to as &quot;quad core&quot; or &quot;H-Bridge&quot;) which approach the performance levels of CFB and provide &quot;current on demand&quot; when designed on similar processes.</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 上述概念，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h3>Section Summary: Current Feedback (CFB) VS. Voltage Feedback (VFB)<small>小结</small></h3>
+<div class="sentence-card"><div class="en"><span>原句</span>The application advantages of current feedback and voltage feedback differ.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电流反馈 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电流反馈</strong>：误差信号以电流形式进入内部节点，带宽与增益关系不同于传统电压反馈运放。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In many applications, the differences between CFB and VFB are not readily apparent.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Today&#x27;s CFB and VFB amplifiers have comparable performance, but there are certain unique advantages associated with each topology.</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 上述概念，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Voltage feedback allows freedom of choice of the feedback resistor (or network) at the expense of sacrificing bandwidth for gain.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Current feedback maintains high bandwidth over a wide range of gains at the cost of limiting the choices in the feedback impedance.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电流反馈、阻抗、带宽 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电流反馈</strong>：误差信号以电流形式进入内部节点，带宽与增益关系不同于传统电压反馈运放。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。；<strong>带宽</strong>：满足指定增益/误差条件的频率范围。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In general, VFB amplifiers offer:\\ • Lower Noise\\ • Better dc Performance\\ • Feedback Component Freedom</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 噪声 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>噪声</strong>：电路内部随机扰动；低噪声设计要分清电压噪声、电流噪声和电阻热噪声。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>while CFB amplifiers offer:\\ • Faster Slew Rates\\ • Lower Distortion\\ • Feedback Component Restrictions</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 压摆率 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>压摆率</strong>：输出电压变化速度上限；大信号高频时常比小信号带宽更先限制波形。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>ADALM2000 Lab Activity 12A, Transimpedance input stage</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 跨阻、阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>跨阻</strong>：把输入电流转换为输出电压，常用于光电二极管前端。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Return to Previous Chapter</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Go to Next Chapter</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Return to Table of Contents</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+    </section>
+    <section class="all-images"><h2>本章图片总览<small>全部已下载图片</small></h2><div class="gallery"><figure><img loading="lazy" src="../assets/chapter-13/chptr13-e1.png" alt="chptr13-e1.png"><figcaption>chptr13-e1.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-13/chptr13-e2.png" alt="chptr13-e2.png"><figcaption>chptr13-e2.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-13/chptr13-f1.png" alt="chptr13-f1.png"><figcaption>chptr13-f1.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-13/chptr13-f2.png" alt="chptr13-f2.png"><figcaption>chptr13-f2.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-13/chptr13-f3.png" alt="chptr13-f3.png"><figcaption>chptr13-f3.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-13/chptr13-f4.png" alt="chptr13-f4.png"><figcaption>chptr13-f4.png</figcaption></figure></div></section>
+  </main>
+</body>
+</html>

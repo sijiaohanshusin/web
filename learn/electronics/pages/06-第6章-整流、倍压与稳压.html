@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 6 章：整流、倍压与稳压 - ADI Electronics 中文详注 HTML</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="../index.html">← 返回总目录</a>
+    <span>Analog Devices Electronics I & II 中文学习版</span>
+  </header>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">ADI 原文 / 中文译读 / 工程注释 / 图片</p>
+      <h1>第 6 章：整流、倍压与稳压</h1>
+      <p class="source">原始标题：Chapter 6: Diode applications (Power supplies, voltage regulators &amp; limiters) · 来源：<a href="https://wiki.analog.com/university/courses/electronics/text/chapter-6">https://wiki.analog.com/university/courses/electronics/text/chapter-6</a></p>
+      <div class="notice">
+        <strong>说明：</strong>这是面向学习的中文详注 HTML，不是 ADI 官方中文译本。页面保留原文句子，并在每句下方给出中文译读和术语注释；涉及公式、参数和器件选择时，请回到 ADI 原文与对应数据手册复核。
+      </div>
+    </section>
+    <section class="note-section">
+      <h2>本章中文详解<small>重写讲义版</small></h2>
+      <div class="note-content"><h1>第 6 章：整流、倍压与稳压</h1>
+<blockquote>
+<p>中文学习笔记，依据 <a href="https://wiki.analog.com/university/courses/electronics/text/chapter-6">ADI 原章节</a> 重述并补充工程注释。不是逐句翻译，也不替代 ADI 原文与器件数据手册。</p>
+</blockquote>
+<h2>本章定位</h2>
+<p>本章讨论把交流变成直流并降低纹波的基本方法，包括半波、全波、滤波电容、倍压器和齐纳并联稳压。设计必须同时考虑平均值、峰值、纹波、浪涌和器件反向耐压。</p>
+<h2>学习目标</h2>
+<ul>
+<li>能用物理直觉说明主要电路或器件的工作过程。</li>
+<li>能写出本章核心近似式，并说明近似成立的条件。</li>
+<li>能识别输入范围、输出余量、功耗、噪声或稳定性中的主要限制。</li>
+<li>能阅读原理图并完成数量级检查。</li>
+</ul>
+<h2>原章小节索引</h2>
+<ul>
+<li>6.1 Rectifier</li>
+<li>6.1.1 Half-wave rectification</li>
+<li>6.1.2 Full-wave rectification</li>
+<li>6.1.3 Rectifier output smoothing</li>
+<li>6.2 Voltage-doubling rectifiers</li>
+<li>Section Review:</li>
+<li>6.3 Zener Diode as Voltage Regulator</li>
+<li>Regulator Design Example:</li>
+</ul>
+<h2>半波与全波整流</h2>
+<p>半波只利用一个半周期，纹波频率等于输入频率；全波利用两个半周期，纹波频率加倍，通常更容易滤波。桥式整流每次有两只二极管导通，低压系统中其压降不可忽略。</p>
+<h2>电容输入滤波</h2>
+<p>电容在波峰附近快速充电，在两次波峰之间向负载放电。负载电流越大、电容越小或纹波周期越长，电压跌落越大；整流二极管的峰值充电电流可能远高于平均负载电流。</p>
+<h2>倍压整流</h2>
+<p>倍压器通过二极管在不同半周期给电容充电并串联叠加电压，适合较高电压、较小电流。输出阻抗和纹波随级数上升，不能把空载倍压值当作带载值。</p>
+<h2>齐纳并联稳压</h2>
+<p>串联电阻吸收输入与输出的压差，齐纳管通过改变电流维持近似恒压。设计要同时验证最差低输入/最大负载时仍有齐纳电流，以及最高输入/最小负载时齐纳功耗不超限。</p>
+<h2>核心公式与使用条件</h2>
+<ul>
+<li>近似纹波：$\Delta V\approx I_L/(f_rC)$</li>
+<li>桥式输出峰值：$V_{pk,out}\approx V_{pk,in}-2V_D$</li>
+<li>齐纳串阻：$R=(V_{in}-V_Z)/(I_L+I_Z)$</li>
+<li>齐纳功耗：$P_Z=V_ZI_Z$</li>
+</ul>
+<blockquote>
+<p>公式默认采用理想或一阶模型。用于实际设计前，应补入器件容差、温度范围、频率依赖和数据手册保证值。</p>
+</blockquote>
+<h2>常见误区</h2>
+<ul>
+<li>用交流有效值直接代替整流后的峰值。</li>
+<li>忽略变压器内阻和二极管浪涌。</li>
+<li>只按典型输入设计齐纳电流。</li>
+</ul>
+<h2>设计检查清单</h2>
+<ol>
+<li>先标出所有电压极性、电流方向与直流工作点。</li>
+<li>验证器件处于假设的工作区，并检查输入/输出合规范围。</li>
+<li>对最大、最小电源与温度角点重复计算。</li>
+<li>计算功耗、噪声或带宽时写清单位和积分带宽。</li>
+<li>用仿真或实验验证瞬态、稳定性及最坏容差。</li>
+</ol>
+<h2>配图</h2>
+<p><img alt="图 1：ADI 原教材图示" src="../assets/chapter-06/chptr6-f5.png" /></p>
+<p><em>图 1：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<p><img alt="图 2：ADI 原教材图示" src="../assets/chapter-06/chptr6-f8.png" /></p>
+<p><em>图 2：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<p><img alt="图 3：ADI 原教材图示" src="../assets/chapter-06/chptr6-f3.png" /></p>
+<p><em>图 3：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<p><img alt="图 4：ADI 原教材图示" src="../assets/chapter-06/chptr6-f1.png" /></p>
+<p><em>图 4：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<h2>复习题</h2>
+<ol>
+<li>用自己的话说明“半波与全波整流”解决的核心问题。</li>
+<li>针对“齐纳并联稳压”，列出一个计算中必须检查的边界条件。</li>
+<li>选取本章一幅图，沿信号或能量流向逐节点解释其工作过程。</li>
+</ol>
+<h2>来源与署名</h2>
+<ul>
+<li>来源：<a href="https://wiki.analog.com/university/courses/electronics/text/chapter-6">ADI 原章节</a>。</li>
+<li>原始教材及图片：Analog Devices, Inc.，用于非商业教育学习；保留 ADI 署名。</li>
+<li>本文中文讲解为重新组织的学习笔记；如与原文或最新数据手册不一致，以原始资料和器件数据手册为准。</li>
+</ul></div>
+    </section>
+    <section class="source-section">
+      <h2>原文逐句译读与注释<small>按原站顺序</small></h2>
+      <h2>Chapter 6: Diode applications (Power supplies, voltage regulators &amp; limiters)<small>二极管 / 稳压器</small></h2>
+<h2>6.1 Rectifier<small>整流器</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>A rectifier is an electrical device that converts alternating current (AC) to direct current (DC), a process known as rectification.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Rectifiers have many uses including as components of power supplies and as amplitude modulation detectors (envelope detectors) of radio signals.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Rectifiers are most commonly made using solid state diodes but other type of components can be used when very high voltages or currents are involved.</div><div class="zh"><span>中文译读</span>可译为“它可用于/常用于……”。本句强调 二极管、整流器 的用途，设计时还要检查适用条件和限制。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>When only a single diode is used to rectify AC (by blocking the negative or positive portion of the waveform), the difference between the term diode and the term rectifier is simply one of usage.</div><div class="zh"><span>中文译读</span>可译为“它可用于/常用于……”。本句强调 二极管、整流器 的用途，设计时还要检查适用条件和限制。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The term rectifier describes a diode that is being used to convert AC to DC.</div><div class="zh"><span>中文译读</span>可译为“它可用于/常用于……”。本句强调 二极管、整流器 的用途，设计时还要检查适用条件和限制。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Most rectifier circuits contain a number of diodes in a specific arrangement to more efficiently convert AC power to DC power than is possible with only a single diode.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<h3>6.1.1 Half-wave rectification<small>本节译题：6.1.1 Half-wave rectification</small></h3>
+<div class="sentence-card"><div class="en"><span>原句</span>In half wave rectification, either the positive or negative half of the AC wave is passed, while the other half is blocked.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Because only one half of the input waveform reaches the output, it is only 50% efficient if used for power transfer.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Half-wave rectification can be achieved with a single diode in a single phase supply as shown in figure 6.1, or with three diodes in a three-phase supply.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr6-f1.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 6.1 Half wave rectifier using one diode</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The output DC voltage of a half wave rectifier, given a sinusoidal input, can be calculated with the following ideal equations:</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr6-e1.png</p>
+<h3>6.1.2 Full-wave rectification<small>本节译题：6.1.2 Full-wave rectification</small></h3>
+<div class="sentence-card"><div class="en"><span>原句</span>A full-wave rectifier converts both the positive and negative halves of the input waveform to a single polarity (positive or negative) at its output.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>By using both halves of the AC waveform full-wave rectification is more efficient than half wave.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>When a simple transformer with out a center tapped secondary is used, four diodes are required instead of the one needed for half-wave rectification.</div><div class="zh"><span>中文译读</span>可译为“它可用于/常用于……”。本句强调 二极管 的用途，设计时还要检查适用条件和限制。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Four diodes arranged this way are called a diode bridge or bridge rectifier as shown in figure 6.2.</div><div class="zh"><span>中文译读</span>可译为“这种对象/现象称为……”。本句是在给 二极管、整流器 下定义；后文遇到该词时要回到这个定义。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The bridge rectifier can also be used for translating a DC input of unknown or arbitrary polarity into an output of known polarity.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This is generally required in electronic telephones or other telephony devices where the DC polarity on the two phone wires is unknown.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>There are also applications for protecting against accidental battery reversal in battery-powered circuits.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr6-f3.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 6.2 Bridge rectifier: a full-wave rectifier using 4 diodes.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>For single-phase AC, if the transformer is center-tapped, then two diodes back-to-back (i.e. anode-to-anode or cathode-to-cathode) can form a full-wave rectifier.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Twice as many windings are required on the transformer secondary to obtain the same output voltage compared to the bridge rectifier above.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 整流器。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This is not as efficient from the transformer perspective because current flows in only one half of the secondary during each positive and negative half cycle of the AC input.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr6-f5.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 6.3 Full-wave rectifier using a center tapped transformer and 2 diodes.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>If a second pair of diodes is included as in figure 6.4 then both positive and negative polarity voltages with respect to the transformer center tap can be generated.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>One can also view this arrangement to be the same as adding a center tap to the secondary winding in the full-wave bridge rectifier from figure 6.2.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr6-f8.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 6.4 Dual polarity Full-wave rectifier using a center tapped transformer and 4 diodes.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>ALM1000 Lab Activity Diode Rectifiers</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<h3>6.1.3 Rectifier output smoothing<small>整流器</small></h3>
+<div class="sentence-card"><div class="en"><span>原句</span>Half-wave or full-wave rectification does not produce a constant-voltage DC as we have seen in the previous figures.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In order to produce a steady DC voltage from a rectified AC source, a filter or smoothing circuit is needed.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In the simplest form this can be just a capacitor placed across the DC output of the rectifier.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>There will still remain an amount of AC ripple voltage where the voltage is not completely smoothed.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The amplitude of the remaining ripple depends on how much the load discharges the capacitor between the peaks of the waveform.</div><div class="zh"><span>中文译读</span>可译为“结果取决于……”。关键依赖项是 文中列出的参数，不能只看单一典型值。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr6-f10.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 6.5(a) Half-wave Rectifier RC-Filter</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr6-f12.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 6.5(b) Full-wave Rectifier RC-Filter</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Sizing of the filter capacitor, C&lt;sub&gt;1&lt;/sub&gt;, represents a tradeoff.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>For a given load, R&lt;sub&gt;L&lt;/sub&gt;, a larger capacitor will reduce ripple but will cost more and will create higher peak currents in the transformer secondary and in the supply feeding it.</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 上述概念，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In extreme cases where many rectifiers are loaded onto a power distribution circuit, it may prove difficult for the power distribution grid to maintain a correctly shaped sinusoidal voltage waveform.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>For a given tolerable ripple the required capacitor size is proportional to the load current and inversely proportional to the supply frequency and the number of output peaks of the rectifier per input cycle.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 整流器。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The load current and the supply frequency are generally outside the control of the designer of the rectifier system but the number of peaks per input cycle can be affected by the choice of rectifier design.</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 整流器，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The maximum ripple voltage present for a Full Wave Rectifier circuit is not only determined by the value of the smoothing capacitor but by the frequency and load current, and is calculated as:</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 整流器，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr6-e2.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Where:\\ V&lt;sub&gt;ripple&lt;/sub&gt;is the maximum ripple voltage on the DC output\\ I&lt;sub&gt;Load&lt;/sub&gt; is the DC load current\\ F is the frequency of the ripple (generally 2X the AC frequency)\\ C is the smoothing capacitor</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>A half-wave rectifier, figure 6.5(a) will only give one peak per cycle and for this and other reasons is only used in very small power supplies and where cost and complexity are of concern.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>A full wave rectifier, figure 6.5(b) achieves two peaks per cycle and this is the best that can be done with single-phase input.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>For three-phase inputs a three-phase bridge will give six peaks per cycle and even higher numbers of peaks can be achieved by using transformer networks placed before the rectifier to convert to a higher phase order.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>To further reduce this ripple, an LC π-filter (pi-filter) such as shown in figure 6.6 can be used.</div><div class="zh"><span>中文译读</span>可译为“它可用于/常用于……”。本句强调 该结构 的用途，设计时还要检查适用条件和限制。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This complements the reservoir capacitor, C&lt;sub&gt;1&lt;/sub&gt;, with a series inductor, L&lt;sub&gt;1&lt;/sub&gt;, and a second filter capacitor, C&lt;sub&gt;2&lt;/sub&gt; so that a steadier DC output can be obtained across the terminals of the final filter capacitor.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The series inductor presents a high impedance at the ripple current frequency.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr6-f13.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 6.6 LC π-filter (pi-filter)</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>A more usual alternative to a filter, and essential if the DC load requires a very smooth supply voltage, is to follow the filter capacitor with a voltage regulator which we will discuss in section 6.3.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 稳压器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>稳压器</strong>：在输入、负载变化时维持输出电压，设计要看压差、热耗和稳定性。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The filter capacitor needs to be large enough to prevent the troughs of the ripple getting below the drop-out voltage of the regulator being used.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The regulator serves both to remove the last of the ripple and to deal with variations in supply and load characteristics.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>It would be possible to use a smaller filter capacitor (which can be large for high-current power supplies) and then apply some filtering as well as the regulator, but this is not a common design strategy.</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 上述概念，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The extreme of this approach is to dispense with the filter capacitor altogether and put the rectified waveform straight into an inductor input filter.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The advantage of this circuit is that the current waveform is smoother and consequently the rectifier no longer has to deal with the current as a large current pulse just at the peaks of the input sine wave, but instead the current delivery is spread over more of the cycle.</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 整流器，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The downside is that the voltage output is much lower - approximately the average of an AC half-cycle rather than the peak.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>6.2 Voltage-doubling rectifiers<small>整流器</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>The simple half wave rectifier can be built in two versions with the diode pointing in opposite directions, one version connects the negative terminal of the output direct to the AC supply and the other connects the positive terminal of the output direct to the AC supply.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>By combining both of these with separate output smoothing capacitors it is possible to get an output voltage of nearly double the peak AC input voltage, figure 6.7.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This also provides a tap in the middle, which allows use of such a circuit as a split rail (positive and negative) supply.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr6-f14.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 6.7 Simple voltage doubler.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>A variant of this is to use two capacitors in series for the output smoothing on a bridge rectifier then place a switch between the midpoint of those capacitors and one of the AC input terminals.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>With the switch open this circuit will act like a normal bridge rectifier with it closed it will act like a voltage doubling rectifier.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In other words this makes it easy to derive a voltage of roughly 320V (+/- around 15%) DC from any mains supply in the world, this can then be fed into a relatively simple switched mode power supply.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电源 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电源</strong>：为电路提供能量；要同时考虑电压、电流、纹波、瞬态和保护。。</div></div>
+<h3>Section Review:<small>本节译题：Section Review:</small></h3>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>Rectification is the conversion of alternating current (AC) to direct current (DC).\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>A half-wave rectifier is a circuit that allows only one half-cycle of the AC voltage waveform to be applied to the load, resulting in one non-alternating polarity across it.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The resulting DC delivered to the load &quot;pulsates&quot; significantly.\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>A full-wave rectifier is a circuit that converts both half-cycles of the AC voltage waveform to an unbroken series of voltage pulses of the same polarity.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The resulting DC delivered to the load doesn&#x27;t &quot;pulsate&quot; as much.\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Capacitors are used to smooth out or filter the ripple present in the rectified DC, and sometimes more complex filters using inductors as well as capacitors are used.</div><div class="zh"><span>中文译读</span>可译为“它可用于/常用于……”。本句强调 该结构 的用途，设计时还要检查适用条件和限制。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+</div>
+<h2>6.3 Zener Diode as Voltage Regulator<small>二极管 / 齐纳 / 稳压器</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>Zener diodes are widely used as voltage references and as shunt regulators to regulate the voltage across small circuits.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电压基准、二极管、齐纳 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电压基准</strong>：提供稳定、低噪声、低漂移的参考电压，是 ADC/DAC 精度链路的一部分。；<strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>When connected in parallel with a varying voltage source, such as the diode rectifier we just discussed, so that it is reverse biased, the zener diode conducts when the voltage reaches the diode&#x27;s reverse breakdown voltage.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、齐纳、整流器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。；<strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>From that point on, the relatively low impedance of the diode keeps the voltage across the diode at that value.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr6-f15.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 6.8 Zener Diode Voltage Reference</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电压基准、二极管、齐纳 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电压基准</strong>：提供稳定、低噪声、低漂移的参考电压，是 ADC/DAC 精度链路的一部分。；<strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In the circuit shown in figure 6.8, a typical shunt regulator, an input voltage, V&lt;sub&gt;IN&lt;/sub&gt;, is regulated down to a stable output voltage V&lt;sub&gt;OUT&lt;/sub&gt;.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The reverse bias breakdown voltage of diode D&lt;sub&gt;Z&lt;/sub&gt; is stable over a wide current range and holds V&lt;sub&gt;OUT&lt;/sub&gt; relatively constant even though the input voltage may fluctuate over a fairly wide range.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Because of the low impedance of the diode when operated like this, series resistor R&lt;sub&gt;S&lt;/sub&gt; is used to limit current through the circuit.</div><div class="zh"><span>中文译读</span>可译为“它可用于/常用于……”。本句强调 二极管、阻抗 的用途，设计时还要检查适用条件和限制。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In the case of this simple reference, the current flowing in the diode is determined using Ohm&#x27;s law and the known voltage drop across the resistor R&lt;sub&gt;S&lt;/sub&gt;.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>&lt;m&gt;I_Diode = (V_IN - V_OUT) / R_S&lt;/m&gt;</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The value of R&lt;sub&gt;S&lt;/sub&gt; must satisfy two conditions:</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>R&lt;sub&gt;S&lt;/sub&gt; must be small enough that the current through D&lt;sub&gt;Z&lt;/sub&gt; keeps D&lt;sub&gt;Z&lt;/sub&gt; in reverse breakdown.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The value of this current is given in the manufacturer&#x27;s data sheet for D&lt;sub&gt;Z&lt;/sub&gt;.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>For example, the common BZX79C5V6 device, a 5.6 V 0.5 ? zener diode, has a recommended reverse current of 5 mA.</div><div class="zh"><span>中文译读</span>这是举例说明。例子的作用是把 二极管、齐纳 落到具体数值、器件或电路情形上。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>If insufficient current exists through D&lt;sub&gt;Z&lt;/sub&gt;, then V&lt;sub&gt;OUT&lt;/sub&gt; will be unregulated, and less than the nominal breakdown voltage.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>When calculating R&lt;sub&gt;S&lt;/sub&gt;, allowance must be made for any current through any external load that might be connected to V&lt;sub&gt;OUT&lt;/sub&gt;, not shown in this diagram.\\</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>R&lt;sub&gt;S&lt;/sub&gt; must be large enough that the current through D&lt;sub&gt;Z&lt;/sub&gt; does not exceed the rated maximum and destroy the device.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>If the current through D&lt;sub&gt;Z&lt;/sub&gt; is I&lt;sub&gt;D&lt;/sub&gt;, its breakdown voltage V&lt;sub&gt;B&lt;/sub&gt; and its maximum power dissipation P&lt;sub&gt;MAX&lt;/sub&gt;, then:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+</div>
+<div class="sentence-card"><div class="en"><span>原句</span>&lt;m&gt; I_D * V_B &lt; P_MAX &lt;/m&gt;</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>A load may be placed across the diode in this reference circuit, and as long as the zener stays in reverse breakdown, the diode will provide a stable voltage source to the load.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、齐纳 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Zener diodes in this configuration are often used as stable references for more complicated voltage regulator circuits involving buffer amplifier stages to supply large currents to the load.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、齐纳、稳压器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。；<strong>稳压器</strong>：在输入、负载变化时维持输出电压，设计要看压差、热耗和稳定性。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Shunt regulators are simple, but the requirements that the ballast resistor, R&lt;sub&gt;S&lt;/sub&gt;, be small enough to avoid excessive voltage drop during worst-case operation (low input voltage concurrent with high load current) tends to leave a lot of current flowing in the diode much of the time, making for a fairly inefficient regulator with high quiescent power dissipation, only suitable for smaller loads.</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 二极管，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>These devices are also encountered, typically in series with a base-emitter junction, in transistor stages where selective choice of a device centered around the avalanche or zener point can be used to introduce compensating temperature co-efficient balancing of the transistor PN junction.</div><div class="zh"><span>中文译读</span>可译为“它可用于/常用于……”。本句强调 PN 结、齐纳 的用途，设计时还要检查适用条件和限制。</div><div class="note"><span>补充注释</span><strong>PN 结</strong>：P 型和 N 型半导体形成的结，是二极管和 BJT 的物理基础。；<strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>An example of this kind of use would be a DC error amplifier used in a regulated power supply circuit feedback loop system.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电源 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电源</strong>：为电路提供能量；要同时考虑电压、电流、纹波、瞬态和保护。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>As a side note: zener diodes are also used in surge protectors to limit transient voltage spikes.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、齐纳 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Another notable application of the zener diode is the use of noise caused by its avalanche breakdown in a random number generator that never repeats.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、齐纳、噪声 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。；<strong>噪声</strong>：电路内部随机扰动；低噪声设计要分清电压噪声、电流噪声和电阻热噪声。。</div></div>
+<h3>Regulator Design Example:<small>本节译题：Regulator Design Example:</small></h3>
+<div class="sentence-card"><div class="en"><span>原句</span>An output voltage of 5V is required and the output current required is 60mA.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>We first must choose a zener diode, V&lt;sub&gt;Z&lt;/sub&gt; = 4.7V which is the nearest value available.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 二极管、齐纳。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>We need to determine the nominal input voltage and it must be a few volts greater than V&lt;sub&gt;Z&lt;/sub&gt;.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>For this example we will use V&lt;sub&gt;IN&lt;/sub&gt; = 8V.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>As a rule of thumb we choose the nominal current through the zener to be 10% of the required output load current or 6mA.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 齐纳。</div><div class="note"><span>补充注释</span><strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This then determines the current I&lt;sub&gt;max&lt;/sub&gt; = 66mA which will flow through R&lt;sub&gt;S&lt;/sub&gt; (output current plus 10%).</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The series resistor R&lt;sub&gt;S&lt;/sub&gt; = (8V - 4.7V) / 66mA = 50Ω, we would choose R&lt;sub&gt;S&lt;/sub&gt; = 47Ω which is the nearest standard value.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The resistor power rating P&lt;sub&gt;RS&lt;/sub&gt; &gt; (8V - 4.7V) × 66mA = 218mW, so we choose P&lt;sub&gt;RS&lt;/sub&gt; = 0.5W</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The maximum power that could be dissipated in the zener when there is zero current in the output load can be calculated as P&lt;sub&gt;Z&lt;/sub&gt; &gt; 4.7V × 66mA = 310mW, so we would choose P&lt;sub&gt;Z&lt;/sub&gt; = 400mW.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 齐纳 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>ADALM2000 Lab Activity: Zener Diode Regulator</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、齐纳 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Exercise 6.3.1</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr6-f16.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>For the circuit shown, if the power supply voltage V&lt;sub&gt;IN&lt;/sub&gt; increases, the voltage across the load resistor R&lt;sub&gt;L&lt;/sub&gt; will:\\</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电源 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电源</strong>：为电路提供能量；要同时考虑电压、电流、纹波、瞬态和保护。。</div></div>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>increase\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>decrease\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>remain the same</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+</div>
+<div class="sentence-card"><div class="en"><span>原句</span>For the circuit shown, if the power supply voltage V&lt;sub&gt;IN&lt;/sub&gt; decreases, the voltage across the load resistor R&lt;sub&gt;L&lt;/sub&gt; will:\\</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电源 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电源</strong>：为电路提供能量；要同时考虑电压、电流、纹波、瞬态和保护。。</div></div>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>increase\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>decrease\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>remain the same</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+</div>
+<div class="sentence-card"><div class="en"><span>原句</span>For the circuit shown, if the power supply voltage V&lt;sub&gt;IN&lt;/sub&gt; increases, the voltage across the series resistor R&lt;sub&gt;S&lt;/sub&gt; will:\\</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电源 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电源</strong>：为电路提供能量；要同时考虑电压、电流、纹波、瞬态和保护。。</div></div>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>increase\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>decrease\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>remain the same</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+</div>
+<div class="sentence-card"><div class="en"><span>原句</span>For the circuit shown, if the power supply voltage V&lt;sub&gt;IN&lt;/sub&gt; increases, the current through the load resistor R&lt;sub&gt;L&lt;/sub&gt; will:\\</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电源 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电源</strong>：为电路提供能量；要同时考虑电压、电流、纹波、瞬态和保护。。</div></div>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>increase\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>decrease\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>remain the same</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+</div>
+<div class="sentence-card"><div class="en"><span>原句</span>For the circuit shown, if the power supply voltage V&lt;sub&gt;IN&lt;/sub&gt; decreases, the current through the zener diode D&lt;sub&gt;Z&lt;/sub&gt; will:\\</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管、齐纳、电源 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。；<strong>齐纳</strong>：反向击穿稳压器件；必须限流并检查功耗。；<strong>电源</strong>：为电路提供能量；要同时考虑电压、电流、纹波、瞬态和保护。。</div></div>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>increase\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>decrease\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>remain the same</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+</div>
+<div class="sentence-card"><div class="en"><span>原句</span>For the circuit shown, if the power supply voltage V&lt;sub&gt;IN&lt;/sub&gt; increases, the current through the series resistor R&lt;sub&gt;L&lt;/sub&gt; will:\\</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电源 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电源</strong>：为电路提供能量；要同时考虑电压、电流、纹波、瞬态和保护。。</div></div>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>increase\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>decrease\\</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>remain the same</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+</div>
+<div class="sentence-card"><div class="en"><span>原句</span>Return to Previous Chapter</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Go to Next Chapter</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Return to Table of Contents</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+    </section>
+    <section class="all-images"><h2>本章图片总览<small>全部已下载图片</small></h2><div class="gallery"><figure><img loading="lazy" src="../assets/chapter-06/chptr6-e1.png" alt="chptr6-e1.png"><figcaption>chptr6-e1.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-06/chptr6-e2.png" alt="chptr6-e2.png"><figcaption>chptr6-e2.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-06/chptr6-f1.png" alt="chptr6-f1.png"><figcaption>chptr6-f1.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-06/chptr6-f10.png" alt="chptr6-f10.png"><figcaption>chptr6-f10.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-06/chptr6-f12.png" alt="chptr6-f12.png"><figcaption>chptr6-f12.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-06/chptr6-f13.png" alt="chptr6-f13.png"><figcaption>chptr6-f13.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-06/chptr6-f14.png" alt="chptr6-f14.png"><figcaption>chptr6-f14.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-06/chptr6-f15.png" alt="chptr6-f15.png"><figcaption>chptr6-f15.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-06/chptr6-f16.png" alt="chptr6-f16.png"><figcaption>chptr6-f16.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-06/chptr6-f3.png" alt="chptr6-f3.png"><figcaption>chptr6-f3.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-06/chptr6-f5.png" alt="chptr6-f5.png"><figcaption>chptr6-f5.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-06/chptr6-f8.png" alt="chptr6-f8.png"><figcaption>chptr6-f8.png</figcaption></figure></div></section>
+  </main>
+</body>
+</html>

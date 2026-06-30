@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 1 章：电路理论基础 - ADI Electronics 中文详注 HTML</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="../index.html">← 返回总目录</a>
+    <span>Analog Devices Electronics I & II 中文学习版</span>
+  </header>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">ADI 原文 / 中文译读 / 工程注释 / 图片</p>
+      <h1>第 1 章：电路理论基础</h1>
+      <p class="source">原始标题：Chapter 1: Introduction and Chapter Objectives · 来源：<a href="https://wiki.analog.com/university/courses/electronics/text/chapter-1">https://wiki.analog.com/university/courses/electronics/text/chapter-1</a></p>
+      <div class="notice">
+        <strong>说明：</strong>这是面向学习的中文详注 HTML，不是 ADI 官方中文译本。页面保留原文句子，并在每句下方给出中文译读和术语注释；涉及公式、参数和器件选择时，请回到 ADI 原文与对应数据手册复核。
+      </div>
+    </section>
+    <section class="note-section">
+      <h2>本章中文详解<small>重写讲义版</small></h2>
+      <div class="note-content"><h1>第 1 章：电路理论基础</h1>
+<blockquote>
+<p>中文学习笔记，依据 <a href="https://wiki.analog.com/university/courses/electronics/text/chapter-1">ADI 原章节</a> 重述并补充工程注释。不是逐句翻译，也不替代 ADI 原文与器件数据手册。</p>
+</blockquote>
+<h2>本章定位</h2>
+<p>本章建立后续模拟电子学的共同语言：电压、电流、功率、参考方向，以及把复杂线性网络化成简单等效源的方法。重点不是背公式，而是学会先定义方向、再列约束、最后检查量纲与功率守恒。</p>
+<h2>学习目标</h2>
+<ul>
+<li>能用物理直觉说明主要电路或器件的工作过程。</li>
+<li>能写出本章核心近似式，并说明近似成立的条件。</li>
+<li>能识别输入范围、输出余量、功耗、噪声或稳定性中的主要限制。</li>
+<li>能阅读原理图并完成数量级检查。</li>
+</ul>
+<h2>原章小节索引</h2>
+<ul>
+<li>1.1 Active versus passive devices:</li>
+<li>1.2 Notation and conventional terminology</li>
+<li>1.3 Basic quantities.</li>
+<li>1.4 Review of Kirchhoff's circuit laws</li>
+<li>1.4.1 Kirchhoff's current law (KCL)</li>
+<li>1.4.2 Kirchhoff's voltage law (KVL)</li>
+<li>1.5 Review of Thévenin's theorem</li>
+<li>1.6 Review of Norton's theorem</li>
+<li>1.7 Review of the Superposition Theorem</li>
+<li>Section Review:</li>
+</ul>
+<h2>有源与无源器件</h2>
+<p>无源器件不能从自身产生净能量，电阻耗散能量，理想电容和电感储存并返还能量；有源器件可借助电源实现增益、控制或能量转换。判断时要看整个端口的功率关系，不能只凭器件名称下结论。</p>
+<h2>符号与参考方向</h2>
+<p>电压必须说明两点及极性，电流必须说明参考箭头。计算得到负值并不表示公式错，而表示真实方向与预设方向相反。采用被动符号约定时，电流流入电压正端，器件吸收功率为正。</p>
+<h2>KCL 与 KVL</h2>
+<p>KCL来自电荷守恒：任一节点流入电流代数和为零；KVL来自能量守恒：任一闭合回路电压代数和为零。列方程前先标节点电压通常更稳健，避免同一支路被重复定义。</p>
+<h2>戴维南与诺顿等效</h2>
+<p>从负载端看，任意线性二端网络可化为电压源串联电阻，或电流源并联电阻。开路电压给出 Vth，关断独立源后看入端口得到 Rth；含受控源时必须保留受控源并施加测试源。</p>
+<h2>叠加定理</h2>
+<p>在线性电路中，各独立源对电压或电流的贡献可以相加。关断电压源等效短路、关断电流源等效开路；功率是平方量，不能直接叠加。</p>
+<h2>核心公式与使用条件</h2>
+<ul>
+<li>KCL：$\sum i_k=0$</li>
+<li>KVL：$\sum v_k=0$</li>
+<li>$P=VI$；电阻上 $P=I^2R=V^2/R$</li>
+<li>$V_{th}=V_{oc}$，$I_N=I_{sc}$，$R_{th}=V_{th}/I_N$</li>
+</ul>
+<blockquote>
+<p>公式默认采用理想或一阶模型。用于实际设计前，应补入器件容差、温度范围、频率依赖和数据手册保证值。</p>
+</blockquote>
+<h2>常见误区</h2>
+<ul>
+<li>把参考方向画错当成物理错误。</li>
+<li>求等效电阻时错误地关断受控源。</li>
+<li>把各电源单独产生的功率直接相加。</li>
+</ul>
+<h2>设计检查清单</h2>
+<ol>
+<li>先标出所有电压极性、电流方向与直流工作点。</li>
+<li>验证器件处于假设的工作区，并检查输入/输出合规范围。</li>
+<li>对最大、最小电源与温度角点重复计算。</li>
+<li>计算功耗、噪声或带宽时写清单位和积分带宽。</li>
+<li>用仿真或实验验证瞬态、稳定性及最坏容差。</li>
+</ol>
+<h2>配图</h2>
+<p><img alt="图 1：ADI 原教材图示" src="../assets/chapter-01/chptr1-f11.png" /></p>
+<p><em>图 1：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<p><img alt="图 2：ADI 原教材图示" src="../assets/chapter-01/chptr1-f10.png" /></p>
+<p><em>图 2：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<p><img alt="图 3：ADI 原教材图示" src="../assets/chapter-01/chptr1-f8.png" /></p>
+<p><em>图 3：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<p><img alt="图 4：ADI 原教材图示" src="../assets/chapter-01/chptr1-f9.png" /></p>
+<p><em>图 4：选自 ADI 原章节；请结合本章中文解释阅读。</em></p>
+<h2>复习题</h2>
+<ol>
+<li>用自己的话说明“有源与无源器件”解决的核心问题。</li>
+<li>针对“叠加定理”，列出一个计算中必须检查的边界条件。</li>
+<li>选取本章一幅图，沿信号或能量流向逐节点解释其工作过程。</li>
+</ol>
+<h2>来源与署名</h2>
+<ul>
+<li>来源：<a href="https://wiki.analog.com/university/courses/electronics/text/chapter-1">ADI 原章节</a>。</li>
+<li>原始教材及图片：Analog Devices, Inc.，用于非商业教育学习；保留 ADI 署名。</li>
+<li>本文中文讲解为重新组织的学习笔记；如与原文或最新数据手册不一致，以原始资料和器件数据手册为准。</li>
+</ul></div>
+    </section>
+    <section class="source-section">
+      <h2>原文逐句译读与注释<small>按原站顺序</small></h2>
+      <h2>Chapter 1: Introduction and Chapter Objectives<small>本章目标</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>This introductory chapter will serve as a quick review of a few of the more important topics from the earlier courses Circuits I and II.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>It can be skipped if the reader feels he or she is sufficiently familiar with these fundamental circuit analysis and design concepts.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>After completing this chapter you should be able to:</div><div class="zh"><span>中文译读</span>完成本章后，你应该能够：</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>Define an Active Device vs. a Passive Device</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Apply KVL and KCL to a circuit</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Create Thevenin and Norton Equivalent Circuits</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 戴维南、诺顿 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>戴维南</strong>：把线性二端网络等效成电压源串联电阻/阻抗。；<strong>诺顿</strong>：把线性二端网络等效成电流源并联电阻/阻抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Convert between Thevenin and Norton Equivalent Circuits</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 戴维南、诺顿 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>戴维南</strong>：把线性二端网络等效成电压源串联电阻/阻抗。；<strong>诺顿</strong>：把线性二端网络等效成电流源并联电阻/阻抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Use the Superposition Theorem to analyze circuits with multiple sources</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 叠加定理 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+</div>
+<h2>1.1 Active versus passive devices:<small>有源器件与无源器件</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>An active device is any type of component with the ability to electrically control the flow of current (electricity controlled by electricity).</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>For a circuit to be called electronic, it must contain at least one active device.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Components incapable of controlling current by means of another electrical signal are called passive devices.</div><div class="zh"><span>中文译读</span>可译为“这种对象/现象称为……”。本句是在给 一个术语 下定义；后文遇到该词时要回到这个定义。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Resistors, capacitors, inductors, transformers, and even diodes are all considered passive devices.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Passive devices can have linear current vs voltage characteristic like a resistor or non-linear I vs V curves such as a diode and are commonly two terminal elements.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Active devices include, but are not limited to, vacuum tubes, transistors, silicon-controlled rectifiers (SCRs), and TRIACs.</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 整流器，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span><strong>整流器</strong>：把交流变成单向脉动电压/电流，后续常接滤波和稳压。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>All active devices have the means to control the flow of current through them.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Some active devices allow a voltage to control this current while other active devices allow another current to be the controlling signal.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Devices utilizing a voltage as the controlling signal are, not surprisingly, called voltage-controlled devices.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Devices working on the principle of one current controlling another current are known as current-controlled devices.</div><div class="zh"><span>中文译读</span>可译为“这种对象/现象称为……”。本句是在给 一个术语 下定义；后文遇到该词时要回到这个定义。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The first type of solid-state transistor successfully demonstrated was a current-controlled device.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>1.2 Notation and conventional terminology<small>符号约定与常用术语</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>The notations used in these pages for voltages and currents correspond to the following conventions: DC bias values are indicated by an upper case letter with upper case subscripts, e.g.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>V&lt;sub&gt;DS&lt;/sub&gt;, I&lt;sub&gt;C&lt;/sub&gt;.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Instantaneous values of small-signal variables are indicated by a lower-case letter with lower-case subscripts, e.g. v&lt;sub&gt;gs&lt;/sub&gt;, i&lt;sub&gt;d&lt;/sub&gt;.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Total values are indicated by a lower-case letter with upper-case subscripts, e.g. vBE, iD.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Schematic symbols for independent sources are circular and symbols for controlled sources have a diamond shape.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Voltage sources have a ± sign within the symbol and current sources have an arrow.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Schematics are drawn with the standard conventions where the most positive supply voltage is drawn at the top and the most negative at the bottom.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Thus positive current flow is generally from top to bottom in the schematic.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Inputs are generally on the left and outputs on the right with the signal flow from left to right.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Over time as the study of Electronics developed the use of certain terminology has become common or the defacto standard.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Some terms and symbols have over time been used in multiple contexts and taken on somewhat different meanings.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>One such case is the use of the word &quot;saturation&quot;.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 饱和 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>饱和</strong>：不同器件上下文含义不同：BJT 饱和与 MOS 饱和不是一回事。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In the context of Bipolar Junction Transistors &quot;saturation&quot; has a much different meaning than in the context of Field Effect Transistors.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 双极型晶体管、场效应晶体管、饱和 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>双极型晶体管</strong>：BJT，电流由载流子注入控制，参数 beta 离散性很大。；<strong>场效应晶体管</strong>：FET，用电场控制沟道导通，栅极直流电流很小但有栅电容。；<strong>饱和</strong>：不同器件上下文含义不同：BJT 饱和与 MOS 饱和不是一回事。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This can lead to confusion in readers new to Electronics.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Another example is the use of the Greek letter ?</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>(beta). It is used to represent the dimensionless feedback factor in the context of Op-Amp circuits and as the dimensionless current gain of BJT devices.</div><div class="zh"><span>中文译读</span>可译为“它可用于/常用于……”。本句强调 该结构 的用途，设计时还要检查适用条件和限制。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The reader should take care when reading though the material covered in this text to avoid confusion when these and other such context sensitive terms are encountered.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In this text the reader should expect that calculations done in the various example circuits should result in reasonable values.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>If the power supply voltage is +/-10 V, a calculated DC bias value of 15 V (not within the range of the power supply voltages) for example would be unreasonable.</div><div class="zh"><span>中文译读</span>这是举例说明。例子的作用是把 电源 落到具体数值、器件或电路情形上。</div><div class="note"><span>补充注释</span><strong>电源</strong>：为电路提供能量；要同时考虑电压、电流、纹波、瞬态和保护。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Generally, bias current levels will be between 1 microamp and a few hundred milliamps.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>A calculated bias current of 3.2 amps is probably unreasonable and should be reexamined (except in case of perhaps power devices).</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Peak-to-peak ac voltages should be within the power supply voltage range.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电源 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电源</strong>：为电路提供能量；要同时考虑电压、电流、纹波、瞬态和保护。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>A calculated component value that is unrealistic should be rechecked.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>For example, a resistance equal to 0.013 ohms.</div><div class="zh"><span>中文译读</span>这是举例说明。例子的作用是把 电阻 落到具体数值、器件或电路情形上。</div><div class="note"><span>补充注释</span><strong>电阻</strong>：耗散能量并限制电流的元件参数。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Given the inherent variations in most electronic components, three significant digits are more than adequate for representation of results.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>1.3 Basic quantities.<small>基本电路量</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>Two of the main laws that describe the operation of electronic systems are Ohm&#x27;s law and Kirchhoff&#x27;s laws.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 基尔霍夫 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>基尔霍夫</strong>：KCL/KVL 来自电荷守恒和能量守恒，是电路分析的底层约束。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The main quantities that describe the operation of electronic systems are resistance R, capacitance C, and inductance L.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电容、电感、电阻 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电容</strong>：储存电荷的能力；阻抗随频率升高而降低。；<strong>电感</strong>：储存磁场能量的能力；阻抗随频率升高而升高。；<strong>电阻</strong>：耗散能量并限制电流的元件参数。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The derivative quantities are reactance X, impedance Z, and admittance, or full conductivity G.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 阻抗、导纳 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。；<strong>导纳</strong>：阻抗的倒数，常用于并联网络分析。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>It is presumed that the reader has a level of familiarity with the following basic circuit concepts:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>Ohm&#x27;s Law</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Passive Circuit Analysis</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Kirchhoff&#x27;s circuit laws</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 基尔霍夫 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>基尔霍夫</strong>：KCL/KVL 来自电荷守恒和能量守恒，是电路分析的底层约束。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Thevenin and Norton Equivalent Circuits</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 戴维南、诺顿 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>戴维南</strong>：把线性二端网络等效成电压源串联电阻/阻抗。；<strong>诺顿</strong>：把线性二端网络等效成电流源并联电阻/阻抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The Superposition Theorem</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 叠加定理 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Controlled Sources</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Ideal operational amplifiers</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 运算放大器 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>运算放大器</strong>：高增益差分放大器；闭环特性主要由反馈网络决定，但受带宽、失调、噪声和输出能力限制。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Transformers</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Frequency Response</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 频率响应 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>频率响应</strong>：电路增益和相位随频率变化的关系。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Familiarity with the Spice circuit simulator or similar software</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+</div>
+<div class="sentence-card"><div class="en"><span>原句</span>What follows is a short review of some of these concepts.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>1.4 Review of Kirchhoff&#x27;s circuit laws<small>基尔霍夫电路定律回顾</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>Kirchhoff&#x27;s circuit laws are two equalities that deal with the conservation of charge and energy in electrical circuits, and were first described in 1845 by Gustav Kirchhoff.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 基尔霍夫 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>基尔霍夫</strong>：KCL/KVL 来自电荷守恒和能量守恒，是电路分析的底层约束。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>These &quot;laws&quot; are widely used in the analysis and design of electronic circuits.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h3>1.4.1 Kirchhoff&#x27;s current law (KCL)<small>基尔霍夫电流定律</small></h3>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-f1.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>The current entering any junction in a circuit network is equal to the current leaving that junction.</div><div class="zh"><span>中文译读</span>电路网络中流入任一结点的电流，等于流出该结点的电流。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>i&lt;sub&gt;1&lt;/sub&gt; + i&lt;sub&gt;4&lt;/sub&gt; = i&lt;sub&gt;2&lt;/sub&gt; + i&lt;sub&gt;3&lt;/sub&gt;</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This law is sometimes referred to as Kirchhoff&#x27;s point rule, Kirchhoff&#x27;s junction rule (or nodal rule), and Kirchhoff&#x27;s first rule.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 基尔霍夫 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>基尔霍夫</strong>：KCL/KVL 来自电荷守恒和能量守恒，是电路分析的底层约束。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The principle of conservation of electric charge implies that: At any node (junction) in an electrical circuit, the sum of currents flowing into that node is equal to the sum of currents flowing out of that node.</div><div class="zh"><span>中文译读</span>可译为“二者相等/代数关系成立”。这里的核心量是 等式两边的电路量，使用时要先统一参考方向和符号。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Otherwise electric charge would endlessly build up on or drain off the node which is physically impossible.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>or</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The algebraic sum of currents in a network of conductors meeting at a point is zero.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>(Assuming that current entering the junction is taken as positive and current leaving the junction is taken as negative).</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Recalling that current is a signed (positive or negative) quantity reflecting direction towards or away from a node; this principle can be stated as the following equation:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-e1.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Here, n is the total number of branches with currents flowing towards or away from the node.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This formula is also valid for complex currents:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-e2.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>The law is based on the conservation of charge whereby the charge (measured in coulombs) is the product of the current (in amperes) and the time (which is measured in seconds).</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>A matrix version of Kirchhoff&#x27;s current law is the basis of most circuit simulation software, such as SPICE.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 基尔霍夫、电流定律 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>基尔霍夫</strong>：KCL/KVL 来自电荷守恒和能量守恒，是电路分析的底层约束。；<strong>电流定律</strong>：节点电流代数和为零，核心是电荷不能凭空积累。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Activity 1: Kirchhoff&#x27;s Voltage and Current Laws for ADALM1000</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 基尔霍夫、电流定律 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>基尔霍夫</strong>：KCL/KVL 来自电荷守恒和能量守恒，是电路分析的底层约束。；<strong>电流定律</strong>：节点电流代数和为零，核心是电荷不能凭空积累。。</div></div>
+<h3>1.4.2 Kirchhoff&#x27;s voltage law (KVL)<small>基尔霍夫电压定律</small></h3>
+<div class="sentence-card"><div class="en"><span>原句</span>This law is sometimes referred to as Kirchhoff&#x27;s second law, Kirchhoff&#x27;s loop (or mesh) rule, and Kirchhoff&#x27;s second rule.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 基尔霍夫 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>基尔霍夫</strong>：KCL/KVL 来自电荷守恒和能量守恒，是电路分析的底层约束。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-f2.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>The sum of all the voltages around a loop of circuit elements is equal to zero.</div><div class="zh"><span>中文译读</span>沿电路元件构成的闭合回路绕行一周，所有电压的代数和等于零。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>v1 + v2 + v3 + v4 = 0</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The principle of conservation of energy implies that:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The directed sum of the electrical potential differences (voltage) around any closed circuit must be zero.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>or</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Simply, the sum of the electromotive forces in any closed loop is equivalent to the sum of the potential drops in that loop.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 闭环 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>闭环</strong>：反馈已经接入并决定实际传递关系的工作状态。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>or</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The algebraic sum of the products of the resistances of the conductors and the currents in them in a closed loop is equal to the total electromotive force available in that loop.</div><div class="zh"><span>中文译读</span>可译为“二者相等/代数关系成立”。这里的核心量是 闭环、电阻，使用时要先统一参考方向和符号。</div><div class="note"><span>补充注释</span><strong>闭环</strong>：反馈已经接入并决定实际传递关系的工作状态。；<strong>电阻</strong>：耗散能量并限制电流的元件参数。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Similarly to KCL, it can be stated as:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-e3.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Here, n is the total number of voltages measured.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The voltages may also be complex:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-e4.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>This law is based on the conservation of &quot;energy given/taken by potential field&quot; (not including energy taken by dissipation).</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Given a voltage potential, a charge which has completed a closed loop doesn&#x27;t gain or lose energy as it has gone back to initial potential level.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 闭环 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>闭环</strong>：反馈已经接入并决定实际传递关系的工作状态。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This law holds true even when resistance (which causes dissipation of energy) is present in a circuit.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电阻 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电阻</strong>：耗散能量并限制电流的元件参数。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The validity of this law in this case can be understood if one realizes that a charge in fact doesn&#x27;t go back to its starting point, due to dissipation of energy.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>A charge will just terminate at the negative terminal, instead of positive terminal.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This means all the energy (from the power supply) given by the potential difference has been fully consumed by resistance which in turn loses the energy as heat dissipation.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电源、电阻 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电源</strong>：为电路提供能量；要同时考虑电压、电流、纹波、瞬态和保护。；<strong>电阻</strong>：耗散能量并限制电流的元件参数。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>To summarize, Kirchhoff&#x27;s voltage law has nothing to do with gain or loss of energy by electronic components (resistors, capacitors, etc).</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 基尔霍夫、电压定律 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>基尔霍夫</strong>：KCL/KVL 来自电荷守恒和能量守恒，是电路分析的底层约束。；<strong>电压定律</strong>：闭合回路电压代数和为零，核心是回到同一电位能级。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>It is a law referring to the potential field generated by voltage sources.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>In this potential field, regardless of what electronic components are present, the gain or loss in &quot;energy given by the potential field&quot; must be zero when a charge completes a closed loop.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 闭环。</div><div class="note"><span>补充注释</span><strong>闭环</strong>：反馈已经接入并决定实际传递关系的工作状态。。</div></div>
+<h2>1.5 Review of Thévenin&#x27;s theorem<small>戴维南定理回顾</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>In circuit theory, Thévenin&#x27;s theorem for linear electrical networks states that any combination of voltage sources, current sources and resistors with two terminals is electrically equivalent to a single voltage source V and a single series resistor R.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>For single frequency AC systems the theorem can also be applied to general impedances, not just resistors.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>This theorem states that a circuit of voltage sources and resistors can be converted into a Thévenin equivalent, which is a simplification technique used in circuit analysis.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The Thévenin equivalent can be used as a good model for a power supply or battery (with the resistor representing the internal impedance and the source representing the electromotive force).</div><div class="zh"><span>中文译读</span>可译为“它可用于/常用于……”。本句强调 电源、阻抗 的用途，设计时还要检查适用条件和限制。</div><div class="note"><span>补充注释</span><strong>电源</strong>：为电路提供能量；要同时考虑电压、电流、纹波、瞬态和保护。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The circuit consists of an ideal voltage source in series with an ideal resistor.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-f3.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 1.5.1 Any black box containing only voltage sources, current sources, and other resistors can be converted to a Thévenin equivalent circuit, comprising exactly one voltage source and one resistor.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Review Lab Activity: Real voltage sources for ADALM1000\\ Review Lab Activity: Real voltage sources for ADALM2000</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>1.6 Review of Norton&#x27;s theorem<small>诺顿定理回顾</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>Norton&#x27;s theorem for linear electrical networks states that any collection of voltage sources, current sources, and resistors with two terminals is electrically equivalent to an ideal current source, I, in parallel with a single resistor, R.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 诺顿 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>诺顿</strong>：把线性二端网络等效成电流源并联电阻/阻抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>For single-frequency AC systems the theorem can also be applied to general impedances, not just resistors.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The Norton equivalent is used to represent any network of linear sources and impedances, at a given frequency.</div><div class="zh"><span>中文译读</span>可译为“它可用于/常用于……”。本句强调 诺顿、阻抗 的用途，设计时还要检查适用条件和限制。</div><div class="note"><span>补充注释</span><strong>诺顿</strong>：把线性二端网络等效成电流源并联电阻/阻抗。；<strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The circuit consists of an ideal current source in parallel with an ideal impedance (or resistor for non-reactive circuits).</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 阻抗 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>阻抗</strong>：交流中电压与电流的复数比，包含电阻和电抗。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-f4.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Figure 1.6.1 Any black box containing only voltage sources, current sources, and resistors can be converted to a Norton equivalent circuit.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 诺顿 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>诺顿</strong>：把线性二端网络等效成电流源并联电阻/阻抗。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Activity 4: Thévenin Equivalent Circuit and Maximum Power Transfer for ADALM1000</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<h2>1.7 Review of the Superposition Theorem<small>叠加定理</small></h2>
+<div class="sentence-card"><div class="en"><span>原句</span>The Superposition Theorem is one of those strokes of genius that takes a complex subject and simplifies it in a way that makes perfect sense.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 叠加定理 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The strategy used in the Superposition Theorem is to eliminate all but one source of power within a network at a time, using series/parallel analysis to determine voltage drops (and/or currents) within the modified network for each power source separately.</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 叠加定理，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Then, once voltage drops and/or currents have been determined for each power source working separately, the values are all &quot;superimposed&quot; on top of each other (added algebraically) to find the actual voltage drops/currents with all sources active.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>To understand the concept we will analyze the following example circuit and apply the Superposition Theorem to it:</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 叠加定理 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-f5.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>There are two sources of power in this circuit, figure 1.7.1, therefore we will have to calculate two sets of values for voltage drops and/or currents.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The general rule, when applying the Superposition Theorem to a circuit for series/parallel analysis with one source, all other voltage sources are replaced by shorts, and all current sources with open circuits.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 叠加定理 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>We have only voltage sources (batteries) in this example circuit.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Every inactive source will be replaced with a short during analysis.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The first set is done for the circuit with the 5 volt source removed and replaced with a short circuit, and only the 2.6 volt source remaining, figure 1.7.2.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-f6.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>For the second set we replace the 2.6 volt source with a short and with only the 5 volt source remaining, figure 1.7.3.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-f7.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Analyzing the circuit with only the 2.6 volt source, we obtain the following values for voltage and current:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="table-wrap"><table><tr><th>R&lt;sub&gt;1&lt;/sub&gt;</th><th>R&lt;sub&gt;2&lt;/sub&gt;</th><th>R&lt;sub&gt;3&lt;/sub&gt;</th><th>R&lt;sub&gt;2&lt;/sub&gt;IIR&lt;sub&gt;3&lt;/sub&gt;</th><th>R&lt;sub&gt;1&lt;/sub&gt;+R&lt;sub&gt;2&lt;/sub&gt;IIR&lt;sub&gt;3&lt;/sub&gt;</th><th></th></tr>
+<tr><td>2</td><td>0.6</td><td>0.6</td><td>0.6</td><td>2.6</td><td>Volts</td></tr>
+<tr><td>5</td><td>3</td><td>2</td><td>5</td><td>5</td><td>mAmps</td></tr>
+<tr><td>400</td><td>200</td><td>300</td><td>120</td><td>520</td><td>Ohms</td></tr></table></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Table 1.7.1</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-f8.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Analyzing the circuit with only the 5 volt battery, we obtain another set of values for voltage and current:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="table-wrap"><table><tr><th>R&lt;sub&gt;1&lt;/sub&gt;</th><th>R&lt;sub&gt;2&lt;/sub&gt;</th><th>R&lt;sub&gt;3&lt;/sub&gt;</th><th>R&lt;sub&gt;1&lt;/sub&gt;IIR&lt;sub&gt;2&lt;/sub&gt;</th><th>R&lt;sub&gt;3&lt;/sub&gt;+R&lt;sub&gt;1&lt;/sub&gt;IIR&lt;sub&gt;2&lt;/sub&gt;</th><th></th></tr>
+<tr><td>1.538</td><td>1.538</td><td>3.462</td><td>1.538</td><td>5</td><td>Volts</td></tr>
+<tr><td>3.845</td><td>7.69</td><td>11.54</td><td>11.54</td><td>11.54</td><td>mAmps</td></tr>
+<tr><td>400</td><td>200</td><td>300</td><td>133.33</td><td>433.33</td><td>Ohms</td></tr></table></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Table 1.7.2</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-f9.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>When superimposing these values of voltage and current, we have to be very careful to consider polarity (voltage drop) and direction (electron flow), as the values have to be added algebraically.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 安全工作范围、精度或稳定性。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="table-wrap"><table><tr><th>Voltage</th><th>With only 2.6V source</th><th>With only 5V source</th><th>With both sources</th></tr>
+<tr><td>VR&lt;sub&gt;1&lt;/sub&gt;</td><td>2</td><td>-1.538</td><td>0.462</td></tr>
+<tr><td>VR&lt;sub&gt;2&lt;/sub&gt;</td><td>0.6</td><td>1.538</td><td>2.138</td></tr>
+<tr><td>VR&lt;sub&gt;3&lt;/sub&gt;</td><td>-0.6</td><td>3.462</td><td>2.862</td></tr></table></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Table 1.7.3</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Applying these superimposed voltages to the circuit, the end result looks something like this:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-f10.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>Currents add up algebraically as well, and can either be superimposed as done with the resistor voltage drops, or simply calculated from the final voltage drops and respective resistances (I=V/R).</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电阻 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电阻</strong>：耗散能量并限制电流的元件参数。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Either way, the answers will be the same.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Here we show the superposition method applied to current:</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 叠加定理 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<div class="table-wrap"><table><tr><th>Current</th><th>With only 2.6V source</th><th>With only 5V source</th><th>With both sources</th></tr>
+<tr><td>IR&lt;sub&gt;1&lt;/sub&gt;</td><td>5mA</td><td>-3.845mA</td><td>1.155mA</td></tr>
+<tr><td>IR&lt;sub&gt;2&lt;/sub&gt;</td><td>3mA</td><td>7.69mA</td><td>10.69mA</td></tr>
+<tr><td>IR&lt;sub&gt;3&lt;/sub&gt;</td><td>-2mA</td><td>11.54mA</td><td>9.54mA</td></tr></table></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Table 1.7.4</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Once again applying these superimposed figures to our circuit:</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<p class="missing-image">图片未下载：university:courses:electronics:text:chptr1-f11.png</p>
+<div class="sentence-card"><div class="en"><span>原句</span>It must be noted that the Superposition Theorem works only for circuits that are reducible to series/parallel combinations for each of the power sources at a time (thus, this theorem is useless for analyzing an unbalanced bridge circuit), and it only works where the underlying equations are linear (no mathematical powers or roots).</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 叠加定理。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The requisite of linearity means that Superposition Theorem is only applicable for determining voltage and current, not power.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 叠加定理 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Power dissipation, being a nonlinear function, does not algebraically add to an accurate total when only one source is calculated at a time.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The need for linearity also means this Theorem cannot be applied in circuits where the resistance of a component changes with voltage or current.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 电阻 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>电阻</strong>：耗散能量并限制电流的元件参数。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Hence, networks containing components like incandescent light bulbs could not be analyzed.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Another prerequisite for Superposition Theorem is that all components must be &quot;bilateral,&quot; meaning that they behave the same with electrons flowing either direction through them.</div><div class="zh"><span>中文译读</span>可译为“必须/需要……”。这是约束条件，通常关系到 叠加定理。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Resistors have no polarity-specific behavior, and so the circuits we&#x27;ve been studying so far all meet this criterion.</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Unidirectional devices like diodes cannot be included in the circuit being analyzed.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 二极管 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>二极管</strong>：单向导电非线性器件；实际行为与电流、温度和反向恢复有关。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>The Superposition Theorem finds use in the study of alternating current (AC) circuits, and semiconductor (amplifier) circuits, where sometimes AC is often mixed (superimposed) with DC.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 叠加定理 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Because AC voltage and current equations (Ohm&#x27;s Law) are linear just like DC, we can use Superposition to analyze the circuit with just the DC power source, then just the AC power source, combining the results to tell what will happen with both AC and DC sources in effect.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 叠加定理 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>For now, though, Superposition will suffice as a break from having to do simultaneous equations to analyze a circuit.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 叠加定理 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Activity 3: Proportionality and Superposition for ADALM1000</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 叠加定理 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<h3>Section Review:<small>本节译题：Section Review:</small></h3>
+<div class="list-cards">
+<div class="sentence-card"><div class="en"><span>原句</span>The Superposition Theorem states that a circuit can be analyzed with only one source of power at a time, the corresponding component voltages and currents algebraically added to find out what they&#x27;ll do with all power sources in effect.</div><div class="zh"><span>中文译读</span>逐句译读：这句话围绕 叠加定理 展开；核心是在说明这些量/结构之间的定义、作用或约束关系。</div><div class="note"><span>补充注释</span><strong>叠加定理</strong>：线性网络中可分别计算各独立源贡献后相加，但功率不能直接叠加。。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>To negate all but one power source for analysis, replace any source of voltage (batteries) with a wire; replace any current source with an open (break).</div><div class="zh"><span>中文译读</span>可译为“但是/然而……”。本句在提醒限制或例外：即使涉及 上述概念，也不能无条件套用前一句结论。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+</div>
+<div class="sentence-card"><div class="en"><span>原句</span>Return to Previous Chapter</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Go to Next Chapter</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+<div class="sentence-card"><div class="en"><span>原句</span>Return to Table of Contents</div><div class="zh"><span>中文译读</span>逐句译读：这是一句上下文说明，建议与前后句连读，用来补全本节的概念背景或推导条件。</div><div class="note"><span>补充注释</span>学习提示：先确认这句话是在给定义、列条件、还是给结论；电路题里最常见的错误是跳过适用条件直接套公式。</div></div>
+    </section>
+    <section class="all-images"><h2>本章图片总览<small>全部已下载图片</small></h2><div class="gallery"><figure><img loading="lazy" src="../assets/chapter-01/chptr1-e1.png" alt="chptr1-e1.png"><figcaption>chptr1-e1.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-e2.png" alt="chptr1-e2.png"><figcaption>chptr1-e2.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-e3.png" alt="chptr1-e3.png"><figcaption>chptr1-e3.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-e4.png" alt="chptr1-e4.png"><figcaption>chptr1-e4.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-f1.png" alt="chptr1-f1.png"><figcaption>chptr1-f1.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-f10.png" alt="chptr1-f10.png"><figcaption>chptr1-f10.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-f11.png" alt="chptr1-f11.png"><figcaption>chptr1-f11.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-f2.png" alt="chptr1-f2.png"><figcaption>chptr1-f2.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-f3.png" alt="chptr1-f3.png"><figcaption>chptr1-f3.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-f4.png" alt="chptr1-f4.png"><figcaption>chptr1-f4.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-f5.png" alt="chptr1-f5.png"><figcaption>chptr1-f5.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-f6.png" alt="chptr1-f6.png"><figcaption>chptr1-f6.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-f7.png" alt="chptr1-f7.png"><figcaption>chptr1-f7.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-f8.png" alt="chptr1-f8.png"><figcaption>chptr1-f8.png</figcaption></figure>
+<figure><img loading="lazy" src="../assets/chapter-01/chptr1-f9.png" alt="chptr1-f9.png"><figcaption>chptr1-f9.png</figcaption></figure></div></section>
+  </main>
+</body>
+</html>
