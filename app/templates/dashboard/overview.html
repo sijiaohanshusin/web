@@ -1,0 +1,184 @@
+{% extends "dashboard/base.html" %}
+{% load static humanize %}
+
+{% block title %}数据总览{% endblock %}
+{% block page_title %}数据总览{% endblock %}
+
+{% block content %}
+
+{% if pending_count %}
+<div class="dash-banner">
+    <strong>⚠ 有 {{ pending_count }} 名成员等待审核</strong>
+    <span style="color:var(--muted);font-size:13.5px;">新同学在等你点通过，别让 Ta 等太久</span>
+    <a class="btn btn-primary btn-sm" href="{% url 'dashboard:members' %}?tab=pending">去审核</a>
+</div>
+{% endif %}
+
+<div class="dash-cards">
+    <div class="dash-card">
+        <div class="dash-card-value">{{ total_members }}</div>
+        <div class="dash-card-label">会员总数</div>
+    </div>
+    <div class="dash-card {% if pending_count %}warn{% endif %}">
+        <div class="dash-card-value">{{ pending_count }}</div>
+        <div class="dash-card-label">待审核</div>
+    </div>
+    <div class="dash-card">
+        <div class="dash-card-value">{{ officer_count }}</div>
+        <div class="dash-card-label">干事及以上</div>
+    </div>
+    <div class="dash-card">
+        <div class="dash-card-value">{{ resource_count }}<em>份</em></div>
+        <div class="dash-card-label">站内资料</div>
+    </div>
+    <div class="dash-card">
+        <div class="dash-card-value">{{ download_total }}</div>
+        <div class="dash-card-label">累计下载</div>
+    </div>
+    <div class="dash-card">
+        <div class="dash-card-value">{% if bili_stats %}{{ bili_stats.follower|intcomma }}{% else %}—{% endif %}</div>
+        <div class="dash-card-label">B 站粉丝</div>
+    </div>
+    <div class="dash-card">
+        <div class="dash-card-value">{% if bili_stats %}{{ bili_stats.videos }}{% else %}—{% endif %}</div>
+        <div class="dash-card-label">B 站视频</div>
+    </div>
+    <div class="dash-card">
+        <div class="dash-card-value">{% if bili_stats %}{{ bili_stats.likes|intcomma }}{% else %}—{% endif %}</div>
+        <div class="dash-card-label">B 站获赞</div>
+    </div>
+</div>
+
+<div class="dash-charts">
+    <div class="dash-panel wide">
+        <h2>注册趋势（近 12 个月）</h2>
+        <div class="dash-chart-box"><canvas id="chart-reg"></canvas></div>
+    </div>
+    <div class="dash-panel">
+        <h2>会员年级分布</h2>
+        <div class="dash-chart-box">
+            {% if charts.gradeDist.labels %}<canvas id="chart-grade"></canvas>
+            {% else %}<div class="dash-empty">暂无年级数据（成员完善资料后显示）</div>{% endif %}
+        </div>
+    </div>
+    <div class="dash-panel">
+        <h2>资料分类分布</h2>
+        <div class="dash-chart-box">
+            {% if charts.categoryDist.labels %}<canvas id="chart-category"></canvas>
+            {% else %}<div class="dash-empty">还没有上传资料</div>{% endif %}
+        </div>
+    </div>
+    <div class="dash-panel">
+        <h2>下载 Top 10</h2>
+        <div class="dash-chart-box">
+            {% if charts.topDownloads.labels %}<canvas id="chart-top"></canvas>
+            {% else %}<div class="dash-empty">还没有下载记录</div>{% endif %}
+        </div>
+    </div>
+    <div class="dash-panel">
+        <h2>B 站粉丝走势</h2>
+        <div class="dash-chart-box">
+            {% if charts.biliTrend.labels|length > 1 %}<canvas id="chart-bili"></canvas>
+            {% else %}<div class="dash-empty">快照积累中：每天打开一次总览即自动记录，几天后这里会出现曲线</div>{% endif %}
+        </div>
+    </div>
+</div>
+
+{{ charts|json_script:"charts-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script>
+(function () {
+    "use strict";
+    var data = JSON.parse(document.getElementById("charts-data").textContent);
+
+    var BLUE = "#0ea5e9", LIGHT = "#38bdf8", CYAN = "#22d3ee";
+    var GRID = "rgba(148,163,184,.12)", TICK = "#8aa3c6";
+
+    Chart.defaults.color = TICK;
+    Chart.defaults.font.family = "'JetBrains Mono', Consolas, 'Microsoft YaHei', sans-serif";
+    Chart.defaults.plugins.legend.display = false;
+
+    function axis() {
+        return {
+            x: { grid: { color: GRID }, ticks: { maxRotation: 0, autoSkip: true } },
+            y: { grid: { color: GRID }, beginAtZero: true, ticks: { precision: 0 } }
+        };
+    }
+
+    function el(id) { return document.getElementById(id); }
+
+    if (el("chart-reg")) {
+        new Chart(el("chart-reg"), {
+            type: "line",
+            data: {
+                labels: data.regTrend.labels,
+                datasets: [{
+                    data: data.regTrend.data,
+                    borderColor: BLUE, borderWidth: 2.5,
+                    pointBackgroundColor: LIGHT, pointRadius: 3,
+                    tension: .35, fill: true,
+                    backgroundColor: function (ctx) {
+                        var g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 240);
+                        g.addColorStop(0, "rgba(14,165,233,.25)");
+                        g.addColorStop(1, "rgba(14,165,233,0)");
+                        return g;
+                    }
+                }]
+            },
+            options: { maintainAspectRatio: false, scales: axis() }
+        });
+    }
+
+    if (el("chart-grade") && data.gradeDist.labels.length) {
+        new Chart(el("chart-grade"), {
+            type: "bar",
+            data: {
+                labels: data.gradeDist.labels,
+                datasets: [{ data: data.gradeDist.data, backgroundColor: "rgba(14,165,233,.55)", borderColor: BLUE, borderWidth: 1.5, borderRadius: 6 }]
+            },
+            options: { maintainAspectRatio: false, scales: axis() }
+        });
+    }
+
+    if (el("chart-category") && data.categoryDist.labels.length) {
+        new Chart(el("chart-category"), {
+            type: "doughnut",
+            data: {
+                labels: data.categoryDist.labels,
+                datasets: [{
+                    data: data.categoryDist.data,
+                    backgroundColor: ["rgba(14,165,233,.75)", "rgba(34,211,238,.65)", "rgba(56,189,248,.5)", "rgba(148,163,184,.4)"],
+                    borderColor: "#0b0b0e", borderWidth: 2
+                }]
+            },
+            options: { maintainAspectRatio: false, cutout: "62%", plugins: { legend: { display: true, position: "right" } } }
+        });
+    }
+
+    if (el("chart-top") && data.topDownloads.labels.length) {
+        new Chart(el("chart-top"), {
+            type: "bar",
+            data: {
+                labels: data.topDownloads.labels,
+                datasets: [{ data: data.topDownloads.data, backgroundColor: "rgba(34,211,238,.5)", borderColor: CYAN, borderWidth: 1.5, borderRadius: 5 }]
+            },
+            options: { indexAxis: "y", maintainAspectRatio: false, scales: axis() }
+        });
+    }
+
+    if (el("chart-bili") && data.biliTrend.labels.length > 1) {
+        new Chart(el("chart-bili"), {
+            type: "line",
+            data: {
+                labels: data.biliTrend.labels,
+                datasets: [{ data: data.biliTrend.data, borderColor: CYAN, borderWidth: 2.5, pointRadius: 2, tension: .3 }]
+            },
+            options: { maintainAspectRatio: false, scales: { x: { grid: { color: GRID } }, y: { grid: { color: GRID } } } }
+        });
+    }
+})();
+</script>
+{% endblock %}

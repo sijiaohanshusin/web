@@ -54,14 +54,13 @@ sudo /opt/heuesta/web/ops/deploy.sh
 
 ## 常用运维
 
-| 操作 | 命令 |
+| 操作 | 入口 / 命令 |
 | --- | --- |
 | 部署 / 更新 | `sudo /opt/heuesta/web/ops/deploy.sh` |
 | 看应用日志 | `cd /opt/heuesta/web && docker compose -f ops/docker-compose.yml --env-file /opt/heuesta/.env logs -f app` |
 | 手动备份 | `sudo /opt/heuesta/web/ops/backup.sh` |
-| 审核新会员 | 登录 `heuesta.cn/admin/` → 成员 → 勾选 → 「通过审核并设为会员」 |
-| 换招新视频 | Admin → 站点配置 → 改「招新视频 BV 号」 |
-| 换首页轮播图 | Admin → 首页轮播图 → 上传 |
+| 审核会员 / 数据图表 / 传资料 / 改配置 / 轮播图 | **管理驾驶舱** `heuesta.cn/dashboard/`（干事及以上） |
+| 底层数据管理 | 高级后台 `heuesta.cn/admin/`（管理员，simpleui 主题） |
 
 详细说明（架构图、备份恢复、故障排查、如何加新页面）见 [docs/维护手册.md](docs/维护手册.md)。
 

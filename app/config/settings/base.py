@@ -15,6 +15,7 @@ DEBUG = False
 ALLOWED_HOSTS: list[str] = []
 
 INSTALLED_APPS = [
+    "simpleui",  # Django Admin 主题，必须在 admin 之前
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -25,7 +26,15 @@ INSTALLED_APPS = [
     "core",
     "accounts",
     "files",
+    "dashboard",
 ]
+
+# ---- simpleui（Admin 美化）----
+SIMPLEUI_HOME_INFO = False       # 关闭首页 simpleui 宣传卡片
+SIMPLEUI_ANALYSIS = False        # 禁用使用统计外联
+SIMPLEUI_STATIC_OFFLINE = True   # 全部静态资源本地化，不请求外网
+SIMPLEUI_LOGO = "/static/img/logo.png"
+SIMPLEUI_DEFAULT_THEME = "layui.css"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -51,6 +60,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.site",
+                "dashboard.context_processors.pending_members",
             ],
         },
     },

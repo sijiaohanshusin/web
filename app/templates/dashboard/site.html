@@ -1,0 +1,70 @@
+{% extends "dashboard/base.html" %}
+
+{% block dash_title %}站点设置{% endblock %}
+
+{% block dash_content %}
+<div class="dash-head">
+    <h1>站点设置</h1>
+    <span class="dash-head-sub">仅管理员可见 · 保存即生效（部分内容有最长 1 小时缓存）</span>
+</div>
+
+<div class="dash-grid-side">
+    <div class="dash-panel">
+        <h2>基本配置</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_config">
+            {% for field in config_form %}
+                {% include "includes/field.html" %}
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">保存配置</button>
+        </form>
+    </div>
+
+    <div class="dash-panel">
+        <h2>新增轮播图</h2>
+        <p class="dash-tip">建议尺寸约 1600×900，大小 500KB 以内；上传后自动出现在首页「科协日常」走廊，替换留白占位格。</p>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_carousel">
+            {% for field in carousel_form %}
+                {% include "includes/field.html" %}
+            {% endfor %}
+            <button type="submit" class="btn btn-primary btn-block">上传轮播图</button>
+        </form>
+    </div>
+</div>
+
+<div class="dash-panel dash-panel-wide" style="margin-top:20px;">
+    <h2>轮播图列表</h2>
+    {% if carousel_items %}
+    <div class="dash-carousel-grid">
+        {% for item in carousel_items %}
+        <div class="dash-carousel-item {% if not item.is_active %}is-off{% endif %}">
+            <img src="{{ item.image.url }}" alt="{{ item.title }}" loading="lazy">
+            <div class="dash-carousel-meta">
+                <strong>{{ item.title }}</strong>
+                <span>排序 {{ item.sort_order }} · {% if item.is_active %}启用中{% else %}已停用{% endif %}</span>
+                <div class="dash-carousel-ops">
+                    <form method="post" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle_carousel">
+                        <input type="hidden" name="carousel_id" value="{{ item.pk }}">
+                        <button type="submit" class="btn btn-ghost btn-sm">{% if item.is_active %}停用{% else %}启用{% endif %}</button>
+                    </form>
+                    <form method="post" class="inline-form" onsubmit="return confirm('确定删除「{{ item.title }}」？')">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete_carousel">
+                        <input type="hidden" name="carousel_id" value="{{ item.pk }}">
+                        <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="dash-empty">还没有上传轮播图，首页正在使用仓库自带的兜底图和留白占位格</div>
+    {% endif %}
+</div>
+{% endblock %}

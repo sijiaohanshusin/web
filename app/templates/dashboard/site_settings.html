@@ -1,0 +1,74 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}站点设置{% endblock %}
+{% block page_title %}站点设置{% endblock %}
+
+{% block content %}
+
+<div class="dash-grid-2">
+    <div class="dash-panel">
+        <h2>基本配置</h2>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">改完保存即生效（首页数据缓存最长 1 小时刷新）。</p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="config">
+            {% for field in config_form %}
+                {% include "includes/field.html" %}
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">保存配置</button>
+        </form>
+    </div>
+
+    <div class="dash-panel">
+        <h2>添加轮播图</h2>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">建议宽 1600px、500KB 以内；有启用的轮播图后，首页走廊将展示这里的照片（替换掉留白占位格）。</p>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="carousel_add">
+            {% for field in carousel_form %}
+                {% include "includes/field.html" %}
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">上传轮播图</button>
+        </form>
+    </div>
+</div>
+
+<div class="dash-panel" style="margin-top:16px;">
+    <h2>首页轮播图（{{ carousel_items|length }} 张）</h2>
+    {% if carousel_items %}
+    <div class="dash-carousel-grid">
+        {% for item in carousel_items %}
+        <div class="dash-carousel-item {% if not item.is_active %}inactive{% endif %}">
+            <img src="{{ item.image.url }}" alt="{{ item.title }}">
+            <div class="dash-carousel-body">
+                <strong>{{ item.title }} {% if not item.is_active %}<span class="badge badge-gray">已停用</span>{% endif %}</strong>
+                <small>{{ item.caption|default:"（无说明）" }}</small>
+                <div class="dash-carousel-ops">
+                    <form method="post" action="{% url 'dashboard:carousel_update' item.pk %}" class="inline-form" style="display:flex;gap:6px;align-items:center;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="sort">
+                        <input class="input" type="number" name="sort_order" value="{{ item.sort_order }}" title="排序（小的在前）">
+                        <button type="submit" class="btn btn-ghost btn-sm">存排序</button>
+                    </form>
+                    <form method="post" action="{% url 'dashboard:carousel_update' item.pk %}" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle">
+                        <button type="submit" class="btn btn-ghost btn-sm">{% if item.is_active %}停用{% else %}启用{% endif %}</button>
+                    </form>
+                    <form method="post" action="{% url 'dashboard:carousel_update' item.pk %}" class="inline-form"
+                          onsubmit="return confirm('确定删除「{{ item.title }}」？');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete">
+                        <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="dash-empty">还没有上传轮播图，首页正在使用仓库自带的兜底图和留白占位格</div>
+    {% endif %}
+</div>
+
+{% endblock %}

@@ -28,8 +28,11 @@
             <div class="profile-actions">
                 <a class="btn btn-outline" href="{% url 'accounts:profile_edit' %}">编辑资料</a>
                 <a class="btn btn-ghost" href="{% url 'accounts:password_change' %}">修改密码</a>
+                {% if user.is_officer %}
+                    <a class="btn btn-primary" href="{% url 'dashboard:overview' %}">管理驾驶舱</a>
+                {% endif %}
                 {% if user.is_staff %}
-                    <a class="btn btn-ghost" href="{% url 'admin:index' %}">进入管理后台</a>
+                    <a class="btn btn-ghost" href="{% url 'admin:index' %}">高级后台（Admin）</a>
                 {% endif %}
             </div>
         </div>

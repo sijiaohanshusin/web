@@ -30,6 +30,9 @@
         </nav>
         <div class="nav-auth">
             {% if user.is_authenticated %}
+                {% if user.is_officer %}
+                    <a class="btn btn-outline btn-sm" href="{% url 'dashboard:overview' %}">管理</a>
+                {% endif %}
                 <a class="nav-user" href="{% url 'accounts:profile' %}">
                     <span class="nav-user-dot"></span>{{ user.display_name }}
                 </a>
