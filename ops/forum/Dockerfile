@@ -1,6 +1,7 @@
 # NodeBB 论坛镜像（自构建：Docker Hub 官方镜像标签陈旧且国内镜像源拉不到，
 # 改为 node 基础镜像 + GitHub codeload 源码，全链路国内可达）
-FROM node:20-slim
+# 注意：NodeBB v4.14+ 要求 Node >= 22
+FROM node:22-slim
 
 ARG NODEBB_VERSION=4.14.0
 
