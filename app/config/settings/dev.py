@@ -23,3 +23,6 @@ CACHES = {
 }
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# 开发环境固定 SSO 测试密钥（生产用 .env 注入的强随机值）
+NODEBB_JWT_SECRET = "dev-sso-secret-not-for-production"

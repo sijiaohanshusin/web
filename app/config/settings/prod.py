@@ -40,6 +40,9 @@ STORAGES = {
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"},
 }
 
+# 论坛 SSO Cookie 需要覆盖主域及 bbs 子域
+SSO_COOKIE_DOMAIN = ".heuesta.cn"
+
 # 反向代理（nginx / CDN）之后的 HTTPS 识别
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True

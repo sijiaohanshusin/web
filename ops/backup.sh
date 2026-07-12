@@ -13,15 +13,27 @@ STAMP=$(date +%Y%m%d-%H%M%S)
 
 install -d -m 750 "$BACKUP_DIR"
 
-echo "==> 备份数据库"
+echo "==> 备份主站数据库"
 $COMPOSE exec -T db pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > "$BACKUP_DIR/db-$STAMP.sql.gz"
+
+echo "==> 备份论坛数据库"
+if $COMPOSE exec -T db psql -U "$POSTGRES_USER" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='nodebb'" | grep -q 1; then
+    $COMPOSE exec -T db pg_dump -U "$POSTGRES_USER" nodebb | gzip > "$BACKUP_DIR/forum-db-$STAMP.sql.gz"
+fi
 
 echo "==> 备份上传文件"
 tar -czf "$BACKUP_DIR/media-$STAMP.tar.gz" -C /srv/heuesta media
 
+if [ -d /srv/heuesta/forum/uploads ]; then
+    echo "==> 备份论坛附件"
+    tar -czf "$BACKUP_DIR/forum-uploads-$STAMP.tar.gz" -C /srv/heuesta/forum uploads
+fi
+
 echo "==> 清理 7 天前的备份"
 find "$BACKUP_DIR" -name "db-*.sql.gz" -mtime +7 -delete
+find "$BACKUP_DIR" -name "forum-db-*.sql.gz" -mtime +7 -delete
 find "$BACKUP_DIR" -name "media-*.tar.gz" -mtime +7 -delete
+find "$BACKUP_DIR" -name "forum-uploads-*.tar.gz" -mtime +7 -delete
 
 echo "==> 备份完成：$BACKUP_DIR"
 ls -lh "$BACKUP_DIR" | tail -5

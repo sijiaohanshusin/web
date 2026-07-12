@@ -1,5 +1,7 @@
 import datetime
 
+from django.conf import settings
+
 from .models import SiteConfig
 
 
@@ -8,4 +10,5 @@ def site(request):
     return {
         "site_config": SiteConfig.load(),
         "current_year": datetime.date.today().year,
+        "forum_url": settings.FORUM_URL,
     }

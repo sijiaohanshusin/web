@@ -26,6 +26,7 @@
             <a href="{% url 'core:recruit' %}">新生指南</a>
             <a href="/learn/electronics/">学习中心</a>
             <a href="{% url 'files:list' %}">资料站</a>
+            <a href="{{ forum_url }}">论坛</a>
             <a href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">B 站频道 ↗</a>
         </nav>
         <div class="nav-auth">
@@ -80,6 +81,7 @@
             <a href="{% url 'core:recruit' %}">新生指南</a>
             <a href="/learn/electronics/">电子学学习中心</a>
             <a href="{% url 'files:list' %}">资料站</a>
+            <a href="{{ forum_url }}">会员论坛</a>
             <a href="{% url 'accounts:register' %}">注册会员</a>
         </div>
         <div class="footer-col">

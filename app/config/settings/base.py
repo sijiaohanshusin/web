@@ -45,7 +45,15 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "core.middleware.DynamicPagesNoCacheMiddleware",
+    "accounts.sso.SsoCookieMiddleware",
 ]
+
+# ---- 论坛账号互通（NodeBB session-sharing）----
+# 未设置 NODEBB_JWT_SECRET 时 SSO 中间件不生效
+NODEBB_JWT_SECRET = os.environ.get("NODEBB_JWT_SECRET", "")
+SSO_COOKIE_NAME = "heuesta_sso"
+SSO_COOKIE_DOMAIN: str | None = None  # prod 覆盖为 .heuesta.cn
+FORUM_URL = os.environ.get("FORUM_URL", "https://bbs.heuesta.cn")
 
 ROOT_URLCONF = "config.urls"
 

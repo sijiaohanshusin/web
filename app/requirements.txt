@@ -4,4 +4,4 @@ gunicorn>=23.0
 requests>=2.32
 Pillow>=11.0
 django-simpleui>=2025.1
-django-simpleui>=2025.1
+PyJWT>=2.9

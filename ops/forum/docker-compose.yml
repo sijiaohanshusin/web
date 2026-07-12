@@ -1,0 +1,35 @@
+# HEU ESTA 论坛（NodeBB）—— 与主站完全独立的编排
+# 用法（服务器上）：
+#   docker compose -f /opt/heuesta/web/ops/forum/docker-compose.yml --env-file /opt/heuesta/forum.env up -d --build
+# 或直接执行 ops/forum/deploy-forum.sh
+name: heuesta-forum
+
+services:
+  forum:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - /opt/heuesta/forum.env
+    environment:
+      NODEBB_URL: https://bbs.heuesta.cn
+      NODEBB_DB_HOST: db
+    ports:
+      - "127.0.0.1:4567:4567"
+    volumes:
+      - /srv/heuesta/forum/config:/opt/config
+      - /srv/heuesta/forum/uploads:/usr/src/app/public/uploads
+    networks:
+      - heuesta_net
+    # 首次 setup 要构建前端资源较吃内存，运行期实际占用约 300MB
+    mem_limit: 800m
+    memswap_limit: 1600m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  heuesta_net:
+    name: heuesta_default
+    external: true
