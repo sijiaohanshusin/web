@@ -1,0 +1,8 @@
+[Unit]
+Description=HEU ESTA daily backup (database + media)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/heuesta/web/ops/backup.sh

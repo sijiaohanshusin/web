@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block body_class %}page-home{% endblock %}
+
+{% block content %}
+
+<!-- ============ HERO：黑底 · 巨型排版 · 全屏粒子信号海洋 ============ -->
+<section class="nf-hero nf-dark" data-nav="dark" id="nf-hero">
+    <canvas class="nf-hero-canvas" id="hero-canvas" aria-hidden="true"></canvas>
+    <div class="nf-hero-overlay" aria-hidden="true"></div>
+    <div class="container nf-hero-inner">
+        <div class="nf-hero-text">
+            <p class="nf-eyebrow line-reveal">哈尔滨工程大学 · 电子科技协会 · EST. {{ site_config.founding_year }}</p>
+            <h1 class="nf-hero-title">
+                <span class="line-reveal">焊接每一个</span>
+                <span class="line-reveal accent">奇思妙想<em>_</em></span>
+            </h1>
+            <p class="nf-hero-sub line-reveal">从点亮第一颗 LED，到站上全国大学生电子设计竞赛的领奖台。</p>
+            <div class="nf-hero-cta line-reveal">
+                <a class="btn btn-primary btn-lg btn-magnet" href="#join">加入我们</a>
+                <a class="nf-link-more" href="{% url 'core:recruit' %}">新生指南 <span>→</span></a>
+            </div>
+        </div>
+    </div>
+    <div class="nf-hero-foot container">
+        <p class="nf-hero-note">* 信通学院科协 · 电子设计竞赛主力社团</p>
+        <div class="nf-scroll-cue"><span></span>SCROLL</div>
+    </div>
+</section>
+
+<!-- ============ 白色区：三个理由 ============ -->
+<section class="nf-section nf-light" data-nav="light">
+    <div class="container">
+        <div class="nf-split">
+            <div class="nf-split-media reveal">
+                <figure class="nf-photo-card tilt-card" id="reason-photo">
+                    <img src="{% static 'img/carousel/pcb.webp' %}" alt="协会成员制作的 PCB">
+                    <figcaption>成员作品 · PCB 实物</figcaption>
+                </figure>
+            </div>
+            <div class="nf-split-text">
+                <h2 class="nf-display reveal"><span class="accent">3 个理由</span><br>选择电子科技协会</h2>
+                <ol class="nf-reasons">
+                    <li class="reveal">
+                        <h3>真刀真枪的硬件实践</h3>
+                        <p>烙铁、示波器、信号发生器随你使用，从面包板到 PCB 打样，作品全部亲手完成。</p>
+                    </li>
+                    <li class="reveal">
+                        <h3>成体系的免费培训</h3>
+                        <p>C 语言、STM32、运放、滤波器——一学年 10+ 场培训与任务，配套 27 章自编电子学教材。</p>
+                    </li>
+                    <li class="reveal">
+                        <h3>直通电赛的梯队培养</h3>
+                        <p>寒假合作任务、暑期封闭集训，学长学姐一对一带队，冲击全国大学生电子设计竞赛。</p>
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ 黑色区：大数字 ============ -->
+<section class="nf-section nf-dark nf-bignum-section" data-nav="dark">
+    <div class="container">
+        <p class="nf-eyebrow reveal">SINCE {{ site_config.founding_year }}</p>
+        <div class="nf-bignum reveal">
+            <span class="nf-bignum-value"><span class="counter" data-target="{{ years }}">0</span></span>
+            <div class="nf-bignum-side">
+                <span class="nf-bignum-unit">年技术传承</span>
+                <span class="nf-bignum-desc">一届届学长学姐，把烙铁和示波器交到下一代手上</span>
+            </div>
+        </div>
+        <div class="nf-substats">
+            <div class="nf-substat reveal">
+                <strong><span class="counter" data-target="{% firstof bili_stats.follower 2933 %}">0</span>+</strong>
+                <span>B 站粉丝</span>
+            </div>
+            <div class="nf-substat reveal">
+                <strong><span class="counter" data-target="{% firstof bili_stats.videos 93 %}">0</span></strong>
+                <span>培训视频</span>
+            </div>
+            <div class="nf-substat reveal">
+                <strong><span class="counter" data-target="27">0</span></strong>
+                <span>教材章节</span>
+            </div>
+            <div class="nf-substat reveal">
+                <strong><span class="counter" data-target="{% firstof bili_stats.likes 2685 %}">0</span>+</strong>
+                <span>视频获赞</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ 白色区：三大方向 ============ -->
+<section class="nf-section nf-light" data-nav="light">
+    <div class="container">
+        <p class="nf-eyebrow reveal">// DIRECTIONS</p>
+        <h2 class="nf-display reveal">在这里，你可以<span class="accent">成为</span></h2>
+        <div class="nf-dir-grid">
+            <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#hardware">
+                <figure><img src="{% static 'img/recruit/oscilloscope.webp' %}" alt="硬件方向" loading="lazy"></figure>
+                <div class="nf-dir-body">
+                    <span class="nf-dir-index">01</span>
+                    <h3>硬件工程师</h3>
+                    <p>模拟电路 · 运算放大器 · 滤波器 · 电源 · PCB 设计</p>
+                    <span class="nf-link-more">了解硬件部 <span>→</span></span>
+                </div>
+            </a>
+            <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#software">
+                <figure><img src="{% static 'img/recruit/board-stm32.webp' %}" alt="软件方向" loading="lazy"></figure>
+                <div class="nf-dir-body">
+                    <span class="nf-dir-index">02</span>
+                    <h3>嵌入式开发者</h3>
+                    <p>C 语言 · STM32 / MSPM0 · 通信协议 · 边缘 AI</p>
+                    <span class="nf-link-more">了解软件部 <span>→</span></span>
+                </div>
+            </a>
+            <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#training">
+                <figure><img src="{% static 'img/carousel/etched-board.webp' %}" alt="竞赛方向" loading="lazy"></figure>
+                <div class="nf-dir-body">
+                    <span class="nf-dir-index">03</span>
+                    <h3>电赛选手</h3>
+                    <p>真题训练 · 组队实战 · 暑期集训 · 国赛冲刺</p>
+                    <span class="nf-link-more">查看培养路线 <span>→</span></span>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ============ 黑色区：招新视频 ============ -->
+<section class="nf-section nf-dark" data-nav="dark">
+    <div class="container">
+        <p class="nf-eyebrow nf-center reveal">// MOVIE</p>
+        <h2 class="nf-display nf-center reveal">一分钟，认识科协</h2>
+        <div class="video-facade reveal" id="video-facade"
+             data-embed="//player.bilibili.com/player.html?bvid={{ site_config.recruit_video_bvid }}&autoplay=1&danmaku=0&high_quality=1">
+            {% if recruit_video.pic %}
+                <img src="{{ recruit_video.pic }}" alt="{{ recruit_video.title|default:'招新宣传视频' }}"
+                     loading="lazy" referrerpolicy="no-referrer">
+            {% else %}
+                <div class="video-facade-fallback"></div>
+            {% endif %}
+            <div class="video-facade-overlay">
+                <button class="video-play-btn" aria-label="播放视频">
+                    <svg viewBox="0 0 24 24" width="34" height="34"><path fill="currentColor" d="M8 5.14v13.72L19 12z"/></svg>
+                </button>
+                <span class="video-facade-title">{{ recruit_video.title|default:"电子科技协会招新宣传视频" }}</span>
+                <span class="video-facade-hint">点击播放 · 视频由 B 站提供</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ 黑色区：图片走廊（可拖拽 · 自动漂移） ============ -->
+<section class="nf-gallery-section nf-dark" data-nav="dark">
+    <div class="container nf-gallery-head">
+        <div>
+            <p class="nf-eyebrow reveal">// GALLERY</p>
+            <h2 class="nf-display reveal">科协日常</h2>
+        </div>
+        <p class="nf-gallery-hint reveal">拖拽浏览 ⇄</p>
+    </div>
+    <div class="nf-strip" id="nf-strip">
+        <div class="nf-strip-track" id="nf-strip-track">
+            {% for item in gallery %}
+                {% if item.kind == "photo" %}
+                <figure class="nf-tile">
+                    <img src="{{ item.image_url }}" alt="{{ item.title }}" {% if not forloop.first %}loading="lazy"{% endif %} draggable="false">
+                    <figcaption>
+                        <strong>{{ item.title }}</strong>
+                        {% if item.caption %}<span>{{ item.caption }}</span>{% endif %}
+                    </figcaption>
+                </figure>
+                {% else %}
+                <figure class="nf-tile nf-tile-empty">
+                    <div class="nf-tile-empty-inner">
+                        <span class="nf-tile-empty-mark">[ &nbsp;&nbsp; ]</span>
+                        <strong>{{ item.title }}</strong>
+                        <span>{{ item.caption }}</span>
+                    </div>
+                </figure>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ============ 白色区：一年之路 ============ -->
+<section class="nf-section nf-light" data-nav="light">
+    <div class="container">
+        <p class="nf-eyebrow reveal">// ROADMAP</p>
+        <h2 class="nf-display reveal">从萌新到大佬<span class="accent">的一年</span></h2>
+        <div class="nf-timeline">
+            <div class="nf-tl-line" aria-hidden="true"><i id="nf-tl-progress"></i></div>
+            <div class="nf-tl-item reveal">
+                <span class="nf-tl-num">01</span>
+                <h3>大一上 · 秋</h3>
+                <p>自制音乐盒（全员）、C 语言培训、运放与滤波器、STM32 入门</p>
+            </div>
+            <div class="nf-tl-item reveal">
+                <span class="nf-tl-num">02</span>
+                <h3>寒假</h3>
+                <p>软硬件组队合作任务，开学验收</p>
+            </div>
+            <div class="nf-tl-item reveal">
+                <span class="nf-tl-num">03</span>
+                <h3>大一下 · 春</h3>
+                <p>万用表制作、进阶培训、第一次面试选拔</p>
+            </div>
+            <div class="nf-tl-item reveal">
+                <span class="nf-tl-num">04</span>
+                <h3>暑假</h3>
+                <p>电赛封闭集训，向全国一等奖发起冲击</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ 黑色区：学习资源 + B站 ============ -->
+<section class="nf-section nf-dark" data-nav="dark">
+    <div class="container">
+        <p class="nf-eyebrow reveal">// RESOURCES</p>
+        <h2 class="nf-display reveal">技术传承<span class="accent">从未停歇</span></h2>
+
+        <div class="nf-res-grid">
+            <a class="nf-res-card reveal" href="/learn/electronics/">
+                <span class="nf-res-num">01</span>
+                <h3>电子学学习中心</h3>
+                <p>21 章正文 + 6 篇附录，从电路理论到数据转换的系统教材。</p>
+                <span class="nf-link-more">进入课程 <span>→</span></span>
+            </a>
+            <a class="nf-res-card reveal" href="{% url 'files:list' %}">
+                <span class="nf-res-num">02</span>
+                <h3>资料站</h3>
+                <p>培训课件、竞赛资料、工具软件，注册会员解锁全部内容。</p>
+                <span class="nf-link-more">浏览资料 <span>→</span></span>
+            </a>
+            <a class="nf-res-card reveal" href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">
+                <span class="nf-res-num">03</span>
+                <h3>B 站视频教程</h3>
+                <p>STM32 系列教程、硬件培训回放、竞赛题解，持续更新。</p>
+                <span class="nf-link-more">前往 B 站 <span>→</span></span>
+            </a>
+        </div>
+
+        {% if bili_videos %}
+        <div class="nf-bili-head reveal">
+            <h3>最新培训视频</h3>
+            <a class="nf-link-more" href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">全部 {% firstof bili_stats.videos 93 %} 个视频 <span>↗</span></a>
+        </div>
+        <div class="bili-grid">
+            {% for v in bili_videos %}
+            <a class="bili-card reveal" href="{{ v.url }}" target="_blank" rel="noopener">
+                <div class="bili-cover">
+                    <img src="{{ v.pic }}" alt="{{ v.title }}" loading="lazy" referrerpolicy="no-referrer">
+                    <span class="bili-duration">{{ v.duration }}</span>
+                </div>
+                <div class="bili-info">
+                    <h3>{{ v.title }}</h3>
+                    <span class="bili-views">▶ {{ v.view }} 次观看</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- ============ 加入我们 ============ -->
+<section class="nf-join nf-dark" id="join" data-nav="dark">
+    <div class="nf-join-halo" aria-hidden="true"></div>
+    <div class="container nf-center">
+        <p class="nf-eyebrow reveal">// JOIN US</p>
+        <h2 class="nf-display reveal">准备好点亮<br>你的<span class="accent">第一颗 LED</span> 了吗？</h2>
+        <p class="nf-join-sub reveal">加入招新 QQ 群，开始你的第一个任务</p>
+        <div class="nf-join-qq reveal">
+            <span class="nf-join-number">{{ site_config.recruit_qq_group }}</span>
+            <div class="nf-join-actions">
+                <button class="btn btn-primary btn-lg btn-magnet" id="copy-qq" data-qq="{{ site_config.recruit_qq_group }}">复制群号</button>
+                <a class="nf-link-more" href="{% url 'core:recruit' %}">先看《新生指南》<span>→</span></a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/hero-field.js' %}" defer></script>
+<script src="{% static 'js/home.js' %}" defer></script>
+{% endblock %}

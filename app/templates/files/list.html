@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}资料站 | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container page-section">
+    <div class="page-head">
+        <h1>资料站</h1>
+        <p>培训课件、竞赛资料与常用工具。标记「仅会员」的资料需要登录且通过审核后才能下载。</p>
+    </div>
+
+    <div class="filter-bar">
+        <div class="filter-tabs">
+            <a href="{% url 'files:list' %}{% if query %}?q={{ query|urlencode }}{% endif %}"
+               class="{% if not category %}active{% endif %}">全部</a>
+            {% for value, label in categories %}
+                <a href="?category={{ value }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+                   class="{% if category == value %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-spacer"></div>
+        <form method="get" style="display:flex;gap:8px;">
+            {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+            <input class="input" type="search" name="q" value="{{ query }}" placeholder="搜索资料标题或说明…">
+            <button type="submit" class="btn btn-outline">搜索</button>
+        </form>
+        {% if can_upload %}
+            <a class="btn btn-primary" href="{% url 'files:upload' %}">+ 上传资料</a>
+        {% endif %}
+    </div>
+
+    {% if page.object_list %}
+        <div class="panel table-wrap" style="padding:8px 16px;">
+            <table class="table">
+                <thead>
+                <tr><th>资料</th><th>分类</th><th>可见范围</th><th>大小</th><th>下载</th><th>上传者</th><th>时间</th><th></th></tr>
+                </thead>
+                <tbody>
+                {% for r in page.object_list %}
+                    <tr>
+                        <td>
+                            <strong>{{ r.title }}</strong>
+                            {% if r.description %}<br><small style="color:var(--muted);">{{ r.description|truncatechars:60 }}</small>{% endif %}
+                        </td>
+                        <td><span class="badge badge-blue">{{ r.get_category_display }}</span></td>
+                        <td>
+                            {% if r.visibility == "members" %}
+                                <span class="badge badge-amber">仅会员</span>
+                            {% else %}
+                                <span class="badge badge-green">公开</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ r.size|filesizeformat }}</td>
+                        <td>{{ r.download_count }}</td>
+                        <td>{{ r.uploader.display_name|default:"—" }}</td>
+                        <td>{{ r.created_at|date:"Y-m-d" }}</td>
+                        <td><a class="btn btn-outline btn-sm" href="{% url 'files:download' r.pk %}">下载</a></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page.paginator.num_pages > 1 %}
+            <div class="pagination">
+                {% if page.has_previous %}
+                    <a href="?page={{ page.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if category %}&category={{ category }}{% endif %}">‹</a>
+                {% endif %}
+                <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+                {% if page.has_next %}
+                    <a href="?page={{ page.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if category %}&category={{ category }}{% endif %}">›</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-hint">
+            <span class="empty-icon">📭</span>
+            {% if query %}没有找到与「{{ query }}」相关的资料{% else %}这里还没有资料{% endif %}
+            {% if not user.is_authenticated %}<br><br><a href="{% url 'accounts:login' %}">登录</a>后可查看更多会员资料{% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

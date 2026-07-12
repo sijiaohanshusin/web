@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}个人中心 | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container page-section">
+    <div class="page-head">
+        <h1>个人中心</h1>
+    </div>
+    <div class="profile-grid">
+        <div class="panel profile-side">
+            {% if user.avatar %}
+                <img class="profile-avatar" src="{{ user.avatar.url }}" alt="头像">
+            {% else %}
+                <div class="profile-avatar-fallback">{{ user.display_name|first }}</div>
+            {% endif %}
+            <h2>{{ user.display_name }}</h2>
+            <div class="profile-username">@{{ user.username }}</div>
+            <span class="badge badge-blue">{{ user.role_label }}</span>
+            <ul class="profile-meta">
+                <li><span>学号</span><span>{{ user.student_id|default:"—" }}</span></li>
+                <li><span>学院</span><span>{{ user.college|default:"—" }}</span></li>
+                <li><span>年级</span><span>{{ user.grade|default:"—" }}</span></li>
+                <li><span>QQ</span><span>{{ user.qq|default:"—" }}</span></li>
+                <li><span>注册时间</span><span>{{ user.date_joined|date:"Y-m-d" }}</span></li>
+            </ul>
+            <div class="profile-actions">
+                <a class="btn btn-outline" href="{% url 'accounts:profile_edit' %}">编辑资料</a>
+                <a class="btn btn-ghost" href="{% url 'accounts:password_change' %}">修改密码</a>
+                {% if user.is_staff %}
+                    <a class="btn btn-ghost" href="{% url 'admin:index' %}">进入管理后台</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="panel">
+            <h2>我上传的资料</h2>
+            {% if my_resources %}
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                        <tr><th>标题</th><th>分类</th><th>可见范围</th><th>下载</th><th>时间</th></tr>
+                        </thead>
+                        <tbody>
+                        {% for r in my_resources %}
+                            <tr>
+                                <td><a href="{% url 'files:download' r.pk %}">{{ r.title }}</a></td>
+                                <td>{{ r.get_category_display }}</td>
+                                <td>{{ r.get_visibility_display }}</td>
+                                <td>{{ r.download_count }}</td>
+                                <td>{{ r.created_at|date:"Y-m-d" }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-hint">
+                    <span class="empty-icon">🗂️</span>
+                    还没有上传过资料{% if user.is_officer %}，<a href="{% url 'files:upload' %}">去上传第一份</a>{% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

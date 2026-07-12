@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}编辑资料 | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-card auth-card-wide">
+        <h1>编辑资料</h1>
+        <p class="auth-sub">完善信息，方便干事联系你</p>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% for field in form %}
+                {% include "includes/field.html" %}
+            {% endfor %}
+            <button type="submit" class="btn btn-primary btn-block">保存</button>
+        </form>
+        <p class="auth-alt"><a href="{% url 'accounts:profile' %}">← 返回个人中心</a></p>
+    </div>
+</div>
+{% endblock %}

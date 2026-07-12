@@ -1,0 +1,81 @@
+from urllib.parse import quote
+
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.views import redirect_to_login
+from django.core.paginator import Paginator
+from django.db.models import F, Q
+from django.http import FileResponse, HttpResponse, HttpResponseForbidden
+from django.shortcuts import get_object_or_404, redirect, render
+
+from accounts.roles import is_member, is_officer
+
+from .forms import ResourceUploadForm
+from .models import Resource
+
+
+def resource_list(request):
+    resources = Resource.objects.select_related("uploader")
+
+    # 未登录 / 非会员只能看到公开资料
+    if not is_member(request.user):
+        resources = resources.filter(visibility=Resource.Visibility.PUBLIC)
+
+    query = request.GET.get("q", "").strip()
+    if query:
+        resources = resources.filter(Q(title__icontains=query) | Q(description__icontains=query))
+
+    category = request.GET.get("category", "")
+    if category in Resource.Category.values:
+        resources = resources.filter(category=category)
+
+    paginator = Paginator(resources, 20)
+    page = paginator.get_page(request.GET.get("page"))
+
+    context = {
+        "page": page,
+        "query": query,
+        "category": category,
+        "categories": Resource.Category.choices,
+        "can_upload": is_officer(request.user),
+    }
+    return render(request, "files/list.html", context)
+
+
+@login_required
+@user_passes_test(is_officer)
+def resource_upload(request):
+    if request.method == "POST":
+        form = ResourceUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            resource = form.save(commit=False)
+            resource.uploader = request.user
+            resource.save()
+            messages.success(request, f"资料「{resource.title}」上传成功。")
+            return redirect("files:list")
+    else:
+        form = ResourceUploadForm()
+    return render(request, "files/upload.html", {"form": form})
+
+
+def resource_download(request, pk: int):
+    resource = get_object_or_404(Resource, pk=pk)
+
+    if resource.visibility == Resource.Visibility.MEMBERS:
+        if not request.user.is_authenticated:
+            return redirect_to_login(request.get_full_path())
+        if not is_member(request.user):
+            return HttpResponseForbidden("该资料仅对已审核会员开放。")
+
+    Resource.objects.filter(pk=pk).update(download_count=F("download_count") + 1)
+
+    if settings.DEBUG:
+        return FileResponse(resource.file.open("rb"), as_attachment=True, filename=resource.filename)
+
+    # 生产环境：Django 只做鉴权，文件传输交给 nginx（X-Accel-Redirect），不占应用内存
+    response = HttpResponse()
+    response["Content-Type"] = "application/octet-stream"
+    response["X-Accel-Redirect"] = f"/protected/{quote(resource.file.name)}"
+    response["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(resource.filename)}"
+    return response

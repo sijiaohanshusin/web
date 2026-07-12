@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}新生指南 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}电子科技协会新生扫盲指南：培训安排、硬件基础知识、软件基础知识与学习资源。{% endblock %}
+
+{% block content %}
+
+<div class="recruit-hero">
+    <div class="container">
+        <span class="section-tag">// FRESHMAN GUIDE</span>
+        <h1>新生指南 · 从零开始的电子之旅</h1>
+        <p>欢迎加入电子科技协会！这份指南带你认识协会的培训体系、常用元件与工具、开发软件和学习资源。看不懂没关系，一年后回头看，你会惊讶自己走了多远。</p>
+    </div>
+</div>
+
+<div class="container recruit-layout">
+    <nav class="recruit-toc" id="recruit-toc">
+        <a href="#intro">协会简介</a>
+        <a href="#training">培训安排</a>
+        <a href="#hardware">硬件基础</a>
+        <a href="#software">软件基础</a>
+        <a href="#resources">学习资源</a>
+    </nav>
+
+    <div class="recruit-content">
+
+        <!-- ================= 协会简介 ================= -->
+        <section id="intro">
+            <h2>协会简介</h2>
+            <div class="sec-sub">// WHO WE ARE</div>
+            <p>电子科技协会是一个致力于电子技术和计算机科学普及与创新的学生组织。我们为对电子技术和软件开发感兴趣的同学提供学习、交流和实践的平台。</p>
+            <p>无论你是零基础小白，还是有一定经验的爱好者，这里都有适合你的活动和资源！</p>
+        </section>
+
+        <!-- ================= 培训安排 ================= -->
+        <section id="training">
+            <h2>培训安排</h2>
+            <div class="sec-sub">// TRAINING SCHEDULE</div>
+
+            <details class="fold" open>
+                <summary>硬件部培训安排</summary>
+                <div class="fold-body table-wrap">
+                    <table class="table">
+                        <thead><tr><th>进度</th><th>任务 / 说明</th></tr></thead>
+                        <tbody>
+                        <tr><td>大一上 第一次培训/任务</td><td>自制音乐盒（全体参加）和 PCB 的初步绘制</td></tr>
+                        <tr><td>大一上 第二次培训/任务</td><td>运算放大器的学习与使用</td></tr>
+                        <tr><td>大一上 第三次任务</td><td>滤波器的学习与制作</td></tr>
+                        <tr><td>大一上 第四次任务</td><td>待定</td></tr>
+                        <tr><td>大一下 第一次合作任务</td><td>寒假发布，开学后验收，内容待定</td></tr>
+                        <tr><td>大一下 第二次合作任务</td><td>万用表的制作</td></tr>
+                        <tr><td>第一次面试</td><td>通过第一次面试的同学进入暑假培训，电赛结束后进行第二次面试；此后，实验室只对通过考核的同学开放</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+
+            <details class="fold">
+                <summary>软件部培训安排</summary>
+                <div class="fold-body table-wrap">
+                    <table class="table">
+                        <thead><tr><th>进度</th><th>任务 / 说明</th></tr></thead>
+                        <tbody>
+                        <tr><td>单片机学习前置任务</td><td>C 语言培训：第一组题目至少完成 80%（截至 11 月 31 日），并来到科协与学长交流后，可进入单片机的学习（即第二次任务）</td></tr>
+                        <tr><td>大一上 第一次任务</td><td>自制音乐盒（全体参加）</td></tr>
+                        <tr><td>大一上 第二次培训/任务</td><td>STM32 的 GPIO、时钟树</td></tr>
+                        <tr><td>大一上 第二次培训/任务</td><td>STM32 的定时器、中断</td></tr>
+                        <tr><td>大一上 第三次培训/任务</td><td>LCD 屏幕、串口</td></tr>
+                        <tr><td>大一上 第四次培训/任务</td><td>STM32 的 ADC、DMA</td></tr>
+                        <tr><td>大一上 第五次培训/任务</td><td>通信协议</td></tr>
+                        <tr><td>大一下 第一次合作任务</td><td>寒假发布，开学后验收，内容待定。前五次任务完成优秀者可免费申请 MSPM0 学习</td></tr>
+                        <tr><td>大一下 第二次合作任务</td><td>万用表的制作</td></tr>
+                        <tr><td>第一次面试</td><td>通过第一次面试的同学进入暑假培训，电赛结束后进行第二次面试；此后，实验室只对通过考核的同学开放</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        </section>
+
+        <!-- ================= 硬件基础知识 ================= -->
+        <section id="hardware">
+            <h2>硬件基础知识</h2>
+            <div class="sec-sub">// HARDWARE 101</div>
+
+            <details class="fold" open>
+                <summary>常用电子元件</summary>
+                <div class="fold-body">
+
+                    <div class="component-block">
+                        <h4>电阻器</h4>
+                        <p>限制电流的元件，单位是欧姆（Ω），用于控制电路中的电压和电流。遵循欧姆定律 V = I × R。常见类型：碳膜电阻、金属膜电阻、绕线电阻、可变电阻（电位器）。</p>
+                        <div class="img-grid">
+                            <figure><img src="{% static 'img/recruit/resistor-1.webp' %}" alt="色环电阻" loading="lazy"><figcaption>色环电阻</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/resistor-2.webp' %}" alt="贴片电阻" loading="lazy"><figcaption>贴片电阻</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/resistor-3.webp' %}" alt="功率电阻" loading="lazy"><figcaption>功率电阻</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/resistor-4.webp' %}" alt="水泥电阻" loading="lazy"><figcaption>水泥电阻</figcaption></figure>
+                        </div>
+                    </div>
+
+                    <div class="component-block">
+                        <h4>电容器</h4>
+                        <p>储存电荷的元件，单位是法拉（F），特点是「阻直流、通交流」，用于滤波、耦合、定时等电路。常见类型：陶瓷电容、电解电容、薄膜电容、可变电容。</p>
+                        <div class="img-grid">
+                            <figure><img src="{% static 'img/recruit/capacitor-1.webp' %}" alt="电解电容" loading="lazy"><figcaption>电解电容</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/capacitor-2.webp' %}" alt="贴片电容" loading="lazy"><figcaption>贴片电容</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/capacitor-3.webp' %}" alt="钽电容" loading="lazy"><figcaption>钽电容</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/capacitor-4.webp' %}" alt="独石电容" loading="lazy"><figcaption>独石电容</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/capacitor-5.webp' %}" alt="陶瓷电容" loading="lazy"><figcaption>陶瓷电容</figcaption></figure>
+                        </div>
+                    </div>
+
+                    <div class="component-block">
+                        <h4>电感器</h4>
+                        <p>储存磁能的元件，单位是亨利（H），特点是「阻交流、通直流」，用于滤波、振荡、变压器等电路。常见类型：空芯电感、铁氧体磁芯电感、铁芯电感、可调电感。</p>
+                        <div class="img-grid">
+                            <figure><img src="{% static 'img/recruit/inductor-1.webp' %}" alt="色环电感" loading="lazy"><figcaption>色环电感</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/inductor-2.webp' %}" alt="贴片电感" loading="lazy"><figcaption>贴片电感</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/inductor-3.webp' %}" alt="工字电感" loading="lazy"><figcaption>工字电感</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/inductor-4.webp' %}" alt="磁环电感" loading="lazy"><figcaption>磁环电感</figcaption></figure>
+                        </div>
+                    </div>
+
+                    <div class="component-block">
+                        <h4>二极管</h4>
+                        <p>单向导电的半导体器件：正向导通、反向截止，硅管正向压降约 0.7V。用于整流、检波、稳压等电路。常见类型：整流二极管、稳压（齐纳）二极管、发光二极管（LED）、肖特基二极管。</p>
+                        <div class="img-grid">
+                            <figure><img src="{% static 'img/recruit/diode-led.webp' %}" alt="发光二极管" loading="lazy"><figcaption>发光二极管</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/diode-rectifier.webp' %}" alt="整流二极管" loading="lazy"><figcaption>整流二极管</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/diode-zener.webp' %}" alt="稳压二极管" loading="lazy"><figcaption>稳压二极管</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/diode-schottky.webp' %}" alt="肖特基二极管" loading="lazy"><figcaption>肖特基二极管</figcaption></figure>
+                        </div>
+                    </div>
+
+                    <div class="component-block">
+                        <h4>晶体管</h4>
+                        <p>放大和开关信号的半导体器件，是现代电子设备的核心元件。三种工作状态：截止、放大、饱和。常见类型：双极型晶体管（BJT）、场效应晶体管（FET）、MOSFET、IGBT。</p>
+                        <div class="img-grid">
+                            <figure><img src="{% static 'img/recruit/bjt.webp' %}" alt="三极管" loading="lazy"><figcaption>三极管</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/mosfet.webp' %}" alt="MOS 管" loading="lazy"><figcaption>MOS 管</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/igbt.webp' %}" alt="IGBT" loading="lazy"><figcaption>IGBT</figcaption></figure>
+                        </div>
+                    </div>
+
+                    <div class="component-block">
+                        <h4>运算放大器</h4>
+                        <p>调节和放大模拟信号的器件，接入适当的反馈网络后可以实现放大、滤波、比较等各种功能，特点是高输入阻抗、低输出阻抗、增益可调。协会第二次硬件培训的主角就是它。</p>
+                        <div class="img-grid">
+                            <figure><img src="{% static 'img/recruit/opamp-general.webp' %}" alt="通用运放" loading="lazy"><figcaption>通用运放</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/opamp-power.webp' %}" alt="功率运放" loading="lazy"><figcaption>功率运放</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/opamp-highfreq.webp' %}" alt="高频运放" loading="lazy"><figcaption>高频运放</figcaption></figure>
+                            <figure><img src="{% static 'img/recruit/opamp-lownoise.webp' %}" alt="低噪运放" loading="lazy"><figcaption>低噪运放</figcaption></figure>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <details class="fold">
+                <summary>电路图与电路板</summary>
+                <div class="fold-body">
+                    <h3>电路图示例</h3>
+                    <div class="img-grid img-grid-lg">
+                        <figure class="img-wide"><img src="{% static 'img/recruit/schematic.webp' %}" alt="电路图示例" loading="lazy"><figcaption>电路原理图</figcaption></figure>
+                    </div>
+                    <h3>印刷电路板（PCB）</h3>
+                    <p>把电路「画」在覆铜板上，是电子制作的最终形态。协会会教你从原理图绘制到 PCB 打样的完整流程。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/pcb-1.webp' %}" alt="PCB" loading="lazy"><figcaption>PCB 实物</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/pcb-2.webp' %}" alt="PCB" loading="lazy"><figcaption>焊接完成的电路板</figcaption></figure>
+                    </div>
+                    <h3>面包板</h3>
+                    <p><del>虽然它叫这个名字……但它可是不能吃哦。</del>无需焊接即可快速搭建电路原型，新手实验必备。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/breadboard.webp' %}" alt="面包板" loading="lazy"><figcaption>面包板</figcaption></figure>
+                    </div>
+                    <h3>洞洞板</h3>
+                    <p>比面包板更牢固、比 PCB 更灵活的过渡方案，练习焊接的好伙伴。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/perfboard-1.webp' %}" alt="洞洞板" loading="lazy"><figcaption>洞洞板焊接作品</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/perfboard-2.webp' %}" alt="洞洞板" loading="lazy"><figcaption>洞洞板背面走线</figcaption></figure>
+                    </div>
+                    <h3>腐蚀板</h3>
+                    <p>用化学腐蚀法自制的电路板，科协的传统手艺。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/etched-1.webp' %}" alt="腐蚀板" loading="lazy"><figcaption>自制腐蚀板</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/etched-2.webp' %}" alt="腐蚀板" loading="lazy"><figcaption>腐蚀板成品</figcaption></figure>
+                    </div>
+                </div>
+            </details>
+
+            <details class="fold">
+                <summary>硬件常用工具</summary>
+                <div class="fold-body">
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/multimeter.webp' %}" alt="万用表" loading="lazy"><figcaption>万用表 —— 测电压、电流、电阻的瑞士军刀</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/soldering-iron.webp' %}" alt="烙铁" loading="lazy"><figcaption>烙铁 —— 焊接的基本功从它开始</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/hot-air-gun.webp' %}" alt="热风枪" loading="lazy"><figcaption>热风枪 —— 贴片元件焊接与拆卸</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/oscilloscope.webp' %}" alt="示波器" loading="lazy"><figcaption>示波器 —— 让电信号「看得见」</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/signal-generator.webp' %}" alt="信号发生器" loading="lazy"><figcaption>信号发生器 —— 产生各种波形的信号源</figcaption></figure>
+                    </div>
+                </div>
+            </details>
+
+            <details class="fold">
+                <summary>硬件常用软件</summary>
+                <div class="fold-body">
+                    <h3>Multisim —— 电路仿真</h3>
+                    <p>强大的电路仿真工具，能够在动手搭建前提前验证原理图。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/multisim-logo.webp' %}" alt="Multisim" loading="lazy"><figcaption>Multisim</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/multisim-shot.webp' %}" alt="Multisim 界面" loading="lazy"><figcaption>仿真界面</figcaption></figure>
+                    </div>
+                    <h3>嘉立创 EDA —— PCB 设计</h3>
+                    <p>免费的国产 PCB 设计软件，可完成原理图绘制和 PCB 布局，与打样服务无缝衔接。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/jlc-logo.webp' %}" alt="嘉立创" loading="lazy"><figcaption>嘉立创 EDA</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/jlc-1.webp' %}" alt="功放电路原理图" loading="lazy"><figcaption>功放电路原理图示例</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/jlc-2.webp' %}" alt="PCB 布局" loading="lazy"><figcaption>PCB 布局示例</figcaption></figure>
+                    </div>
+                    <h3>嘉立创下单助手 —— PCB 打样</h3>
+                    <p>便捷的电路板下单工具，每月还有免费打样券可以领取。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/jlc-order-logo.webp' %}" alt="下单助手" loading="lazy"><figcaption>下单助手</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/jlc-order-shot.webp' %}" alt="下单界面" loading="lazy"><figcaption>下单界面</figcaption></figure>
+                    </div>
+                </div>
+            </details>
+        </section>
+
+        <!-- ================= 软件基础知识 ================= -->
+        <section id="software">
+            <h2>软件基础知识</h2>
+            <div class="sec-sub">// SOFTWARE 101</div>
+
+            <details class="fold" open>
+                <summary>编程语言介绍</summary>
+                <div class="fold-body table-wrap">
+                    <table class="table">
+                        <thead><tr><th>语言</th><th>主要用途</th><th>难度</th></tr></thead>
+                        <tbody>
+                        <tr><td>C / C++</td><td>系统编程、嵌入式</td><td>中等偏难</td></tr>
+                        <tr><td>Python</td><td>数据分析、AI、Web</td><td>简单</td></tr>
+                        <tr><td>JavaScript</td><td>Web 开发</td><td>简单到中等</td></tr>
+                        <tr><td>Java</td><td>企业应用、Android</td><td>中等</td></tr>
+                        <tr><td>Matlab</td><td>数据分析、辅助设计、仿真</td><td>中等</td></tr>
+                        <tr><td>汇编</td><td>计算机底层实现</td><td>难</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+
+            <details class="fold">
+                <summary>控制器（板卡）介绍</summary>
+                <div class="fold-body">
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead><tr><th>型号</th><th>特点</th><th>难度</th></tr></thead>
+                            <tbody>
+                            <tr><td>STM32（MCU）</td><td>嵌入式、中高性能处理</td><td>中等偏难</td></tr>
+                            <tr><td>MSPM0（MCU）</td><td>嵌入式、中低性能，部分电赛题限定</td><td>中等</td></tr>
+                            <tr><td>FPGA</td><td>高并发性，信号处理能力强</td><td>难</td></tr>
+                            <tr><td>树莓派（微型电脑）</td><td>高性能计算、视觉处理</td><td>中等</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <h3>单片机（学习重点）</h3>
+                    <p>单片机（MCU）又称单片微控制器，它不是完成某一个逻辑功能的芯片，而是把一个微型计算机系统集成到一个芯片上：拥有丰富的 IO 端口，适合控制工作；部分高性能单片机还拥有较强的信号处理能力，可部署边缘 AI 算力。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/board-stm32.webp' %}" alt="STM32" loading="lazy"><figcaption>STM32</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/board-mspm0.webp' %}" alt="MSPM0" loading="lazy"><figcaption>MSPM0</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/board-fpga.webp' %}" alt="FPGA" loading="lazy"><figcaption>FPGA</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/board-raspi.webp' %}" alt="树莓派" loading="lazy"><figcaption>树莓派</figcaption></figure>
+                    </div>
+                </div>
+            </details>
+
+            <details class="fold">
+                <summary>嵌入式开发环境</summary>
+                <div class="fold-body">
+                    <h3>KEIL</h3>
+                    <p>老牌单片机 C 语言开发系统，几乎适配市面所有单片机型号。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/keil-logo.webp' %}" alt="KEIL" loading="lazy"><figcaption>KEIL</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/keil-shot.webp' %}" alt="KEIL 界面" loading="lazy"><figcaption>KEIL 界面</figcaption></figure>
+                    </div>
+                    <h3>VS Code</h3>
+                    <p>轻量级代码编辑器，插件生态丰富，与 KEIL 搭配能提供更现代的编码体验。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/vscode-logo.webp' %}" alt="VS Code" loading="lazy"><figcaption>VS Code</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/vscode-shot.webp' %}" alt="VS Code 界面" loading="lazy"><figcaption>VS Code 界面</figcaption></figure>
+                    </div>
+                    <h3>CLion</h3>
+                    <p>跨平台 C/C++ 集成开发环境，配合 STM32CubeMX 和 CMake，适合 STM32 系列开发。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/clion-logo.webp' %}" alt="CLion" loading="lazy"><figcaption>CLion</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/clion-shot.webp' %}" alt="CLion 界面" loading="lazy"><figcaption>CLion 界面</figcaption></figure>
+                    </div>
+                    <h3>CCS</h3>
+                    <p>TI 公司推出的集成开发环境，自带图形化配置页面，主要用于 TI 单片机（如 MSPM0 系列）。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/ccs-logo.webp' %}" alt="CCS" loading="lazy"><figcaption>CCS</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/ccs-shot.webp' %}" alt="CCS 界面" loading="lazy"><figcaption>CCS 界面</figcaption></figure>
+                    </div>
+                    <h3>STM32CubeIDE</h3>
+                    <p>ST 公司推出的集成开发环境，自带图形化配置页面，主要用于 STM32 系列单片机开发。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/cubeide-logo.webp' %}" alt="STM32CubeIDE" loading="lazy"><figcaption>STM32CubeIDE</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/cubeide-shot.webp' %}" alt="CubeIDE 界面" loading="lazy"><figcaption>CubeIDE 界面</figcaption></figure>
+                    </div>
+                    <h3>STM32CubeMX</h3>
+                    <p>ST 公司的图形化配置工具，可与 KEIL、VS Code、CLion 搭配使用。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/cubemx-logo.webp' %}" alt="STM32CubeMX" loading="lazy"><figcaption>STM32CubeMX</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/cubemx-shot.webp' %}" alt="CubeMX 界面" loading="lazy"><figcaption>CubeMX 界面</figcaption></figure>
+                    </div>
+                    <h3>串口助手</h3>
+                    <p>串口调试工具：单片机 UART 通信经过 USB 转 TTL 后即可与电脑建立通信。</p>
+                    <div class="img-grid img-grid-lg">
+                        <figure><img src="{% static 'img/recruit/serial-logo.webp' %}" alt="串口助手" loading="lazy"><figcaption>串口助手</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/serial-shot.webp' %}" alt="串口助手界面" loading="lazy"><figcaption>串口助手界面</figcaption></figure>
+                    </div>
+                </div>
+            </details>
+
+            <details class="fold">
+                <summary>软件常用工具</summary>
+                <div class="fold-body">
+                    <h3>烧录器（仿真器）</h3>
+                    <p>用来把程序烧录进单片机，并对程序进行在线调试。</p>
+                    <div class="img-grid">
+                        <figure><img src="{% static 'img/recruit/daplink-1.webp' %}" alt="DAPLink" loading="lazy"><figcaption>DAPLink</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/daplink-2.webp' %}" alt="DAPLink" loading="lazy"><figcaption>DAPLink 模块</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/stlink-1.webp' %}" alt="ST-LINK" loading="lazy"><figcaption>ST-LINK</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/stlink-2.webp' %}" alt="ST-LINK" loading="lazy"><figcaption>ST-LINK V2</figcaption></figure>
+                        <figure><img src="{% static 'img/recruit/jlink.webp' %}" alt="J-Link" loading="lazy"><figcaption>J-Link</figcaption></figure>
+                    </div>
+                    <h3>逻辑分析仪</h3>
+                    <p>抓取信号并解码通信协议，检查信号与协议问题的利器。</p>
+                    <div class="img-grid">
+                        <figure><img src="{% static 'img/recruit/logic-analyzer.webp' %}" alt="逻辑分析仪" loading="lazy"><figcaption>逻辑分析仪</figcaption></figure>
+                    </div>
+                    <h3>USB 转 TTL</h3>
+                    <p>连接单片机与电脑，把单片机 UART 通信的内容传给电脑上的串口助手。</p>
+                    <div class="img-grid">
+                        <figure><img src="{% static 'img/recruit/usb-ttl.webp' %}" alt="USB 转 TTL" loading="lazy"><figcaption>USB 转 TTL</figcaption></figure>
+                    </div>
+                </div>
+            </details>
+        </section>
+
+        <!-- ================= 学习资源 ================= -->
+        <section id="resources">
+            <h2>学习资源</h2>
+            <div class="sec-sub">// RESOURCES</div>
+
+            <details class="fold" open>
+                <summary>推荐资源网站</summary>
+                <div class="fold-body">
+                    <h3>通用参考</h3>
+                    <ul>
+                        <li><a href="https://www.bilibili.com/" target="_blank" rel="noopener">B 站</a> —— 丰富的技术视频教程（别忘了关注<a href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">协会官方账号</a>）</li>
+                        <li><a href="https://www.zhihu.com/" target="_blank" rel="noopener">知乎</a> —— 技术问答社区</li>
+                        <li><a href="https://www.csdn.net/" target="_blank" rel="noopener">CSDN</a> —— 程序员问答社区</li>
+                        <li><a href="https://chat.deepseek.com/" target="_blank" rel="noopener">DeepSeek</a> —— AI 助手</li>
+                        <li>Google —— 谷歌一下</li>
+                        <li>学长学姐 —— 最宝贵的资源，大胆请教</li>
+                    </ul>
+                    <h3>硬件方向</h3>
+                    <ul>
+                        <li><a href="https://www.semiee.com/" target="_blank" rel="noopener">半导小芯</a> —— 芯片资料查询</li>
+                        <li><a href="https://www.ti.com.cn/" target="_blank" rel="noopener">TI</a> —— 德州仪器官网</li>
+                        <li><a href="https://www.st.com.cn/" target="_blank" rel="noopener">ST</a> —— 意法半导体官网</li>
+                        <li><a href="https://www.szlcsc.com/" target="_blank" rel="noopener">立创商城</a> —— 元器件采购</li>
+                        <li><a href="https://oshwhub.com/" target="_blank" rel="noopener">立创开源广场</a> —— 开源硬件社区</li>
+                    </ul>
+                    <h3>软件方向</h3>
+                    <ul>
+                        <li><a href="https://github.com/" target="_blank" rel="noopener">GitHub</a> —— 代码托管与开源项目</li>
+                        <li><a href="https://www.runoob.com/" target="_blank" rel="noopener">菜鸟教程</a> —— 编程语言入门</li>
+                        <li><a href="https://csdiy.wiki/" target="_blank" rel="noopener">CS 自学指南</a> —— 高质量计算机课程汇总</li>
+                        <li><a href="/learn/electronics/">协会电子学学习中心</a> —— 21 章 + 6 附录系统教材</li>
+                    </ul>
+                </div>
+            </details>
+
+            <details class="fold" open>
+                <summary>提问前必读</summary>
+                <div class="fold-body">
+                    <p>在学会解决问题前，你首先需要学会<strong>提出问题</strong>。如何提出有意义的问题、不浪费自己和他人的时间？强烈推荐阅读：</p>
+                    <ul>
+                        <li><a href="https://github.com/ryanhanwu/How-To-Ask-Questions-The-Smart-Way/blob/main/README-zh_CN.md" target="_blank" rel="noopener">《提问的智慧》（GitHub 版）</a></li>
+                        <li><a href="https://topstip.com/wp-content/uploads/2024/06/%E6%8F%90%E9%97%AE%E7%9A%84%E6%99%BA%E6%85%A7.pdf" target="_blank" rel="noopener">《提问的智慧》（PDF 版）</a></li>
+                    </ul>
+                </div>
+            </details>
+
+            <div class="join-panel" style="margin-top:40px;">
+                <div class="join-bg" aria-hidden="true"></div>
+                <h2>看完了？来实验室见！</h2>
+                <p>加入招新 QQ 群，开始你的第一个任务</p>
+                <div class="join-qq">
+                    <span class="join-qq-label">招新 QQ 群</span>
+                    <strong>{{ site_config.recruit_qq_group }}</strong>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 目录高亮当前章节
+(function () {
+    "use strict";
+    var links = document.querySelectorAll("#recruit-toc a");
+    var sections = Array.from(links).map(function (a) {
+        return document.querySelector(a.getAttribute("href"));
+    });
+    var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+                links.forEach(function (a) {
+                    a.classList.toggle("active", a.getAttribute("href") === "#" + entry.target.id);
+                });
+            }
+        });
+    }, { rootMargin: "-20% 0px -70% 0px" });
+    sections.forEach(function (s) { if (s) observer.observe(s); });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,5 @@
+Django>=5.2,<5.3
+psycopg[binary]>=3.2
+gunicorn>=23.0
+requests>=2.32
+Pillow>=11.0

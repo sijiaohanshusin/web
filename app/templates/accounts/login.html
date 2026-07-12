@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}登录 | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-card">
+        <h1>登录</h1>
+        <p class="auth-sub">欢迎回来，继续你的电子之旅</p>
+        {% if form.non_field_errors %}
+            <div class="form-nonfield-errors">
+                {% for error in form.non_field_errors %}<div class="alert alert-error">{{ error }}</div>{% endfor %}
+            </div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                {% include "includes/field.html" %}
+            {% endfor %}
+            <input type="hidden" name="next" value="{{ next }}">
+            <button type="submit" class="btn btn-primary btn-block">登录</button>
+        </form>
+        <p class="auth-alt">还没有账号？<a href="{% url 'accounts:register' %}">注册成为会员</a></p>
+    </div>
+</div>
+{% endblock %}

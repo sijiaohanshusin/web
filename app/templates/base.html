@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ site_config.site_name }} | {{ site_config.site_name_en }}{% endblock %}</title>
+    <meta name="description" content="{% block description %}哈尔滨工程大学电子科技协会（HEU ESTA）官方网站：招新信息、电子学培训、竞赛资料与学习资源。{% endblock %}">
+    <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+<header class="site-nav" id="site-nav">
+    <div class="container nav-inner">
+        <a class="nav-brand" href="{% url 'core:home' %}">
+            <img src="{% static 'img/logo.png' %}" alt="会标" class="nav-logo">
+            <span class="nav-title">
+                <strong>电子科技协会</strong>
+                <small>HEU ESTA</small>
+            </span>
+        </a>
+        <nav class="nav-links" id="nav-links">
+            <a href="{% url 'core:home' %}">首页</a>
+            <a href="{% url 'core:recruit' %}">新生指南</a>
+            <a href="/learn/electronics/">学习中心</a>
+            <a href="{% url 'files:list' %}">资料站</a>
+            <a href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">B 站频道 ↗</a>
+        </nav>
+        <div class="nav-auth">
+            {% if user.is_authenticated %}
+                <a class="nav-user" href="{% url 'accounts:profile' %}">
+                    <span class="nav-user-dot"></span>{{ user.display_name }}
+                </a>
+                <form method="post" action="{% url 'accounts:logout' %}" class="inline-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost btn-sm">退出</button>
+                </form>
+            {% else %}
+                <a class="btn btn-ghost btn-sm" href="{% url 'accounts:login' %}">登录</a>
+                <a class="btn btn-primary btn-sm" href="{% url 'accounts:register' %}">注册</a>
+            {% endif %}
+        </div>
+        <button class="nav-burger" id="nav-burger" aria-label="菜单" aria-expanded="false">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</header>
+
+{% if messages %}
+<div class="container messages-wrap">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<main class="site-main">
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+    <div class="container footer-grid">
+        <div class="footer-col footer-brand">
+            <div class="footer-logo-row">
+                <img src="{% static 'img/logo.png' %}" alt="会标">
+                <div>
+                    <strong>{{ site_config.site_name }}</strong>
+                    <small>{{ site_config.site_name_en }} · EST. {{ site_config.founding_year }}</small>
+                </div>
+            </div>
+            <p>探索电子技术的奥秘，开启软硬件开发的精彩旅程。焊接每一个奇思妙想。</p>
+        </div>
+        <div class="footer-col">
+            <h4>快速入口</h4>
+            <a href="{% url 'core:recruit' %}">新生指南</a>
+            <a href="/learn/electronics/">电子学学习中心</a>
+            <a href="{% url 'files:list' %}">资料站</a>
+            <a href="{% url 'accounts:register' %}">注册会员</a>
+        </div>
+        <div class="footer-col">
+            <h4>联系我们</h4>
+            <a href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">B 站：HEU-电子科技协会</a>
+            <span>招新 QQ 群：{{ site_config.recruit_qq_group }}</span>
+            <span>哈尔滨工程大学 信息与通信工程学院</span>
+        </div>
+    </div>
+    <div class="footer-bar">
+        <div class="container footer-bar-inner">
+            <span>&copy; {{ site_config.founding_year }}-{{ current_year }} {{ site_config.site_name_en }}. All rights reserved.</span>
+            <span class="footer-beian">
+                <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">皖ICP备2026006667号</a>
+                <a href="https://beian.mps.gov.cn/#/query/webSearch?code=34020302000338" target="_blank" rel="noopener">皖公网安备 34020302000338号</a>
+            </span>
+        </div>
+    </div>
+</footer>
+
+<script src="{% static 'js/site.js' %}" defer></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

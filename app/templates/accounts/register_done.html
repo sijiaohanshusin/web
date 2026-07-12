@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}注册成功 | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-card" style="text-align:center;">
+        <div style="font-size:44px;margin-bottom:12px;">📨</div>
+        <h1>注册申请已提交</h1>
+        <p class="auth-sub" style="margin-top:10px;">
+            管理员审核通过后即可登录。<br>
+            如需加速审核，可在招新 QQ 群（{{ site_config.recruit_qq_group }}）联系干事。
+        </p>
+        <a class="btn btn-outline" href="{% url 'core:home' %}">返回首页</a>
+    </div>
+</div>
+{% endblock %}

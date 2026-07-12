@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}上传资料 | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-card auth-card-wide">
+        <h1>上传资料</h1>
+        <p class="auth-sub">单个文件最大 200MB；「仅会员」资料只对已审核会员开放下载</p>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% for field in form %}
+                {% include "includes/field.html" %}
+            {% endfor %}
+            <button type="submit" class="btn btn-primary btn-block">上传</button>
+        </form>
+        <p class="auth-alt"><a href="{% url 'files:list' %}">← 返回资料站</a></p>
+    </div>
+</div>
+{% endblock %}

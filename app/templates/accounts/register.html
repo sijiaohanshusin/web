@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}注册 | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-card auth-card-wide">
+        <h1>注册会员</h1>
+        <p class="auth-sub">注册后需管理员审核，审核通过即可登录并解锁会员资料</p>
+        {% if form.non_field_errors %}
+            <div class="form-nonfield-errors">
+                {% for error in form.non_field_errors %}<div class="alert alert-error">{{ error }}</div>{% endfor %}
+            </div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                {% include "includes/field.html" %}
+            {% endfor %}
+            <button type="submit" class="btn btn-primary btn-block">提交注册</button>
+        </form>
+        <p class="auth-alt">已有账号？<a href="{% url 'accounts:login' %}">直接登录</a></p>
+    </div>
+</div>
+{% endblock %}

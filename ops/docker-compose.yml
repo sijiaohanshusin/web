@@ -1,0 +1,51 @@
+# HEU ESTA 官网生产编排
+# 用法（在服务器 /opt/heuesta/web 下）：
+#   docker compose -f ops/docker-compose.yml --env-file /opt/heuesta/.env up -d --build
+name: heuesta
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: ops/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - /opt/heuesta/.env
+    environment:
+      POSTGRES_HOST: db
+    ports:
+      - "127.0.0.1:8001:8000"
+    volumes:
+      - /srv/heuesta/static:/app/staticfiles
+      - /srv/heuesta/media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    mem_limit: 450m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - /srv/heuesta/pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 4s
+      retries: 12
+    mem_limit: 300m
+    shm_size: 128mb
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

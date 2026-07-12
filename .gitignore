@@ -1,3 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Django
+app/db.sqlite3
+app/media/
+app/staticfiles/
+
+# 环境变量与密钥
+.env
 *.pem
-index_v1.html
-科协招新综述/
+
+# 编辑器
+.idea/
+.vscode/
+*.swp
+
+# 系统
+.DS_Store
+Thumbs.db

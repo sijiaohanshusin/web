@@ -1,95 +1,73 @@
 # 哈尔滨工程大学电子科技协会官网
 
-这是哈尔滨工程大学电子科技协会（HEU ESTA）的官网仓库。当前线上域名为 [heuesta.cn](https://heuesta.cn)，现阶段用于协会官网页面的维护与发布。
+线上地址：[heuesta.cn](https://heuesta.cn)
 
-## 仓库内容
+这是协会官网的完整代码仓库：Django 全栈站点（官网 + 会员系统 + 资料站）+ 静态电子学学习中心 + 部署运维脚本。
 
-仓库中的主要文件：
+## 仓库结构
 
-- `index.html`：网站首页
-- `image_6662db.png`：协会会标图片
-- `ops/`：部署和自动同步所需的运维文件
+```text
+web/
+├── app/                Django 项目（官网本体）
+│   ├── config/         配置（settings 分 dev/prod 两套）
+│   ├── core/           首页、新生指南、B 站数据集成、站点配置
+│   ├── accounts/       会员系统（注册/登录/审核/角色）
+│   ├── files/          资料站（上传/下载/权限）
+│   ├── templates/      页面模板
+│   └── static/         CSS / JS / 图片（无构建链，改完即生效）
+├── learn/electronics/  电子学学习中心（纯静态，nginx 直接服务）
+├── ops/                部署：Dockerfile、compose、nginx 配置、部署/备份脚本
+├── scripts/            工具脚本（图片压缩等）
+└── docs/维护手册.md     ★ 接手维护先读这个
+```
 
-以下内容不会发布到线上站点：
+## 本地开发（Windows / macOS / Linux 通用）
 
-- `index_v1.html`
-- `科协招新综述/`
-- `*.pem`
-- `.gitignore`
-- `.gitattributes`
-- `README.md`
-- `ops/`
+```bash
+# 1. 建虚拟环境并装依赖（只需一次）
+python -m venv .venv
+.venv/Scripts/pip install -r app/requirements.txt      # Windows
+# .venv/bin/pip install -r app/requirements.txt        # macOS / Linux
 
-## 技术说明
+# 2. 初始化数据库并创建管理员（只需一次）
+cd app
+../.venv/Scripts/python manage.py migrate
+../.venv/Scripts/python manage.py createsuperuser
 
-当前站点是静态页面，主要使用：
+# 3. 启动开发服务器
+../.venv/Scripts/python manage.py runserver
+```
 
-- HTML
-- CSS
-- JavaScript
-
-线上环境使用：
-
-- Ubuntu
-- Nginx
-- Cloudflare
-- Let's Encrypt
-
-## 本地预览
-
-直接在浏览器中打开 `index.html` 即可查看页面效果。
-
-如果需要边改边预览，可以在编辑器中使用本地静态服务器工具，例如 VS Code 的 `Live Server`。
+打开 <http://127.0.0.1:8000>，管理后台在 `/admin/`。开发模式用 SQLite，不需要装数据库。
 
 ## 线上部署
 
-线上站点目录：
-
-```text
-/var/www/heuesta.cn/public
-```
-
-网站由 Nginx 提供服务，Cloudflare 负责外层代理与 DNS，HTTPS 由 Let's Encrypt 证书提供。
-
-## 自动同步发布
-
-服务器已配置自动同步任务，会定时从 GitHub 获取 `main` 分支最新内容，并同步到线上站点目录。
-
-同步逻辑包括：
-
-1. 获取 GitHub 上 `main` 分支的最新归档
-2. 更新服务器上的源码缓存目录
-3. 同步正式站点文件到线上目录
-4. 自动排除资料文件、说明文件和运维文件
-5. 校验并重载 Nginx
-
-服务器上的相关文件：
-
-```text
-/usr/local/bin/heuesta-sync.sh
-/etc/systemd/system/heuesta-sync.service
-/etc/systemd/system/heuesta-sync.timer
-```
-
-常用运维命令：
+服务器上一条命令：
 
 ```bash
-sudo systemctl start heuesta-sync.service
-sudo systemctl status heuesta-sync.service
-sudo systemctl status heuesta-sync.timer
-sudo systemctl list-timers --all | grep heuesta-sync
+sudo /opt/heuesta/web/ops/deploy.sh
 ```
 
-## 日常更新流程
+它会自动：拉最新代码 → 重建 Docker 镜像 → 数据库迁移 → 收集静态文件 → 同步学习中心 → 重载 nginx。
 
-推荐的更新方式：
+日常更新流程：本地改代码 → 推送到 GitHub `main` → 服务器上跑 `deploy.sh`。
 
-1. 在本地修改站点文件
-2. 提交并推送到 GitHub `main`
-3. 等待服务器自动同步，或手动触发一次同步
+## 常用运维
 
-## 维护说明
+| 操作 | 命令 |
+| --- | --- |
+| 部署 / 更新 | `sudo /opt/heuesta/web/ops/deploy.sh` |
+| 看应用日志 | `cd /opt/heuesta/web && docker compose -f ops/docker-compose.yml --env-file /opt/heuesta/.env logs -f app` |
+| 手动备份 | `sudo /opt/heuesta/web/ops/backup.sh` |
+| 审核新会员 | 登录 `heuesta.cn/admin/` → 成员 → 勾选 → 「通过审核并设为会员」 |
+| 换招新视频 | Admin → 站点配置 → 改「招新视频 BV 号」 |
+| 换首页轮播图 | Admin → 首页轮播图 → 上传 |
 
-- 新增静态资源时，需要确认它们没有被同步脚本的排除规则过滤掉
-- 如果后续站点结构调整，记得同步检查 `ops/heuesta-sync.sh` 中的发布规则
-- 本仓库的运维说明仅覆盖官网相关内容
+详细说明（架构图、备份恢复、故障排查、如何加新页面）见 [docs/维护手册.md](docs/维护手册.md)。
+
+## 技术栈
+
+- **后端**：Django 5.2 LTS（Python 3.12）+ PostgreSQL 16（生产）/ SQLite（开发）
+- **前端**：Django 模板 + 手写 CSS/JS，零构建链，零 Node 依赖
+- **部署**：Docker Compose + 宿主机 nginx + Let's Encrypt，站点前置 CDN
+- **历史版本**：旧静态站保存在 `legacy-static` 分支
