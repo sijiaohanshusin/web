@@ -18,6 +18,7 @@ services:
     volumes:
       - /srv/heuesta/forum/config:/opt/config
       - /srv/heuesta/forum/uploads:/usr/src/app/public/uploads
+      - forum-build:/usr/src/app/build
     networks:
       - heuesta_net
     # 首次 setup 要构建前端资源较吃内存，运行期实际占用约 300MB
@@ -33,3 +34,6 @@ networks:
   heuesta_net:
     name: heuesta_default
     external: true
+
+volumes:
+  forum-build:

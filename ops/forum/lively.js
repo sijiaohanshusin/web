@@ -17,6 +17,7 @@ nconf.defaults({
     const db = require(APP + '/src/database');
     await db.init();
     const meta = require(APP + '/src/meta');
+    await meta.configs.init();  // 发帖解析需要配置缓存
     const Groups = require(APP + '/src/groups');
     const Categories = require(APP + '/src/categories');
     const Topics = require(APP + '/src/topics');

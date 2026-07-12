@@ -32,4 +32,10 @@ else
     cp "$CONFIG" ./config.json
 fi
 
+# 镜像重建后 build 卷可能是空的（或版本升级后过期），缺前端资源时自动构建
+if [ ! -d "build/public" ]; then
+    echo "[forum] assets missing - running nodebb build (several minutes)..."
+    ./nodebb build
+fi
+
 exec node loader.js --no-silent --no-daemon
