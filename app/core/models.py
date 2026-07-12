@@ -44,39 +44,6 @@ class SiteConfig(models.Model):
         return config
 
 
-class BiliSnapshot(models.Model):
-    """B 站账号数据每日快照（驾驶舱粉丝走势图数据源）。"""
-
-    date = models.DateField("日期", unique=True)
-    follower = models.PositiveIntegerField("粉丝数", default=0)
-    videos = models.PositiveIntegerField("视频数", default=0)
-    likes = models.PositiveIntegerField("获赞数", default=0)
-
-    class Meta:
-        verbose_name = "B站数据快照"
-        verbose_name_plural = "B站数据快照"
-        ordering = ["date"]
-
-    def __str__(self):
-        return f"{self.date} 粉丝 {self.follower}"
-
-    @classmethod
-    def capture(cls, stats: dict | None) -> None:
-        """每天最多落一条快照；stats 为 None（接口失败）时跳过。"""
-        import datetime
-
-        if not stats:
-            return
-        cls.objects.get_or_create(
-            date=datetime.date.today(),
-            defaults={
-                "follower": stats.get("follower", 0),
-                "videos": stats.get("videos", 0),
-                "likes": stats.get("likes", 0),
-            },
-        )
-
-
 class CarouselImage(models.Model):
     """首页轮播图。后台上传即可增删，排序值小的在前。"""
 
