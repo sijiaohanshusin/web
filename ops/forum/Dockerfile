@@ -12,7 +12,8 @@ WORKDIR /usr/src/app
 
 ADD https://codeload.github.com/NodeBB/NodeBB/tar.gz/refs/tags/v${NODEBB_VERSION} /tmp/nodebb.tar.gz
 RUN tar -xzf /tmp/nodebb.tar.gz -C /usr/src/app --strip-components=1 \
-    && rm /tmp/nodebb.tar.gz
+    && rm /tmp/nodebb.tar.gz \
+    && cp install/package.json package.json  # NodeBB 的依赖清单在 install/ 下
 
 # npm 走国内镜像；预装 session-sharing 插件（账号互通）
 RUN npm config set registry https://registry.npmmirror.com \
