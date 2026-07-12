@@ -16,10 +16,10 @@ RUN tar -xzf /tmp/nodebb.tar.gz -C /usr/src/app --strip-components=1 \
     && rm /tmp/nodebb.tar.gz \
     && cp install/package.json package.json  # NodeBB 的依赖清单在 install/ 下
 
-# npm 走国内镜像；预装 session-sharing 插件（账号互通）
+# npm 走国内镜像；预装 session-sharing（账号互通）与 reactions（帖子表情回应）
 RUN npm config set registry https://registry.npmmirror.com \
     && npm install --omit=dev \
-    && npm install nodebb-plugin-session-sharing \
+    && npm install nodebb-plugin-session-sharing nodebb-plugin-reactions \
     && npm cache clean --force \
     && chown -R node:node /usr/src/app
 

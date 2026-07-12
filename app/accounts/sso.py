@@ -34,6 +34,7 @@ class SsoCookieMiddleware:
                     "id": user.pk,
                     "username": user.username,
                     "fullname": user.display_name or user.username,
+                    "groups": self._role_groups(user),
                     "iat": now,
                     "exp": now + settings.SESSION_COOKIE_AGE,
                 }
@@ -53,6 +54,14 @@ class SsoCookieMiddleware:
             response.delete_cookie(cookie_name, domain=cookie_domain)
 
         return response
+
+    @staticmethod
+    def _role_groups(user) -> list[str]:
+        """映射主站角色 -> 论坛用户组（论坛端 join-only 同步，显示彩色头衔）。"""
+        names = set(user.groups.filter(name__in=["会员", "干事", "管理员"]).values_list("name", flat=True))
+        if user.is_staff or user.is_superuser:
+            names.add("管理员")
+        return sorted(names)
 
     @staticmethod
     def _token_valid(token: str | None, user, secret: str) -> bool:

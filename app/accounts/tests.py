@@ -82,6 +82,19 @@ class SsoCookieTests(TestCase):
         self.assertEqual(payload["username"], "ssouser")
         self.assertEqual(payload["fullname"], "宋九")
         self.assertEqual(payload["email"], "s@x.cn")
+        self.assertEqual(payload["groups"], [])
+
+    def test_sso_payload_contains_role_groups(self):
+        import jwt
+        from django.contrib.auth.models import Group
+
+        self.user.groups.add(Group.objects.get(name="会员"), Group.objects.get(name="干事"))
+        resp = self.client.post(reverse("accounts:login"), {
+            "username": "ssouser",
+            "password": "Str0ngPass!2025",
+        })
+        payload = jwt.decode(resp.cookies["heuesta_sso"].value, self.SECRET, algorithms=["HS256"])
+        self.assertEqual(payload["groups"], ["会员", "干事"])
 
     def test_logout_clears_sso_cookie(self):
         self.client.login(username="ssouser", password="Str0ngPass!2025")
