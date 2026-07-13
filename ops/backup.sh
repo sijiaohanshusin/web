@@ -11,7 +11,8 @@ STAMP=$(date +%Y%m%d-%H%M%S)
 # shellcheck disable=SC1090
 . "$ENV_FILE"
 
-install -d -m 750 "$BACKUP_DIR"
+# 755：容许 backup-puller（异地备份限权账号）经 rrsync 只读进入
+install -d -m 755 "$BACKUP_DIR"
 
 echo "==> 备份主站数据库"
 $COMPOSE exec -T db pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > "$BACKUP_DIR/db-$STAMP.sql.gz"
