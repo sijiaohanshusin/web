@@ -25,6 +25,11 @@
             </span>
         </div>
         <div class="fb-card-body">{{ f.content|linebreaksbr }}</div>
+        <div class="fb-card-note">
+            <a href="{% url 'core:feedback_detail' f.pk %}">
+                💬 {% if f.reply_count %}{{ f.reply_count }} 条回复 · 查看/参与对话{% else %}回复提交人（开启对话）{% endif %}
+            </a>
+        </div>
         {% if f.status == 'resolved' %}
         <div class="fb-card-note">
             处理人：{{ f.resolved_by.display_name|default:"—" }} · {{ f.resolved_at|date:"m-d H:i" }}

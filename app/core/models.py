@@ -86,6 +86,26 @@ class Feedback(models.Model):
         return f"#{self.pk} {self.content[:24]}"
 
 
+class FeedbackReply(models.Model):
+    """反馈下的回复：提交人与管理组可以往来对话。"""
+
+    feedback = models.ForeignKey(Feedback, verbose_name="所属反馈", on_delete=models.CASCADE, related_name="replies")
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, verbose_name="回复人", null=True,
+        on_delete=models.SET_NULL, related_name="feedback_replies",
+    )
+    content = models.TextField("内容")
+    created_at = models.DateTimeField("时间", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "反馈回复"
+        verbose_name_plural = "反馈回复"
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"回复#{self.pk} → 反馈#{self.feedback_id}"
+
+
 class CarouselImage(models.Model):
     """首页轮播图。后台上传即可增删，排序值小的在前。"""
 

@@ -37,11 +37,16 @@
                 {% for f in my_feedbacks %}
                 <li>
                     <span class="badge {% if f.status == 'resolved' %}badge-green{% else %}badge-amber{% endif %}">{{ f.get_status_display }}</span>
-                    <span class="fb-mine-text">{{ f.content|truncatechars:50 }}</span>
-                    <small>{{ f.created_at|date:"m-d H:i" }}{% if f.admin_note %} · 回复：{{ f.admin_note }}{% endif %}</small>
+                    <a class="fb-mine-text" href="{% url 'core:feedback_detail' f.pk %}">{{ f.content|truncatechars:50 }}</a>
+                    <small>
+                        {{ f.created_at|date:"m-d H:i" }}
+                        {% if f.reply_count %} · {{ f.reply_count }} 条回复{% endif %}
+                        {% if f.admin_note %} · 已回复{% endif %}
+                    </small>
                 </li>
                 {% endfor %}
             </ul>
+            <p class="fb-mine-hint">点击任意一条可查看对话、继续追问。</p>
         </div>
         {% endif %}
     </div>

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import CarouselImage, Feedback, SiteConfig
+from .models import CarouselImage, Feedback, FeedbackReply, SiteConfig
 
 
 @admin.register(SiteConfig)
@@ -15,8 +15,15 @@ class SiteConfigAdmin(admin.ModelAdmin):
         return False
 
 
+class FeedbackReplyInline(admin.TabularInline):
+    model = FeedbackReply
+    extra = 0
+    readonly_fields = ["author", "content", "created_at"]
+
+
 @admin.register(Feedback)
 class FeedbackAdmin(admin.ModelAdmin):
+    inlines = [FeedbackReplyInline]
     list_display = ["id", "short_content", "user", "contact", "status", "created_at", "resolved_by"]
     list_filter = ["status"]
     search_fields = ["content", "contact", "user__username", "user__real_name"]

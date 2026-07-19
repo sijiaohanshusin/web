@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}反馈 #{{ fb.pk }} | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-card auth-card-wide">
+        <div class="fbd-head">
+            <h1>反馈 #{{ fb.pk }}</h1>
+            <span class="badge {% if fb.status == 'resolved' %}badge-green{% else %}badge-amber{% endif %}">{{ fb.get_status_display }}</span>
+        </div>
+        <p class="auth-sub">
+            {% if fb.user %}{{ fb.user.display_name }}{% else %}匿名{% endif %}
+            提交于 {{ fb.created_at|date:"Y-m-d H:i" }}
+            {% if fb.page %} · 来自 {{ fb.page|truncatechars:50 }}{% endif %}
+        </p>
+
+        <div class="fbd-thread">
+            <div class="fbd-msg">
+                <div class="fbd-msg-meta">
+                    <strong>{% if fb.user %}{{ fb.user.display_name }}{% else %}匿名{% endif %}</strong>
+                    <small>{{ fb.created_at|date:"m-d H:i" }} · 原始反馈</small>
+                </div>
+                <div class="fbd-msg-body">{{ fb.content|linebreaksbr }}</div>
+            </div>
+
+            {% if fb.admin_note %}
+            <div class="fbd-msg fbd-msg-staff">
+                <div class="fbd-msg-meta">
+                    <strong>{{ fb.resolved_by.display_name|default:"管理组" }}</strong>
+                    <span class="badge badge-blue">管理组</span>
+                    <small>{{ fb.resolved_at|date:"m-d H:i" }} · 处理备注</small>
+                </div>
+                <div class="fbd-msg-body">{{ fb.admin_note }}</div>
+            </div>
+            {% endif %}
+
+            {% for r in replies %}
+            <div class="fbd-msg {% if r.author and r.author.is_officer and r.author != fb.user %}fbd-msg-staff{% endif %}">
+                <div class="fbd-msg-meta">
+                    <strong>{{ r.author.display_name|default:"已注销用户" }}</strong>
+                    {% if r.author and r.author.is_officer and r.author != fb.user %}<span class="badge badge-blue">管理组</span>{% endif %}
+                    <small>{{ r.created_at|date:"m-d H:i" }}</small>
+                </div>
+                <div class="fbd-msg-body">{{ r.content|linebreaksbr }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <form method="post" class="fbd-reply-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>继续回复</label>
+                <textarea class="input" name="content" rows="3" maxlength="2000" required
+                          placeholder="{% if is_officer_viewer %}回复提交人（对方在此页可见）{% else %}补充说明或追问，管理组会收到{% endif %}"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">发送回复</button>
+        </form>
+
+        <div class="auth-links">
+            <a href="{% url 'core:feedback' %}">← 返回反馈页</a>
+            {% if is_officer_viewer %}<a href="{% url 'dashboard:feedbacks' %}">去反馈管理</a>{% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

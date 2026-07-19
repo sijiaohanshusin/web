@@ -1,14 +1,17 @@
 import datetime
 
 from django.contrib import messages
+from django.contrib.auth.views import redirect_to_login
 from django.core.cache import cache
-from django.http import JsonResponse
-from django.shortcuts import redirect, render
-
+from django.db.models import Count
+from django.http import HttpResponseForbidden, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.templatetags.static import static
 
+from accounts.roles import is_officer
+
 from . import bilibili
-from .models import CarouselImage, Feedback, SiteConfig
+from .models import CarouselImage, Feedback, FeedbackReply, SiteConfig
 
 # 数据库没有轮播图时的兜底走廊：真实素材 + 留白占位格。
 # 占位格（kind=placeholder）等照片补齐后，由管理员在后台上传真实图片替换。
@@ -106,5 +109,48 @@ def feedback(request):
 
     my_feedbacks = []
     if request.user.is_authenticated:
-        my_feedbacks = request.user.feedbacks.all()[:5]
+        my_feedbacks = request.user.feedbacks.annotate(reply_count=Count("replies"))[:10]
     return render(request, "core/feedback.html", {"my_feedbacks": my_feedbacks})
+
+
+def _can_view_feedback(user, fb) -> bool:
+    """提交人本人或干事及以上可以查看/参与对话。"""
+    if is_officer(user):
+        return True
+    return user.is_authenticated and fb.user_id == user.pk
+
+
+def feedback_detail(request, pk: int):
+    """反馈详情：原始内容 + 回复对话，双方可继续回复。"""
+    fb = get_object_or_404(
+        Feedback.objects.select_related("user", "resolved_by"), pk=pk
+    )
+    if not request.user.is_authenticated:
+        return redirect_to_login(request.get_full_path())
+    if not _can_view_feedback(request.user, fb):
+        return HttpResponseForbidden("只有反馈提交人和管理组可以查看该对话。")
+
+    if request.method == "POST":
+        content = (request.POST.get("content") or "").strip()
+        if len(content) < 2:
+            messages.error(request, "回复内容太短。")
+        elif len(content) > 2000:
+            messages.error(request, "回复内容超长（最多 2000 字）。")
+        else:
+            FeedbackReply.objects.create(feedback=fb, author=request.user, content=content)
+            # 提交人追问已处理的反馈 -> 自动重新打开，管理组会再次看到
+            if fb.user_id == request.user.pk and fb.status == Feedback.Status.RESOLVED:
+                fb.status = Feedback.Status.PENDING
+                fb.save(update_fields=["status"])
+                messages.success(request, "回复已发送，该反馈已重新打开。")
+            else:
+                messages.success(request, "回复已发送。")
+        return redirect(request.POST.get("next") or request.path)
+
+    replies = fb.replies.select_related("author", "author__position")
+    context = {
+        "fb": fb,
+        "replies": replies,
+        "is_officer_viewer": is_officer(request.user),
+    }
+    return render(request, "core/feedback_detail.html", context)

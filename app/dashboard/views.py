@@ -259,7 +259,7 @@ def feedbacks(request):
     tab = request.GET.get("tab", "pending")
     if tab not in ("pending", "all"):
         tab = "pending"
-    items = Feedback.objects.select_related("user", "resolved_by")
+    items = Feedback.objects.select_related("user", "resolved_by").annotate(reply_count=Count("replies"))
     if tab == "pending":
         items = items.filter(status=Feedback.Status.PENDING)
 
