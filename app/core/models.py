@@ -19,6 +19,15 @@ class SiteConfig(models.Model):
     recruit_qq_group = models.CharField("招新 QQ 群号", max_length=20, default="1015304209")
     bilibili_mid = models.CharField("B 站账号 UID", max_length=20, default="70859324")
 
+    beta_mode = models.BooleanField(
+        "内测模式", default=True,
+        help_text="开启后：全站显示内测反馈入口；新注册用户自动提升为干事以便测试全部功能。",
+    )
+    auto_approve = models.BooleanField(
+        "注册自动审核", default=True,
+        help_text="开启后：注册通过邮箱验证即自动激活，无需管理员手动审核。",
+    )
+
     class Meta:
         verbose_name = "站点配置"
         verbose_name_plural = "站点配置"

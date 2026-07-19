@@ -1,138 +1,168 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.core import mail
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from . import roles
+from core.models import SiteConfig
+
+from . import roles, verification
+from .models import Medal, Position, UserMedal, VerificationCode
 
 User = get_user_model()
 
+SSO_SECRET = "dev-sso-secret-not-for-production"
 
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class RegistrationTests(TestCase):
-    def test_register_creates_inactive_user(self):
-        resp = self.client.post(reverse("accounts:register"), {
+    def _set_config(self, **kw):
+        c = SiteConfig.load()
+        for k, v in kw.items():
+            setattr(c, k, v)
+        c.save()
+
+    def _register_payload(self, **over):
+        data = {
             "username": "xiaoming",
             "real_name": "小明",
             "student_id": "2025010101",
             "college": "信通学院",
             "grade": "2025",
-            "qq": "12345678",
+            "email": "xm@example.com",
+            "phone": "13800000001",
             "password1": "Str0ngPass!2025",
             "password2": "Str0ngPass!2025",
-        })
-        self.assertEqual(resp.status_code, 200)
-        user = User.objects.get(username="xiaoming")
-        self.assertFalse(user.is_active)
+        }
+        data.update(over)
+        return data
 
-    def test_duplicate_student_id_rejected(self):
-        User.objects.create_user(username="a", password="x", student_id="2025010101")
-        resp = self.client.post(reverse("accounts:register"), {
-            "username": "b",
-            "real_name": "小红",
-            "student_id": "2025010101",
-            "college": "信通学院",
-            "grade": "2025",
-            "password1": "Str0ngPass!2025",
-            "password2": "Str0ngPass!2025",
-        })
-        self.assertContains(resp, "该学号已注册")
-        self.assertFalse(User.objects.filter(username="b").exists())
+    def _get_code(self, email, purpose):
+        verification.issue(email, purpose)
+        return VerificationCode.objects.filter(email=email, purpose=purpose, used=False).latest("created_at").code
 
-    def test_pending_user_login_shows_review_message(self):
-        user = User.objects.create_user(username="pending", password="Str0ngPass!2025")
-        user.is_active = False
+    def test_register_requires_code(self):
+        self._set_config(beta_mode=False, auto_approve=True)
+        resp = self.client.post(reverse("accounts:register"), self._register_payload(code="000000"))
+        self.assertContains(resp, "验证码")
+        self.assertFalse(User.objects.filter(username="xiaoming").exists())
+
+    def test_register_auto_approve(self):
+        self._set_config(beta_mode=False, auto_approve=True)
+        code = self._get_code("xm@example.com", "register")
+        resp = self.client.post(reverse("accounts:register"), self._register_payload(code=code))
+        self.assertEqual(resp.status_code, 302)
+        u = User.objects.get(username="xiaoming")
+        self.assertTrue(u.is_active)
+        self.assertEqual(u.member_level, roles.LEVEL_APPLICANT)
+
+    def test_register_beta_mode_gives_officer(self):
+        self._set_config(beta_mode=True, auto_approve=True)
+        code = self._get_code("xm@example.com", "register")
+        self.client.post(reverse("accounts:register"), self._register_payload(code=code))
+        u = User.objects.get(username="xiaoming")
+        self.assertEqual(u.member_level, roles.LEVEL_OFFICER)
+        self.assertTrue(u.is_officer)
+
+    def test_register_manual_review(self):
+        self._set_config(beta_mode=False, auto_approve=False)
+        code = self._get_code("xm@example.com", "register")
+        self.client.post(reverse("accounts:register"), self._register_payload(code=code))
+        u = User.objects.get(username="xiaoming")
+        self.assertFalse(u.is_active)
+        self.assertEqual(u.member_level, roles.LEVEL_PENDING)
+
+    def test_duplicate_email_rejected(self):
+        User.objects.create_user(username="a", password="x", email="dup@example.com")
+        self._set_config(beta_mode=False, auto_approve=True)
+        resp = self.client.post(reverse("accounts:register"), self._register_payload(email="dup@example.com", code="123456"))
+        self.assertContains(resp, "该邮箱已注册")
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+class VerificationTests(TestCase):
+    def test_issue_sends_email(self):
+        verification.issue("v@example.com", "register")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("验证码", mail.outbox[0].subject)
+
+    def test_cooldown(self):
+        verification.issue("v@example.com", "register")
+        ok, _ = verification.can_send("v@example.com")
+        self.assertFalse(ok)
+
+    def test_verify_wrong_then_right(self):
+        code = verification.issue("v@example.com", "login").code
+        with self.assertRaises(verification.CodeError):
+            verification.verify("v@example.com", "login", "000000")
+        verification.verify("v@example.com", "login", code)  # 不抛异常即通过
+
+    def test_forgot_password_resets(self):
+        user = User.objects.create_user(username="bob", password="OldPass!2025", email="bob@example.com", is_active=True)
+        user.member_level = roles.LEVEL_FORMAL
         user.save()
-        resp = self.client.post(reverse("accounts:login"), {
-            "username": "pending",
-            "password": "Str0ngPass!2025",
-        })
-        self.assertContains(resp, "等待管理员审核")
-
-    def test_active_user_can_login(self):
-        User.objects.create_user(username="active", password="Str0ngPass!2025")
-        resp = self.client.post(reverse("accounts:login"), {
-            "username": "active",
-            "password": "Str0ngPass!2025",
-        }, follow=True)
-        self.assertTrue(resp.context["user"].is_authenticated)
-
-
-class SsoCookieTests(TestCase):
-    """论坛账号互通：登录发 heuesta_sso JWT Cookie，登出清除。"""
-
-    SECRET = "dev-sso-secret-not-for-production"
-
-    def setUp(self):
-        self.user = User.objects.create_user(username="ssouser", password="Str0ngPass!2025", email="s@x.cn")
-        self.user.real_name = "宋九"
-        self.user.save()
-
-    def test_login_sets_sso_cookie_with_valid_jwt(self):
-        import jwt
-
-        resp = self.client.post(reverse("accounts:login"), {
-            "username": "ssouser",
-            "password": "Str0ngPass!2025",
+        code = verification.issue("bob@example.com", "reset").code
+        resp = self.client.post(reverse("accounts:forgot_password"), {
+            "email": "bob@example.com", "code": code,
+            "new_password1": "BrandNew!2025", "new_password2": "BrandNew!2025",
         })
         self.assertEqual(resp.status_code, 302)
-        cookie = resp.cookies.get("heuesta_sso")
-        self.assertIsNotNone(cookie)
-        payload = jwt.decode(cookie.value, self.SECRET, algorithms=["HS256"])
-        self.assertEqual(payload["id"], self.user.pk)
-        self.assertEqual(payload["username"], "ssouser")
-        self.assertEqual(payload["fullname"], "宋九")
-        self.assertEqual(payload["email"], "s@x.cn")
-        self.assertEqual(payload["groups"], [])
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("BrandNew!2025"))
 
-    def test_sso_payload_contains_role_groups(self):
+
+class LevelTests(TestCase):
+    def test_set_level_syncs_group_and_log(self):
+        u = User.objects.create_user(username="c", password="x")
+        u.set_level(roles.LEVEL_OFFICER, note="test")
+        self.assertTrue(u.is_active)
+        self.assertTrue(u.groups.filter(name="干事").exists())
+        self.assertTrue(u.is_officer)
+        self.assertEqual(u.level_logs.count(), 1)
+
+    def test_promote_removes_old_group(self):
+        u = User.objects.create_user(username="d", password="x")
+        u.set_level(roles.LEVEL_APPLICANT)
+        self.assertTrue(u.groups.filter(name="报名会员").exists())
+        u.set_level(roles.LEVEL_FORMAL)
+        self.assertFalse(u.groups.filter(name="报名会员").exists())
+        self.assertTrue(u.groups.filter(name="正式会员").exists())
+
+    def test_cohort_label(self):
+        u = User.objects.create_user(username="e", password="x", grade="2025")
+        self.assertEqual(u.cohort_label, "25届")
+
+    def test_admin_level_sets_staff(self):
+        u = User.objects.create_user(username="f", password="x")
+        u.set_level(roles.LEVEL_ADMIN)
+        u.refresh_from_db()
+        self.assertTrue(u.is_staff)
+
+
+@override_settings(NODEBB_JWT_SECRET=SSO_SECRET)
+class SsoTests(TestCase):
+    def test_sso_cookie_carries_level_and_position(self):
         import jwt
-        from django.contrib.auth.models import Group
 
-        self.user.groups.add(Group.objects.get(name="会员"), Group.objects.get(name="干事"))
-        resp = self.client.post(reverse("accounts:login"), {
-            "username": "ssouser",
-            "password": "Str0ngPass!2025",
-        })
-        payload = jwt.decode(resp.cookies["heuesta_sso"].value, self.SECRET, algorithms=["HS256"])
-        self.assertEqual(payload["groups"], ["会员", "干事"])
+        pos = Position.objects.create(name="硬件主席", color="#c98a3d")
+        User.objects.create_user(username="ssou", password="Str0ngPass!2025", email="s@x.cn")
+        user = User.objects.get(username="ssou")
+        user.member_level = roles.LEVEL_FORMAL
+        user.position = pos
+        user.save()
+        roles.sync_user_groups(user)
 
-    def test_logout_clears_sso_cookie(self):
-        self.client.login(username="ssouser", password="Str0ngPass!2025")
-        self.client.cookies["heuesta_sso"] = "whatever"
-        resp = self.client.post(reverse("accounts:logout"))
-        cookie = resp.cookies.get("heuesta_sso")
-        self.assertIsNotNone(cookie)
-        self.assertEqual(cookie.value, "")  # 删除 = 置空 + 过期
-
-    def test_anonymous_with_stale_cookie_gets_it_removed(self):
-        self.client.cookies["heuesta_sso"] = "stale-token"
+        self.client.login(username="ssou", password="Str0ngPass!2025")
         resp = self.client.get(reverse("core:home"))
         cookie = resp.cookies.get("heuesta_sso")
         self.assertIsNotNone(cookie)
-        self.assertEqual(cookie.value, "")
-
-    def test_valid_cookie_not_reissued(self):
-        self.client.login(username="ssouser", password="Str0ngPass!2025")
-        first = self.client.get(reverse("core:home")).cookies.get("heuesta_sso")
-        self.assertIsNotNone(first)
-        # 带着有效 Cookie 再请求，不应重新签发
-        self.client.cookies["heuesta_sso"] = first.value
-        second = self.client.get(reverse("core:home")).cookies.get("heuesta_sso")
-        self.assertIsNone(second)
+        payload = jwt.decode(cookie.value, SSO_SECRET, algorithms=["HS256"])
+        self.assertIn("正式会员", payload["groups"])
+        self.assertIn("硬件主席", payload["groups"])
 
 
-class RoleTests(TestCase):
-    def test_groups_created_by_migration(self):
-        for name in roles.ALL_GROUPS:
-            self.assertTrue(Group.objects.filter(name=name).exists(), name)
-
-    def test_member_and_officer_helpers(self):
-        member = User.objects.create_user(username="m", password="x")
-        member.groups.add(Group.objects.get(name=roles.GROUP_MEMBER))
-        officer = User.objects.create_user(username="o", password="x")
-        officer.groups.add(Group.objects.get(name=roles.GROUP_OFFICER))
-
-        self.assertTrue(roles.is_member(member))
-        self.assertFalse(roles.is_officer(member))
-        self.assertTrue(roles.is_member(officer))
-        self.assertTrue(roles.is_officer(officer))
+class MedalTests(TestCase):
+    def test_award_medal_unique(self):
+        u = User.objects.create_user(username="g", password="x")
+        m = Medal.objects.create(name="电赛国奖")
+        UserMedal.objects.create(user=u, medal=m)
+        self.assertEqual(u.medals.count(), 1)

@@ -34,7 +34,7 @@ class SsoCookieMiddleware:
                     "id": user.pk,
                     "username": user.username,
                     "fullname": user.display_name or user.username,
-                    "groups": self._role_groups(user),
+                    "groups": self._forum_groups(user),
                     "iat": now,
                     "exp": now + settings.SESSION_COOKIE_AGE,
                 }
@@ -56,12 +56,18 @@ class SsoCookieMiddleware:
         return response
 
     @staticmethod
-    def _role_groups(user) -> list[str]:
-        """映射主站角色 -> 论坛用户组（论坛端 join-only 同步，显示彩色头衔）。"""
-        names = set(user.groups.filter(name__in=["会员", "干事", "管理员"]).values_list("name", flat=True))
-        if user.is_staff or user.is_superuser:
-            names.add("管理员")
-        return sorted(names)
+    def _forum_groups(user) -> list[str]:
+        """映射主站等级+职位 -> 论坛用户组（论坛端受控双向同步，晋升自动摘旧徽章）。"""
+        from . import roles
+
+        names = []
+        level = roles.effective_level(user)
+        group = roles.LEVEL_GROUP.get(level)
+        if group:
+            names.append(group)
+        if getattr(user, "position_id", None):
+            names.append(user.position.name)
+        return names
 
     @staticmethod
     def _token_valid(token: str | None, user, secret: str) -> bool:

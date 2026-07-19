@@ -6,7 +6,7 @@
 <div class="container">
     <div class="auth-card auth-card-wide">
         <h1>上传资料</h1>
-        <p class="auth-sub">单个文件最大 200MB；「仅会员」资料只对已审核会员开放下载</p>
+        <p class="auth-sub">单个文件最大 200MB；可见等级决定哪些成员能下载</p>
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {% for field in form %}

@@ -1,17 +1,13 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}注册 | {{ site_config.site_name_en }}{% endblock %}
+{% block title %}验证码登录 | {{ site_config.site_name_en }}{% endblock %}
 
 {% block content %}
 <div class="container">
-    <div class="auth-card auth-card-wide">
-        <h1>注册会员</h1>
-        <p class="auth-sub">
-            {% if site_config.beta_mode %}内测阶段：注册后自动激活，可直接体验全部功能
-            {% elif site_config.auto_approve %}填写信息并通过邮箱验证即可加入
-            {% else %}注册后需管理员审核，审核通过即可登录{% endif %}
-        </p>
+    <div class="auth-card">
+        <h1>验证码登录</h1>
+        <p class="auth-sub">用注册邮箱接收验证码，无需输入密码</p>
         {% if form.non_field_errors %}
             <div class="form-nonfield-errors">
                 {% for error in form.non_field_errors %}<div class="alert alert-error">{{ error }}</div>{% endfor %}
@@ -25,18 +21,21 @@
                         <label for="{{ field.id_for_label }}">{{ field.label }} <span class="req">*</span></label>
                         <div class="code-row">
                             {{ field }}
-                            <button type="button" class="btn btn-outline" data-send-code="register" data-email="#id_email">获取验证码</button>
+                            <button type="button" class="btn btn-outline" data-send-code="login" data-email="#id_email">获取验证码</button>
                         </div>
-                        <small class="form-help" id="code-msg">{{ field.help_text }}</small>
+                        <small class="form-help" id="code-msg"></small>
                         {% for error in field.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
                     </div>
                 {% else %}
                     {% include "includes/field.html" %}
                 {% endif %}
             {% endfor %}
-            <button type="submit" class="btn btn-primary btn-block">提交注册</button>
+            <button type="submit" class="btn btn-primary btn-block">登录</button>
         </form>
-        <p class="auth-alt">已有账号？<a href="{% url 'accounts:login' %}">直接登录</a></p>
+        <div class="auth-links">
+            <a href="{% url 'accounts:login' %}">密码登录</a>
+            <a href="{% url 'accounts:forgot_password' %}">忘记密码？</a>
+        </div>
     </div>
 </div>
 {% endblock %}

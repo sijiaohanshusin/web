@@ -5,8 +5,8 @@ from .models import Resource
 
 @admin.register(Resource)
 class ResourceAdmin(admin.ModelAdmin):
-    list_display = ["title", "category", "visibility", "uploader", "size_display", "download_count", "created_at"]
-    list_filter = ["category", "visibility"]
+    list_display = ["title", "category", "min_level", "uploader", "size_display", "download_count", "created_at"]
+    list_filter = ["category", "min_level"]
     search_fields = ["title", "description"]
     readonly_fields = ["size", "download_count"]
 

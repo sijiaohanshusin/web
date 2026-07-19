@@ -47,8 +47,8 @@
             </td>
             <td><span class="badge badge-blue">{{ r.get_category_display }}</span></td>
             <td>
-                {% if r.visibility == "members" %}<span class="badge badge-amber">仅会员</span>
-                {% else %}<span class="badge badge-green">公开</span>{% endif %}
+                {% if r.min_level == 0 %}<span class="badge badge-green">公开</span>
+                {% else %}<span class="badge badge-amber">{{ r.get_min_level_display }}</span>{% endif %}
             </td>
             <td>{{ r.size|filesizeformat }}</td>
             <td>{{ r.download_count }}</td>

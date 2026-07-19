@@ -14,7 +14,7 @@
 
 <form method="get" class="dash-toolbar">
     <input type="hidden" name="tab" value="{{ tab }}">
-    <input class="input" type="search" name="q" value="{{ query }}" placeholder="姓名 / 学号 / QQ / 学院…">
+    <input class="input" type="search" name="q" value="{{ query }}" placeholder="姓名 / 学号 / QQ / 手机 / 学院…">
     <select class="input" name="grade">
         <option value="">全部年级</option>
         {% for g in grades %}
@@ -22,10 +22,11 @@
         {% endfor %}
     </select>
     {% if tab == 'all' %}
-    <select class="input" name="role">
-        <option value="">全部角色</option>
-        <option value="member" {% if role == 'member' %}selected{% endif %}>会员</option>
-        <option value="officer" {% if role == 'officer' %}selected{% endif %}>干事及以上</option>
+    <select class="input" name="level">
+        <option value="">全部等级</option>
+        {% for value, label in level_choices %}
+            <option value="{{ value }}" {% if level == value|stringformat:'s' %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
     </select>
     {% endif %}
     <button type="submit" class="btn btn-outline btn-sm">筛选</button>
@@ -41,11 +42,11 @@
             <tr>
                 <th style="width:36px;"><input type="checkbox" id="check-all" title="全选"></th>
                 <th>姓名 / 用户名</th>
+                <th>届别</th>
                 <th>学号</th>
                 <th>学院</th>
-                <th>年级</th>
-                <th>QQ</th>
-                <th>角色</th>
+                <th>等级 / 职位</th>
+                <th>勋章</th>
                 <th>注册时间</th>
             </tr>
             </thead>
@@ -57,17 +58,14 @@
                     <strong>{{ u.real_name|default:u.username }}</strong>
                     <small style="color:var(--muted);"> @{{ u.username }}</small>
                 </td>
+                <td>{{ u.cohort_label|default:"—" }}</td>
                 <td>{{ u.student_id|default:"—" }}</td>
                 <td>{{ u.college|default:"—" }}</td>
-                <td>{{ u.grade|default:"—" }}</td>
-                <td>{{ u.qq|default:"—" }}</td>
                 <td>
-                    {% if not u.is_active %}
-                        <span class="badge badge-amber">待审核</span>
-                    {% else %}
-                        <span class="badge badge-blue">{{ u.role_label }}</span>
-                    {% endif %}
+                    <span class="badge" style="color:#fff;background:{{ u.level_color }};border-color:{{ u.level_color }};">{{ u.level_label }}</span>
+                    {% if u.position %}<span class="badge" style="color:#fff;background:{{ u.position.color }};border-color:{{ u.position.color }};">{{ u.position.name }}</span>{% endif %}
                 </td>
+                <td>{% if u.medal_count %}🏅 {{ u.medal_count }}{% else %}—{% endif %}</td>
                 <td>{{ u.date_joined|date:"Y-m-d H:i" }}</td>
             </tr>
             {% empty %}
@@ -81,13 +79,13 @@
     <div class="dash-actions-bar">
         <span class="hint">勾选成员后执行：</span>
         <button type="submit" name="action" value="approve" class="btn btn-primary btn-sm">✓ 通过审核</button>
+        <button type="submit" name="action" value="promote_prep" class="btn btn-ghost btn-sm">↑ 晋升预备</button>
+        <button type="submit" name="action" value="promote_formal" class="btn btn-ghost btn-sm">↑ 晋升正式</button>
         {% if is_admin %}
+            <button type="submit" name="action" value="make_officer" class="btn btn-ghost btn-sm">设为干事</button>
+            <button type="submit" name="action" value="make_admin" class="btn btn-ghost btn-sm">设为管理员</button>
             <button type="submit" name="action" value="reject_delete" class="btn btn-danger btn-sm"
                     onclick="return confirm('确定拒绝并删除选中的待审核账号？此操作不可恢复。')">✕ 拒绝并删除</button>
-            {% if tab == 'all' %}
-                <button type="submit" name="action" value="make_officer" class="btn btn-ghost btn-sm">设为干事</button>
-                <button type="submit" name="action" value="remove_officer" class="btn btn-ghost btn-sm">取消干事</button>
-            {% endif %}
         {% endif %}
     </div>
     {% endif %}
@@ -96,11 +94,11 @@
 {% if page.paginator.num_pages > 1 %}
 <div class="pagination">
     {% if page.has_previous %}
-        <a href="?tab={{ tab }}&page={{ page.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if grade %}&grade={{ grade }}{% endif %}{% if role %}&role={{ role }}{% endif %}">‹</a>
+        <a href="?tab={{ tab }}&page={{ page.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if grade %}&grade={{ grade }}{% endif %}{% if level %}&level={{ level }}{% endif %}">‹</a>
     {% endif %}
     <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
     {% if page.has_next %}
-        <a href="?tab={{ tab }}&page={{ page.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if grade %}&grade={{ grade }}{% endif %}{% if role %}&role={{ role }}{% endif %}">›</a>
+        <a href="?tab={{ tab }}&page={{ page.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if grade %}&grade={{ grade }}{% endif %}{% if level %}&level={{ level }}{% endif %}">›</a>
     {% endif %}
 </div>
 {% endif %}

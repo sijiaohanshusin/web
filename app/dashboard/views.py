@@ -2,7 +2,6 @@ import datetime
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
@@ -10,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from accounts import roles
+from accounts.models import Medal, Position, UserMedal
 from core import bilibili
 from core.models import CarouselImage, SiteConfig
 from files.forms import ResourceUploadForm
@@ -46,9 +46,9 @@ def overview(request):
     config = SiteConfig.load()
 
     total_members = User.objects.filter(is_active=True).count()
-    pending_count = User.objects.filter(is_active=False, is_superuser=False).count()
+    pending_count = User.objects.filter(member_level=roles.LEVEL_PENDING, is_superuser=False).count()
     officer_count = User.objects.filter(
-        Q(groups__name__in=[roles.GROUP_OFFICER, roles.GROUP_ADMIN]) | Q(is_staff=True), is_active=True
+        Q(member_level__gte=roles.LEVEL_OFFICER) | Q(is_staff=True), is_active=True
     ).distinct().count()
     resource_count = Resource.objects.count()
     download_total = Resource.objects.aggregate(total=Sum("download_count"))["total"] or 0
@@ -135,29 +135,27 @@ def overview(request):
 def members(request):
     tab = request.GET.get("tab", "")
     if tab not in ("pending", "all"):
-        tab = "pending" if User.objects.filter(is_active=False, is_superuser=False).exists() else "all"
+        tab = "pending" if User.objects.filter(member_level=roles.LEVEL_PENDING, is_superuser=False).exists() else "all"
 
-    users = User.objects.prefetch_related("groups").order_by("-date_joined")
+    users = User.objects.select_related("position").annotate(medal_count=Count("medals")).order_by("-date_joined")
     if tab == "pending":
-        users = users.filter(is_active=False, is_superuser=False)
+        users = users.filter(member_level=roles.LEVEL_PENDING, is_superuser=False)
 
     query = request.GET.get("q", "").strip()
     if query:
         users = users.filter(
             Q(username__icontains=query) | Q(real_name__icontains=query)
             | Q(student_id__icontains=query) | Q(qq__icontains=query)
-            | Q(college__icontains=query)
+            | Q(phone__icontains=query) | Q(college__icontains=query)
         )
 
     grade = request.GET.get("grade", "").strip()
     if grade:
         users = users.filter(grade=grade)
 
-    role = request.GET.get("role", "")
-    if role == "member":
-        users = users.filter(groups__name=roles.GROUP_MEMBER)
-    elif role == "officer":
-        users = users.filter(Q(groups__name__in=[roles.GROUP_OFFICER, roles.GROUP_ADMIN]) | Q(is_staff=True))
+    level = request.GET.get("level", "")
+    if level.isdigit():
+        users = users.filter(member_level=int(level))
 
     paginator = Paginator(users.distinct(), 25)
     page = paginator.get_page(request.GET.get("page"))
@@ -172,12 +170,24 @@ def members(request):
         "page": page,
         "query": query,
         "grade": grade,
-        "role": role,
+        "level": level,
         "grades": grades,
-        "pending_count": User.objects.filter(is_active=False, is_superuser=False).count(),
+        "level_choices": roles.LEVEL_CHOICES,
+        "pending_count": User.objects.filter(member_level=roles.LEVEL_PENDING, is_superuser=False).count(),
         "is_admin": _is_admin(request.user),
     }
     return render(request, "dashboard/members.html", context)
+
+
+# 动作 -> (目标等级, 需要管理员, 中文名)
+_LEVEL_ACTIONS = {
+    "approve": (roles.LEVEL_APPLICANT, False, "通过审核（报名会员）"),
+    "promote_prep": (roles.LEVEL_PREPARATORY, False, "晋升预备会员"),
+    "promote_formal": (roles.LEVEL_FORMAL, False, "晋升正式会员"),
+    "make_officer": (roles.LEVEL_OFFICER, True, "设为干事"),
+    "make_admin": (roles.LEVEL_ADMIN, True, "设为管理员"),
+    "demote_formal": (roles.LEVEL_FORMAL, True, "降为正式会员"),
+}
 
 
 @officer_required
@@ -185,45 +195,117 @@ def members(request):
 def member_action(request):
     action = request.POST.get("action", "")
     ids = request.POST.getlist("ids")
+    nxt = request.POST.get("next") or "dashboard:members"
     if not ids:
         messages.warning(request, "没有选中任何成员。")
-        return redirect(request.POST.get("next") or "dashboard:members")
-
-    admin_actions = {"reject_delete", "make_officer", "remove_officer"}
-    if action in admin_actions and not _is_admin(request.user):
-        messages.error(request, "该操作需要管理员权限。")
-        return redirect(request.POST.get("next") or "dashboard:members")
+        return redirect(nxt)
 
     targets = User.objects.filter(pk__in=ids, is_superuser=False).exclude(pk=request.user.pk)
-    member_group = Group.objects.get(name=roles.GROUP_MEMBER)
-    officer_group = Group.objects.get(name=roles.GROUP_OFFICER)
 
-    count = 0
-    if action == "approve":
-        for user in targets.filter(is_active=False):
-            user.is_active = True
-            user.save(update_fields=["is_active"])
-            user.groups.add(member_group)
-            count += 1
-        messages.success(request, f"已通过 {count} 名成员的审核。")
-    elif action == "reject_delete":
-        count = targets.filter(is_active=False).count()
-        targets.filter(is_active=False).delete()
+    if action == "reject_delete":
+        if not _is_admin(request.user):
+            messages.error(request, "该操作需要管理员权限。")
+            return redirect(nxt)
+        count = targets.filter(member_level=roles.LEVEL_PENDING).count()
+        targets.filter(member_level=roles.LEVEL_PENDING).delete()
         messages.success(request, f"已拒绝并删除 {count} 个待审核账号。")
-    elif action == "make_officer":
-        for user in targets.filter(is_active=True):
-            user.groups.add(officer_group, member_group)
-            count += 1
-        messages.success(request, f"已将 {count} 名成员设为干事。")
-    elif action == "remove_officer":
-        for user in targets:
-            user.groups.remove(officer_group)
-            count += 1
-        messages.success(request, f"已取消 {count} 名成员的干事身份。")
-    else:
-        messages.error(request, "未知操作。")
+        return redirect(nxt)
 
-    return redirect(request.POST.get("next") or "dashboard:members")
+    if action in _LEVEL_ACTIONS:
+        target_level, need_admin, label = _LEVEL_ACTIONS[action]
+        if need_admin and not _is_admin(request.user):
+            messages.error(request, f"「{label}」需要管理员权限。")
+            return redirect(nxt)
+        count = 0
+        for user in targets:
+            user.set_level(target_level, actor=request.user, note=f"驾驶舱：{label}")
+            count += 1
+        messages.success(request, f"已对 {count} 名成员执行「{label}」。")
+        return redirect(nxt)
+
+    messages.error(request, "未知操作。")
+    return redirect(nxt)
+
+
+# ---------------------------------------------------------------- 勋章与职位（仅管理员）
+
+@admin_required
+def medals(request):
+    if request.method == "POST":
+        form = request.POST.get("form")
+        if form == "create_medal":
+            name = request.POST.get("name", "").strip()
+            if name:
+                Medal.objects.get_or_create(name=name, defaults={
+                    "icon": request.POST.get("icon", "🏅").strip() or "🏅",
+                    "color": request.POST.get("color", "#f59e0b").strip() or "#f59e0b",
+                    "description": request.POST.get("description", "").strip(),
+                })
+                messages.success(request, f"勋章「{name}」已创建。")
+            return redirect("dashboard:medals")
+        if form == "grant":
+            medal = get_object_or_404(Medal, pk=request.POST.get("medal_id"))
+            user = get_object_or_404(User, pk=request.POST.get("user_id"))
+            _, created = UserMedal.objects.get_or_create(
+                user=user, medal=medal,
+                defaults={"reason": request.POST.get("reason", "").strip(), "granted_by": request.user},
+            )
+            messages.success(request, f"已授予 {user.display_name}「{medal.name}」。" if created else "该成员已拥有此勋章。")
+            return redirect("dashboard:medals")
+        if form == "delete_medal":
+            medal = get_object_or_404(Medal, pk=request.POST.get("medal_id"))
+            name = medal.name
+            medal.delete()
+            messages.success(request, f"勋章「{name}」已删除。")
+            return redirect("dashboard:medals")
+
+    context = {
+        "active_nav": "medals",
+        "medals": Medal.objects.annotate(holders=Count("awarded")).all(),
+        "recent_grants": UserMedal.objects.select_related("user", "medal", "granted_by")[:30],
+    }
+    return render(request, "dashboard/medals.html", context)
+
+
+@admin_required
+def positions(request):
+    if request.method == "POST":
+        form = request.POST.get("form")
+        if form == "create_position":
+            name = request.POST.get("name", "").strip()
+            if name:
+                Position.objects.get_or_create(name=name, defaults={
+                    "color": request.POST.get("color", "#b8860b").strip() or "#b8860b",
+                    "sort_order": int(request.POST.get("sort_order") or 100),
+                })
+                messages.success(request, f"职位「{name}」已创建。")
+            return redirect("dashboard:positions")
+        if form == "assign":
+            pos = get_object_or_404(Position, pk=request.POST.get("position_id"))
+            user = get_object_or_404(User, pk=request.POST.get("user_id"))
+            user.position = pos
+            user.save(update_fields=["position"])
+            messages.success(request, f"已任命 {user.display_name} 为「{pos.name}」。")
+            return redirect("dashboard:positions")
+        if form == "unassign":
+            user = get_object_or_404(User, pk=request.POST.get("user_id"))
+            user.position = None
+            user.save(update_fields=["position"])
+            messages.success(request, f"已解除 {user.display_name} 的职位。")
+            return redirect("dashboard:positions")
+        if form == "delete_position":
+            pos = get_object_or_404(Position, pk=request.POST.get("position_id"))
+            name = pos.name
+            pos.delete()
+            messages.success(request, f"职位「{name}」已删除。")
+            return redirect("dashboard:positions")
+
+    context = {
+        "active_nav": "positions",
+        "positions": Position.objects.annotate(count=Count("holders")).all(),
+        "holders": User.objects.filter(position__isnull=False).select_related("position"),
+    }
+    return render(request, "dashboard/positions.html", context)
 
 
 # ---------------------------------------------------------------- 资料管理

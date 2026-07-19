@@ -228,6 +228,17 @@ ul.category-children a i { margin-right: 4px; }
 
 /* ---------- 页脚 ---------- */
 #footer, [component="footer"] { color: #9db7dc; }
+
+/* ---------- 内测反馈浮动按钮 ---------- */
+.esta-beta-fab {
+  position: fixed; right: 20px; bottom: 76px; z-index: 1000;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 17px; border-radius: 999px;
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  color: #fff !important; font-weight: 700; font-size: 14px;
+  box-shadow: 0 10px 28px rgba(239,68,68,.45); text-decoration: none;
+}
+.esta-beta-fab:hover { transform: translateY(-2px); color: #fff !important; }
 `;
 
 /* ============================ 帖子页装饰 JS（注入每页 head） ============================ */
@@ -346,7 +357,17 @@ const CUSTOM_HTML = `
     }
   }
 
-  function run() { try { decoratePosts(); decorateHome(); } catch (e) { console.warn('esta-theme', e); } }
+  function betaFab() {
+    if (document.querySelector('.esta-beta-fab')) { return; }
+    var a = document.createElement('a');
+    a.className = 'esta-beta-fab';
+    a.href = '/topic/5';
+    a.title = '内测反馈：提 Bug / 提建议';
+    a.innerHTML = '<span>🐛</span> 内测反馈';
+    document.body.appendChild(a);
+  }
+
+  function run() { try { decoratePosts(); decorateHome(); betaFab(); } catch (e) { console.warn('esta-theme', e); } }
 
   if (window.jQuery) {
     jQuery(window).on('action:ajaxify.end action:posts.loaded action:topic.loaded', run);

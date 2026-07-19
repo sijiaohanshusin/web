@@ -1,0 +1,96 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}职位管理{% endblock %}
+{% block page_title %}职位管理{% endblock %}
+
+{% block content %}
+<div class="dash-grid-2">
+    <div class="dash-panel">
+        <h2>创建职位</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="create_position">
+            <div class="form-group"><label>职位名称 <span class="req">*</span></label><input class="input" name="name" required maxlength="30" placeholder="如：主席 / 硬件主席 / 软件主席"></div>
+            <div class="form-group"><label>徽章颜色</label><input class="input" name="color" value="#b8860b"></div>
+            <div class="form-group"><label>排序</label><input class="input" type="number" name="sort_order" value="100"></div>
+            <button type="submit" class="btn btn-primary">创建</button>
+        </form>
+    </div>
+
+    <div class="dash-panel">
+        <h2>任命职位</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="assign">
+            <div class="form-group">
+                <label>职位 <span class="req">*</span></label>
+                <select class="input" name="position_id" required>
+                    <option value="">选择职位…</option>
+                    {% for p in positions %}<option value="{{ p.pk }}">{{ p.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>成员 ID <span class="req">*</span></label>
+                <input class="input" name="user_id" required placeholder="输入用户ID（会员管理页可查）">
+            </div>
+            <button type="submit" class="btn btn-primary">任命</button>
+        </form>
+    </div>
+</div>
+
+<div class="dash-panel">
+    <h2>职位列表（{{ positions|length }}）</h2>
+    <div class="dash-table-wrap">
+        <table class="table">
+            <thead><tr><th>职位</th><th>颜色</th><th>在任人数</th><th></th></tr></thead>
+            <tbody>
+            {% for p in positions %}
+                <tr>
+                    <td><span class="badge" style="color:#fff;background:{{ p.color }};border-color:{{ p.color }};">{{ p.name }}</span></td>
+                    <td><code>{{ p.color }}</code></td>
+                    <td>{{ p.count }}</td>
+                    <td>
+                        <form method="post" onsubmit="return confirm('删除职位「{{ p.name }}」？在任成员将失去该职位。');">
+                            {% csrf_token %}
+                            <input type="hidden" name="form" value="delete_position">
+                            <input type="hidden" name="position_id" value="{{ p.pk }}">
+                            <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4"><div class="dash-empty">还没有职位，先在左上角创建</div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="dash-panel">
+    <h2>现任职成员</h2>
+    <div class="dash-table-wrap">
+        <table class="table">
+            <thead><tr><th>成员 (ID)</th><th>届别</th><th>职位</th><th></th></tr></thead>
+            <tbody>
+            {% for u in holders %}
+                <tr>
+                    <td>{{ u.display_name }} <small style="color:var(--muted);">#{{ u.pk }}</small></td>
+                    <td>{{ u.cohort_label|default:"—" }}</td>
+                    <td><span class="badge" style="color:#fff;background:{{ u.position.color }};border-color:{{ u.position.color }};">{{ u.position.name }}</span></td>
+                    <td>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="form" value="unassign">
+                            <input type="hidden" name="user_id" value="{{ u.pk }}">
+                            <button type="submit" class="btn btn-ghost btn-sm">解除</button>
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4"><div class="dash-empty">暂无任职成员</div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

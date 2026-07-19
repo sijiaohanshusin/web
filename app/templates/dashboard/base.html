@@ -33,6 +33,12 @@
             <span class="dash-nav-icon">▤</span>资料管理
         </a>
         {% if user.is_staff or user.is_superuser %}
+        <a href="{% url 'dashboard:medals' %}" class="{% if active_nav == 'medals' %}active{% endif %}">
+            <span class="dash-nav-icon">🏅</span>勋章管理
+        </a>
+        <a href="{% url 'dashboard:positions' %}" class="{% if active_nav == 'positions' %}active{% endif %}">
+            <span class="dash-nav-icon">👔</span>职位管理
+        </a>
         <a href="{% url 'dashboard:site_settings' %}" class="{% if active_nav == 'site' %}active{% endif %}">
             <span class="dash-nav-icon">⚙</span>站点设置
         </a>

@@ -7,7 +7,7 @@
 <div class="container page-section">
     <div class="page-head">
         <h1>资料站</h1>
-        <p>培训课件、竞赛资料与常用工具。标记「仅会员」的资料需要登录且通过审核后才能下载。</p>
+        <p>培训课件、竞赛资料与常用工具。带等级标记的资料需达到相应会员等级才能下载。</p>
     </div>
 
     <div class="filter-bar">
@@ -45,10 +45,10 @@
                         </td>
                         <td><span class="badge badge-blue">{{ r.get_category_display }}</span></td>
                         <td>
-                            {% if r.visibility == "members" %}
-                                <span class="badge badge-amber">仅会员</span>
-                            {% else %}
+                            {% if r.min_level == 0 %}
                                 <span class="badge badge-green">公开</span>
+                            {% else %}
+                                <span class="badge badge-amber">{{ r.get_min_level_display }}</span>
                             {% endif %}
                         </td>
                         <td>{{ r.size|filesizeformat }}</td>

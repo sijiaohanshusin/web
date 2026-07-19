@@ -34,6 +34,12 @@ CACHES = {
     }
 }
 
+# 邮件：配了 SMTP 用户名走 SMTP，否则回落控制台（避免生产误发）
+if os.environ.get("EMAIL_HOST_USER"):
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
 # 静态文件带内容哈希文件名，配合 nginx/CDN 一年长缓存
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

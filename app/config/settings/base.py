@@ -55,6 +55,20 @@ SSO_COOKIE_NAME = "heuesta_sso"
 SSO_COOKIE_DOMAIN: str | None = None  # prod 覆盖为 .heuesta.cn
 FORUM_URL = os.environ.get("FORUM_URL", "https://bbs.heuesta.cn")
 
+# ---- 邮件（验证码 / 找回密码 / 审核通知）----
+# 未配置 EMAIL_HOST_USER 时，dev 用控制台后端；prod 缺省会拒绝发码
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.qq.com")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "465"))
+EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "1") == "1"
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL", f"HEU ESTA <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else "webmaster@localhost"
+)
+VERIFICATION_CODE_TTL = 600          # 验证码有效期（秒）
+VERIFICATION_RESEND_COOLDOWN = 60    # 重发冷却（秒）
+VERIFICATION_DAILY_LIMIT = 10        # 单邮箱每日发码上限
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [

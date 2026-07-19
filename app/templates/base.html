@@ -102,6 +102,13 @@
     </div>
 </footer>
 
+{% if site_config.beta_mode %}
+<a class="beta-fab" href="{{ forum_url }}/topic/5" target="_blank" rel="noopener" title="内测反馈：提 Bug / 提建议">
+    <span class="beta-fab-icon">🐛</span>
+    <span class="beta-fab-text">内测反馈</span>
+</a>
+{% endif %}
+
 <script src="{% static 'js/site.js' %}" defer></script>
 {% block extra_js %}{% endblock %}
 </body>

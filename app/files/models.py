@@ -13,14 +13,21 @@ class Resource(models.Model):
         TOOL = "tool", "工具软件"
         OTHER = "other", "其他"
 
-    class Visibility(models.TextChoices):
-        PUBLIC = "public", "公开"
-        MEMBERS = "members", "仅会员"
+    # 可见等级门槛：用户 member_level >= min_level 才能看到/下载
+    class MinLevel(models.IntegerChoices):
+        PUBLIC = 0, "公开（所有人）"
+        APPLICANT = 1, "报名会员及以上"
+        PREPARATORY = 2, "预备会员及以上"
+        FORMAL = 3, "正式会员及以上"
+        OFFICER = 4, "干事及以上"
 
     title = models.CharField("标题", max_length=200)
     description = models.TextField("说明", blank=True)
     category = models.CharField("分类", max_length=20, choices=Category.choices, default=Category.TRAINING)
-    visibility = models.CharField("可见范围", max_length=20, choices=Visibility.choices, default=Visibility.PUBLIC)
+    min_level = models.PositiveSmallIntegerField(
+        "可见等级", choices=MinLevel.choices, default=MinLevel.PUBLIC,
+        help_text="达到该等级的成员才能查看和下载",
+    )
     file = models.FileField("文件", upload_to="resources/%Y/%m/")
     size = models.BigIntegerField("大小(字节)", default=0, editable=False)
     uploader = models.ForeignKey(

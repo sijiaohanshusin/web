@@ -6,7 +6,7 @@ from .models import Resource
 class ResourceUploadForm(forms.ModelForm):
     class Meta:
         model = Resource
-        fields = ("title", "description", "category", "visibility", "file")
+        fields = ("title", "description", "category", "min_level", "file")
         widgets = {
             "description": forms.Textarea(attrs={"rows": 3}),
         }

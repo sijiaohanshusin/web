@@ -9,7 +9,7 @@ from django.db.models import F, Q
 from django.http import FileResponse, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 
-from accounts.roles import is_member, is_officer
+from accounts.roles import effective_level, is_officer
 
 from .forms import ResourceUploadForm
 from .models import Resource
@@ -18,9 +18,9 @@ from .models import Resource
 def resource_list(request):
     resources = Resource.objects.select_related("uploader")
 
-    # 未登录 / 非会员只能看到公开资料
-    if not is_member(request.user):
-        resources = resources.filter(visibility=Resource.Visibility.PUBLIC)
+    # 按用户有效等级过滤：只显示门槛不高于自己等级的资料
+    level = effective_level(request.user)
+    resources = resources.filter(min_level__lte=level)
 
     query = request.GET.get("q", "").strip()
     if query:
@@ -62,11 +62,13 @@ def resource_upload(request):
 def resource_download(request, pk: int):
     resource = get_object_or_404(Resource, pk=pk)
 
-    if resource.visibility == Resource.Visibility.MEMBERS:
+    if resource.min_level > 0:
         if not request.user.is_authenticated:
             return redirect_to_login(request.get_full_path())
-        if not is_member(request.user):
-            return HttpResponseForbidden("该资料仅对已审核会员开放。")
+        if effective_level(request.user) < resource.min_level:
+            return HttpResponseForbidden(
+                f"该资料需要「{resource.get_min_level_display()}」才能下载。"
+            )
 
     Resource.objects.filter(pk=pk).update(download_count=F("download_count") + 1)
 

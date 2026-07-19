@@ -1,0 +1,89 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}勋章管理{% endblock %}
+{% block page_title %}勋章管理{% endblock %}
+
+{% block content %}
+<div class="dash-grid-2">
+    <div class="dash-panel">
+        <h2>创建勋章</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="create_medal">
+            <div class="form-group"><label>名称 <span class="req">*</span></label><input class="input" name="name" required maxlength="40"></div>
+            <div class="form-group"><label>图标（emoji）</label><input class="input" name="icon" value="🏅" maxlength="40"></div>
+            <div class="form-group"><label>颜色</label><input class="input" name="color" value="#f59e0b"></div>
+            <div class="form-group"><label>说明</label><input class="input" name="description" maxlength="200"></div>
+            <button type="submit" class="btn btn-primary">创建</button>
+        </form>
+    </div>
+
+    <div class="dash-panel">
+        <h2>授予勋章</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="grant">
+            <div class="form-group">
+                <label>勋章 <span class="req">*</span></label>
+                <select class="input" name="medal_id" required>
+                    <option value="">选择勋章…</option>
+                    {% for m in medals %}<option value="{{ m.pk }}">{{ m.icon }} {{ m.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>成员用户名/学号 <span class="req">*</span></label>
+                <input class="input" name="user_id" list="member-list" required placeholder="输入用户ID">
+                <small class="form-help">在“会员管理”页可查用户 ID；或直接填数字 ID</small>
+            </div>
+            <div class="form-group"><label>授予理由</label><input class="input" name="reason" maxlength="200"></div>
+            <button type="submit" class="btn btn-primary">授予</button>
+        </form>
+    </div>
+</div>
+
+<div class="dash-panel">
+    <h2>勋章列表（{{ medals|length }}）</h2>
+    <div class="medal-admin-grid">
+        {% for m in medals %}
+        <div class="medal-admin-item">
+            <span class="medal-icon" style="background:{{ m.color }};">{% if m.icon|slice:':3' == 'fa-' %}<i class="fa {{ m.icon }}"></i>{% else %}{{ m.icon }}{% endif %}</span>
+            <div class="medal-admin-info">
+                <strong>{{ m.name }}</strong>
+                <small>{{ m.description|default:"（无说明）" }}</small>
+                <small>已授予 {{ m.holders }} 人</small>
+            </div>
+            <form method="post" onsubmit="return confirm('删除勋章「{{ m.name }}」将同时收回所有持有者的该勋章，确定？');">
+                {% csrf_token %}
+                <input type="hidden" name="form" value="delete_medal">
+                <input type="hidden" name="medal_id" value="{{ m.pk }}">
+                <button type="submit" class="btn btn-danger btn-sm">删除</button>
+            </form>
+        </div>
+        {% empty %}
+        <div class="dash-empty">还没有勋章，先在左上角创建</div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="dash-panel">
+    <h2>最近授予记录</h2>
+    <div class="dash-table-wrap">
+        <table class="table">
+            <thead><tr><th>成员</th><th>勋章</th><th>理由</th><th>授予人</th><th>时间</th></tr></thead>
+            <tbody>
+            {% for g in recent_grants %}
+                <tr>
+                    <td>{{ g.user.display_name }}</td>
+                    <td>{{ g.medal.icon }} {{ g.medal.name }}</td>
+                    <td>{{ g.reason|default:"—" }}</td>
+                    <td>{{ g.granted_by.display_name|default:"—" }}</td>
+                    <td>{{ g.created_at|date:"Y-m-d H:i" }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5"><div class="dash-empty">还没有授予记录</div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
