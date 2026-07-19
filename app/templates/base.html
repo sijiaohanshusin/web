@@ -103,10 +103,33 @@
 </footer>
 
 {% if site_config.beta_mode %}
-<a class="beta-fab" href="{{ forum_url }}/topic/5" target="_blank" rel="noopener" title="内测反馈：提 Bug / 提建议">
+<button class="beta-fab" id="beta-fab" type="button" title="内测反馈：提 Bug / 提建议">
     <span class="beta-fab-icon">🐛</span>
     <span class="beta-fab-text">内测反馈</span>
-</a>
+</button>
+<div class="fb-mask" id="fb-mask" hidden>
+    <div class="fb-modal" role="dialog" aria-label="内测反馈">
+        <div class="fb-head">
+            <strong>🐛 内测反馈</strong>
+            <button type="button" class="fb-close" id="fb-close" aria-label="关闭">×</button>
+        </div>
+        <p class="fb-tip">遇到 Bug、体验别扭、想要新功能，都写这儿。反馈会进入系统，我们统一审阅、逐条处理。</p>
+        <form id="fb-form">
+            {% csrf_token %}
+            <textarea class="input" id="fb-content" name="content" rows="5" maxlength="2000" required
+                      placeholder="尽量写清楚：在哪个页面 / 做了什么 / 遇到什么问题（或想要什么）"></textarea>
+            {% if not user.is_authenticated %}
+            <input class="input fb-contact" id="fb-contact" name="contact" maxlength="100" placeholder="选填：QQ 或邮箱，方便回访">
+            {% endif %}
+            <div class="fb-foot">
+                <a href="{{ forum_url }}/topic/5" target="_blank" rel="noopener">去论坛讨论 ↗</a>
+                <button type="submit" class="btn btn-primary" id="fb-submit">提交反馈</button>
+            </div>
+        </form>
+        <div class="fb-msg" id="fb-msg" hidden></div>
+    </div>
+</div>
+<script src="{% static 'js/feedback.js' %}" defer></script>
 {% endif %}
 
 <script src="{% static 'js/site.js' %}" defer></script>

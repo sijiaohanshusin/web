@@ -32,6 +32,10 @@
         <a href="{% url 'dashboard:resources' %}" class="{% if active_nav == 'resources' %}active{% endif %}">
             <span class="dash-nav-icon">▤</span>资料管理
         </a>
+        <a href="{% url 'dashboard:feedbacks' %}" class="{% if active_nav == 'feedbacks' %}active{% endif %}">
+            <span class="dash-nav-icon">🐛</span>反馈管理
+            {% if feedback_pending %}<em class="dash-badge">{{ feedback_pending }}</em>{% endif %}
+        </a>
         {% if user.is_staff or user.is_superuser %}
         <a href="{% url 'dashboard:medals' %}" class="{% if active_nav == 'medals' %}active{% endif %}">
             <span class="dash-nav-icon">🏅</span>勋章管理

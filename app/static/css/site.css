@@ -583,19 +583,68 @@ select.input option { background: var(--bg-2); }
 
 /* 内测反馈浮动按钮 */
 .beta-fab {
-    position: fixed; right: 20px; bottom: 22px; z-index: 90;
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 12px 18px; border-radius: 999px;
+    position: fixed; right: 24px; bottom: 26px; z-index: 90;
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 16px 26px; border: none; border-radius: 999px; cursor: pointer;
     background: linear-gradient(135deg, #f97316, #ef4444);
-    color: #fff !important; font-weight: 700; font-size: 14.5px;
-    box-shadow: 0 10px 30px rgba(239, 68, 68, .45);
+    color: #fff !important; font-weight: 800; font-size: 17px; font-family: inherit;
+    box-shadow: 0 12px 36px rgba(239, 68, 68, .5);
     transition: transform .25s var(--ease-out), box-shadow .25s;
     animation: beta-fab-in .5s var(--ease-out) both .6s;
 }
-.beta-fab:hover { transform: translateY(-3px) scale(1.04); box-shadow: 0 14px 40px rgba(239, 68, 68, .6); color: #fff !important; }
-.beta-fab-icon { font-size: 18px; }
+.beta-fab::before {
+    content: ""; position: absolute; inset: -5px; border-radius: 999px;
+    border: 2px solid rgba(249, 115, 22, .55);
+    animation: beta-fab-pulse 2s ease-out infinite;
+    pointer-events: none;
+}
+.beta-fab:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 16px 46px rgba(239, 68, 68, .65); color: #fff !important; }
+.beta-fab-icon { font-size: 24px; }
 @keyframes beta-fab-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
-@media (max-width: 720px) { .beta-fab { right: 14px; bottom: 16px; padding: 11px 15px; } .beta-fab-text { display: none; } }
+@keyframes beta-fab-pulse { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.35); opacity: 0; } }
+@media (max-width: 720px) {
+    .beta-fab { right: 14px; bottom: 18px; padding: 14px 20px; font-size: 15.5px; }
+    .beta-fab-icon { font-size: 20px; }
+}
+
+/* 反馈弹窗 */
+.fb-mask {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(2, 8, 20, .72); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center; padding: 18px;
+}
+.fb-modal {
+    width: 100%; max-width: 520px;
+    background: var(--panel, #0d1830); border: 1px solid var(--line-d, rgba(148,163,184,.18));
+    border-radius: 16px; padding: 22px 22px 18px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+    animation: fb-in .28s var(--ease-out) both;
+}
+@keyframes fb-in { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
+.fb-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.fb-head strong { font-size: 18px; color: #fff; }
+.fb-close {
+    border: none; background: none; color: var(--muted); font-size: 26px; line-height: 1;
+    cursor: pointer; padding: 2px 8px; border-radius: 8px;
+}
+.fb-close:hover { color: #fff; background: rgba(255,255,255,.08); }
+.fb-tip { color: var(--muted); font-size: 13.5px; margin-bottom: 14px; }
+.fb-modal textarea.input { width: 100%; resize: vertical; min-height: 120px; }
+.fb-contact { width: 100%; margin-top: 10px; }
+.fb-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+.fb-foot a { color: var(--muted); font-size: 13.5px; }
+.fb-foot a:hover { color: var(--brand-2); }
+.fb-msg { margin-top: 12px; font-size: 14px; padding: 10px 12px; border-radius: 10px; }
+.fb-msg-ok { color: #4ade80; background: rgba(74, 222, 128, .1); }
+.fb-msg-err { color: #f87171; background: rgba(248, 113, 113, .1); }
+
+/* 反馈页“我的反馈”列表 */
+.fb-mine { margin-top: 26px; border-top: 1px solid var(--line-d, rgba(148,163,184,.18)); padding-top: 18px; }
+.fb-mine h2 { font-size: 16px; margin-bottom: 12px; }
+.fb-mine ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.fb-mine li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.fb-mine-text { flex: 1; }
+.fb-mine small { color: var(--muted); }
 
 /* ============================================================
    新生指南（recruit）

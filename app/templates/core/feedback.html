@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}内测反馈 | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-card auth-card-wide">
+        <h1>🐛 内测反馈</h1>
+        <p class="auth-sub">遇到 Bug、体验别扭、想要新功能，都写这儿。所有反馈进入系统，我们统一审阅、逐条处理。</p>
+
+        <form method="post" action="{% url 'core:feedback' %}">
+            {% csrf_token %}
+            <input type="hidden" name="page" value="{{ request.META.HTTP_REFERER|default:'直接访问反馈页' }}">
+            <div class="form-group">
+                <label>反馈内容 <span class="req">*</span></label>
+                <textarea class="input" name="content" rows="6" maxlength="2000" required
+                          placeholder="尽量写清楚三件事：在哪个页面 / 做了什么操作 / 遇到了什么问题（或期望什么效果）"></textarea>
+            </div>
+            {% if not user.is_authenticated %}
+            <div class="form-group">
+                <label>联系方式</label>
+                <input class="input" name="contact" maxlength="100" placeholder="选填：QQ 或邮箱，方便我们回访">
+            </div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary btn-block">提交反馈</button>
+        </form>
+
+        <div class="auth-links">
+            <a href="{{ forum_url }}/topic/5" target="_blank" rel="noopener">想讨论？去论坛反馈楼 ↗</a>
+            <a href="{% url 'core:home' %}">返回首页</a>
+        </div>
+
+        {% if my_feedbacks %}
+        <div class="fb-mine">
+            <h2>我最近的反馈</h2>
+            <ul>
+                {% for f in my_feedbacks %}
+                <li>
+                    <span class="badge {% if f.status == 'resolved' %}badge-green{% else %}badge-amber{% endif %}">{{ f.get_status_display }}</span>
+                    <span class="fb-mine-text">{{ f.content|truncatechars:50 }}</span>
+                    <small>{{ f.created_at|date:"m-d H:i" }}{% if f.admin_note %} · 回复：{{ f.admin_note }}{% endif %}</small>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

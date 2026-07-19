@@ -231,14 +231,21 @@ ul.category-children a i { margin-right: 4px; }
 
 /* ---------- 内测反馈浮动按钮 ---------- */
 .esta-beta-fab {
-  position: fixed; right: 20px; bottom: 76px; z-index: 1000;
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 11px 17px; border-radius: 999px;
+  position: fixed; right: 22px; bottom: 76px; z-index: 1000;
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 15px 24px; border-radius: 999px;
   background: linear-gradient(135deg, #f97316, #ef4444);
-  color: #fff !important; font-weight: 700; font-size: 14px;
-  box-shadow: 0 10px 28px rgba(239,68,68,.45); text-decoration: none;
+  color: #fff !important; font-weight: 800; font-size: 16px;
+  box-shadow: 0 12px 34px rgba(239,68,68,.5); text-decoration: none;
 }
+.esta-beta-fab::before {
+  content: ""; position: absolute; inset: -5px; border-radius: 999px;
+  border: 2px solid rgba(249,115,22,.55);
+  animation: esta-fab-pulse 2s ease-out infinite; pointer-events: none;
+}
+@keyframes esta-fab-pulse { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.3); opacity: 0; } }
 .esta-beta-fab:hover { transform: translateY(-2px); color: #fff !important; }
+.esta-beta-fab span { font-size: 21px; }
 `;
 
 /* ============================ 帖子页装饰 JS（注入每页 head） ============================ */
@@ -361,8 +368,10 @@ const CUSTOM_HTML = `
     if (document.querySelector('.esta-beta-fab')) { return; }
     var a = document.createElement('a');
     a.className = 'esta-beta-fab';
-    a.href = '/topic/5';
-    a.title = '内测反馈：提 Bug / 提建议';
+    a.href = 'https://heuesta.cn/feedback/';
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.title = '内测反馈：提 Bug / 提建议（提交后进系统，统一处理）';
     a.innerHTML = '<span>🐛</span> 内测反馈';
     document.body.appendChild(a);
   }

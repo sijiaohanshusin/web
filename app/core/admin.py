@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import CarouselImage, SiteConfig
+from .models import CarouselImage, Feedback, SiteConfig
 
 
 @admin.register(SiteConfig)
@@ -13,6 +13,18 @@ class SiteConfigAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(Feedback)
+class FeedbackAdmin(admin.ModelAdmin):
+    list_display = ["id", "short_content", "user", "contact", "status", "created_at", "resolved_by"]
+    list_filter = ["status"]
+    search_fields = ["content", "contact", "user__username", "user__real_name"]
+    readonly_fields = ["user", "contact", "page", "content", "created_at"]
+
+    @admin.display(description="内容")
+    def short_content(self, obj):
+        return obj.content[:40]
 
 
 @admin.register(CarouselImage)

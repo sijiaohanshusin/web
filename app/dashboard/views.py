@@ -8,10 +8,12 @@ from django.db.models.functions import TruncMonth
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from django.utils import timezone
+
 from accounts import roles
 from accounts.models import Medal, Position, UserMedal
 from core import bilibili
-from core.models import CarouselImage, SiteConfig
+from core.models import CarouselImage, Feedback, SiteConfig
 from files.forms import ResourceUploadForm
 from files.models import Resource
 
@@ -225,6 +227,53 @@ def member_action(request):
 
     messages.error(request, "未知操作。")
     return redirect(nxt)
+
+
+# ---------------------------------------------------------------- 内测反馈
+
+@officer_required
+def feedbacks(request):
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+        item = get_object_or_404(Feedback, pk=request.POST.get("id"))
+        if action == "resolve":
+            item.status = Feedback.Status.RESOLVED
+            item.admin_note = (request.POST.get("note") or "").strip()[:200]
+            item.resolved_by = request.user
+            item.resolved_at = timezone.now()
+            item.save(update_fields=["status", "admin_note", "resolved_by", "resolved_at"])
+            messages.success(request, f"反馈 #{item.pk} 已标记为已处理。")
+        elif action == "reopen":
+            item.status = Feedback.Status.PENDING
+            item.save(update_fields=["status"])
+            messages.success(request, f"反馈 #{item.pk} 已重新打开。")
+        elif action == "delete":
+            if not _is_admin(request.user):
+                messages.error(request, "删除反馈需要管理员权限。")
+            else:
+                pk = item.pk
+                item.delete()
+                messages.success(request, f"反馈 #{pk} 已删除。")
+        return redirect(request.POST.get("next") or "dashboard:feedbacks")
+
+    tab = request.GET.get("tab", "pending")
+    if tab not in ("pending", "all"):
+        tab = "pending"
+    items = Feedback.objects.select_related("user", "resolved_by")
+    if tab == "pending":
+        items = items.filter(status=Feedback.Status.PENDING)
+
+    paginator = Paginator(items, 25)
+    page = paginator.get_page(request.GET.get("page"))
+
+    context = {
+        "active_nav": "feedbacks",
+        "tab": tab,
+        "page": page,
+        "pending_total": Feedback.objects.filter(status=Feedback.Status.PENDING).count(),
+        "is_admin": _is_admin(request.user),
+    }
+    return render(request, "dashboard/feedbacks.html", context)
 
 
 # ---------------------------------------------------------------- 勋章与职位（仅管理员）

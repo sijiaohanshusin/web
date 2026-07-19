@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.cache import cache
 from django.db import models
 
@@ -51,6 +52,38 @@ class SiteConfig(models.Model):
             config, _ = cls.objects.get_or_create(pk=1)
             cache.set(SITE_CONFIG_CACHE_KEY, config, 3600)
         return config
+
+
+class Feedback(models.Model):
+    """内测反馈：全站浮动按钮/独立页面提交，驾驶舱统一审阅处理。"""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "待处理"
+        RESOLVED = "resolved", "已处理"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, verbose_name="提交人", null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="feedbacks",
+    )
+    contact = models.CharField("联系方式", max_length=100, blank=True, help_text="QQ/邮箱，匿名提交时选填")
+    page = models.CharField("提交页面", max_length=300, blank=True)
+    content = models.TextField("反馈内容")
+    status = models.CharField("状态", max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True)
+    admin_note = models.CharField("处理备注", max_length=200, blank=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, verbose_name="处理人", null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="feedbacks_resolved",
+    )
+    resolved_at = models.DateTimeField("处理时间", null=True, blank=True)
+    created_at = models.DateTimeField("提交时间", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "内测反馈"
+        verbose_name_plural = "内测反馈"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"#{self.pk} {self.content[:24]}"
 
 
 class CarouselImage(models.Model):

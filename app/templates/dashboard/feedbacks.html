@@ -1,0 +1,77 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}反馈管理{% endblock %}
+{% block page_title %}反馈管理{% endblock %}
+
+{% block content %}
+
+<div class="dash-tabs">
+    <a href="?tab=pending" class="{% if tab == 'pending' %}active{% endif %}">
+        待处理 {% if pending_total %}<em>{{ pending_total }}</em>{% endif %}
+    </a>
+    <a href="?tab=all" class="{% if tab == 'all' %}active{% endif %}">全部</a>
+</div>
+
+<div class="fb-cards">
+    {% for f in page.object_list %}
+    <div class="dash-panel fb-card">
+        <div class="fb-card-head">
+            <span class="badge {% if f.status == 'resolved' %}badge-green{% else %}badge-amber{% endif %}">{{ f.get_status_display }}</span>
+            <strong>#{{ f.pk }}</strong>
+            <span class="fb-card-meta">
+                {% if f.user %}{{ f.user.display_name }}（{{ f.user.full_title }}）{% else %}匿名{% if f.contact %} · {{ f.contact }}{% endif %}{% endif %}
+                · {{ f.created_at|date:"m-d H:i" }}
+                {% if f.page %} · 来自 <a href="{{ f.page }}" target="_blank" rel="noopener">{{ f.page|truncatechars:40 }}</a>{% endif %}
+            </span>
+        </div>
+        <div class="fb-card-body">{{ f.content|linebreaksbr }}</div>
+        {% if f.status == 'resolved' %}
+        <div class="fb-card-note">
+            处理人：{{ f.resolved_by.display_name|default:"—" }} · {{ f.resolved_at|date:"m-d H:i" }}
+            {% if f.admin_note %} · 备注：{{ f.admin_note }}{% endif %}
+        </div>
+        {% endif %}
+        <div class="fb-card-actions">
+            {% if f.status == 'pending' %}
+            <form method="post" class="fb-resolve-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="resolve">
+                <input type="hidden" name="id" value="{{ f.pk }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <input class="input" name="note" maxlength="200" placeholder="处理备注（选填，提交人可见）">
+                <button type="submit" class="btn btn-primary btn-sm">✓ 标记已处理</button>
+            </form>
+            {% else %}
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reopen">
+                <input type="hidden" name="id" value="{{ f.pk }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-ghost btn-sm">重新打开</button>
+            </form>
+            {% endif %}
+            {% if is_admin %}
+            <form method="post" onsubmit="return confirm('删除反馈 #{{ f.pk }}？不可恢复。');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="id" value="{{ f.pk }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-danger btn-sm">删除</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="dash-empty">{% if tab == 'pending' %}没有待处理的反馈，清爽！{% else %}还没有收到任何反馈{% endif %}</div>
+    {% endfor %}
+</div>
+
+{% if page.paginator.num_pages > 1 %}
+<div class="pagination">
+    {% if page.has_previous %}<a href="?tab={{ tab }}&page={{ page.previous_page_number }}">‹</a>{% endif %}
+    <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?tab={{ tab }}&page={{ page.next_page_number }}">›</a>{% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

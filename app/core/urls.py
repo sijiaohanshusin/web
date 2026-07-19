@@ -7,4 +7,5 @@ app_name = "core"
 urlpatterns = [
     path("", views.home, name="home"),
     path("recruit/", views.recruit, name="recruit"),
+    path("feedback/", views.feedback, name="feedback"),
 ]
