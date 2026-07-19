@@ -613,6 +613,7 @@ select.input option { background: var(--bg-2); }
     background: rgba(2, 8, 20, .72); backdrop-filter: blur(4px);
     display: flex; align-items: center; justify-content: center; padding: 18px;
 }
+.fb-mask[hidden] { display: none !important; }
 .fb-modal {
     width: 100%; max-width: 520px;
     background: var(--panel, #0d1830); border: 1px solid var(--line-d, rgba(148,163,184,.18));
