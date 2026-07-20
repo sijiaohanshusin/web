@@ -397,7 +397,12 @@
             <div class="join-panel" style="margin-top:40px;">
                 <div class="join-bg" aria-hidden="true"></div>
                 <h2>看完了？来实验室见！</h2>
-                <p>加入招新 QQ 群，开始你的第一个任务</p>
+                {% if recruitment_open %}
+                    <p>招新进行中，现在就可以线上报名，开始你的第一个任务</p>
+                    <a class="btn btn-primary" href="{% url 'recruitment:index' %}" style="margin:6px 0 18px;">在线报名 →</a>
+                {% else %}
+                    <p>加入招新 QQ 群，开始你的第一个任务</p>
+                {% endif %}
                 <div class="join-qq">
                     <span class="join-qq-label">招新 QQ 群</span>
                     <strong>{{ site_config.recruit_qq_group }}</strong>

@@ -13,9 +13,14 @@ django.setup()
 
 from django.contrib.auth import get_user_model  # noqa: E402
 
+from datetime import timedelta  # noqa: E402
+
+from django.utils import timezone  # noqa: E402
+
 from accounts import roles  # noqa: E402
 from news.models import Post  # noqa: E402
 from notify.services import notify_user  # noqa: E402
+from recruitment.models import Application, Campaign  # noqa: E402
 
 User = get_user_model()
 
@@ -60,4 +65,27 @@ for title, category, body, pinned in POSTS:
     if created and author:
         notify_user(author, f"演示：你发布的「{title}」已上线", kind="news", url="/news/")
 
-print("seeded ok, users:", User.objects.count(), "posts:", Post.objects.count())
+campaign, _ = Campaign.objects.get_or_create(
+    name="2026 秋季招新",
+    defaults={
+        "intro": "## 欢迎加入电子科技协会\n\n- 面向全体本科新生\n- 硬件部 / 软件部两个方向\n- 流程：报名 → 一面 → 暑期培训 → 二面",
+        "opens_at": timezone.now() - timedelta(days=2),
+        "closes_at": timezone.now() + timedelta(days=30),
+        "is_active": True,
+    },
+)
+for i in range(3):
+    applicant = User.objects.filter(username=f"pending{i}").first()
+    if applicant:
+        applicant.set_level(roles.LEVEL_APPLICANT, note="演示：招新报名")
+        Application.objects.get_or_create(
+            campaign=campaign, user=applicant,
+            defaults={
+                "department": ["hardware", "software", "undecided"][i],
+                "skills": ["会一点 C", "焊过板子", "零基础但很想学"][i],
+                "self_intro": "演示报名者的自我介绍，说明为什么想加入以及期待收获。",
+            },
+        )
+
+print("seeded ok, users:", User.objects.count(), "posts:", Post.objects.count(),
+      "applications:", Application.objects.count())

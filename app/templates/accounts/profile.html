@@ -71,6 +71,21 @@
                     <div class="empty-hint"><span class="empty-icon">{% include "includes/icon.html" with name="medal" cls="icon-lg" %}</span>还没有勋章，参与活动、做出贡献即可获得</div>
                 {% endif %}
             </div>
+            {% if my_application %}
+            <div class="panel">
+                <h2>我的招新报名</h2>
+                <div class="recruit-status">
+                    <span class="recruit-status-badge" style="background:{{ my_application.status_color }};">{{ my_application.get_status_display }}</span>
+                    <span class="recruit-status-dept">{{ my_application.campaign.name }} · {{ my_application.get_department_display }}</span>
+                </div>
+                <ul class="recruit-status-timeline">
+                    <li class="done">已报名 · {{ my_application.created_at|date:"m-d H:i" }}</li>
+                    <li class="{% if my_application.status == 'first_pass' or my_application.status == 'second_pass' %}done{% endif %}">一面通过 → 预备会员</li>
+                    <li class="{% if my_application.status == 'second_pass' %}done{% endif %}">二面通过 → 正式会员</li>
+                </ul>
+                <a class="btn btn-ghost btn-sm" href="{% url 'recruitment:index' %}">查看招新页 →</a>
+            </div>
+            {% endif %}
             <div class="panel">
                 <h2>我的活动</h2>
                 {% if my_events %}

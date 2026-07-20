@@ -1262,6 +1262,34 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 .lb-score small { font-size: 12px; color: var(--muted); font-weight: 400; }
 
 /* ============================================================
+   招新报名
+   ============================================================ */
+.nav-hot { color: var(--accent-2) !important; }
+.recruit-apply-layout { display: grid; grid-template-columns: 1.15fr .85fr; gap: 20px; align-items: start; }
+.recruit-intro { line-height: 1.75; }
+.recruit-qq-line { margin-top: 16px; color: var(--muted); font-size: 14px; }
+.recruit-qq-line strong { color: var(--accent-2); font-family: var(--font-mono); letter-spacing: 1px; }
+.recruit-apply-box h2 { margin-bottom: 14px; }
+.recruit-hint { color: var(--muted); font-size: 13.5px; line-height: 1.7; }
+.recruit-hint a { color: var(--accent-2); }
+.recruit-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.recruit-form { display: flex; flex-direction: column; gap: 4px; }
+.btn-block { width: 100%; margin-top: 8px; }
+.recruit-status { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.recruit-status-badge { color: #fff; font-size: 14px; font-weight: 700; border-radius: 999px; padding: 4px 14px; }
+.recruit-status-dept { color: var(--muted); font-size: 13.5px; }
+.recruit-status-timeline { list-style: none; padding: 0; margin: 0 0 14px; display: flex; flex-direction: column; gap: 10px; }
+.recruit-status-timeline li {
+    position: relative; padding-left: 26px; color: var(--muted); font-size: 14px;
+}
+.recruit-status-timeline li::before {
+    content: ""; position: absolute; left: 4px; top: 3px; width: 12px; height: 12px;
+    border-radius: 50%; border: 2px solid var(--line-d-strong); background: var(--black);
+}
+.recruit-status-timeline li.done { color: var(--text); }
+.recruit-status-timeline li.done::before { border-color: var(--accent); background: var(--accent); }
+
+/* ============================================================
    响应式
    ============================================================ */
 @media (max-width: 1024px) {
@@ -1273,6 +1301,7 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
     .footer-grid { grid-template-columns: 1fr 1fr; }
     .profile-grid { grid-template-columns: 1fr; }
     .recruit-layout { grid-template-columns: 1fr; }
+    .recruit-apply-layout { grid-template-columns: 1fr; }
     .recruit-toc { position: static; display: flex; flex-wrap: wrap; gap: 6px; border-left: none; margin-bottom: 6px; }
     .recruit-toc a { border-left: none; border: 1px solid var(--line-d); border-radius: 999px; padding: 6px 14px; font-size: 13px; }
     .recruit-toc a.active { border-color: var(--accent); background: rgba(13, 169, 205, .08); }

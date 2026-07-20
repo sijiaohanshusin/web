@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from django.utils import timezone
@@ -26,6 +27,8 @@ from notify.models import Notification
 from notify.services import notify_user
 from points.models import PointLog
 from points.services import award_points
+from recruitment.forms import CampaignForm
+from recruitment.models import Application, Campaign
 
 from .decorators import admin_required, officer_required
 from .forms import CarouselImageForm, SiteConfigForm
@@ -687,6 +690,126 @@ def event_checkin_qr(request, pk: int):
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return HttpResponse(buf.getvalue(), content_type="image/png")
+
+
+# ---------------------------------------------------------------- 招新管理
+
+# 面试结果动作 -> (报名状态, 目标等级或 None, 中文说明)
+_RECRUIT_RESULTS = {
+    "first_pass": (Application.Status.FIRST_PASS, roles.LEVEL_PREPARATORY, "一面通过 · 晋升预备会员"),
+    "second_pass": (Application.Status.SECOND_PASS, roles.LEVEL_FORMAL, "二面通过 · 晋升正式会员"),
+    "reject": (Application.Status.REJECTED, None, "本次未录取"),
+    "reset": (Application.Status.SUBMITTED, None, "重置为已报名"),
+}
+
+
+def _apply_recruit_result(application, key: str, note: str, actor) -> None:
+    status, level, label = _RECRUIT_RESULTS[key]
+    application.status = status
+    if note:
+        application.interview_note = note[:300]
+    application.save(update_fields=["status", "interview_note", "updated_at"])
+    if level is not None:
+        # set_level 内部写 LevelLog、同步论坛组、发等级变更站内通知
+        application.user.set_level(level, actor=actor, note=f"招新：{label}")
+    elif status == Application.Status.REJECTED:
+        notify_user(
+            application.user, "招新结果通知",
+            kind=Notification.Kind.LEVEL,
+            body="很遗憾本次未能录取。欢迎继续参加培训和活动，期待下次与你相遇！",
+            url="/recruitment/",
+        )
+
+
+@officer_required
+def recruitment_manage(request):
+    campaigns = list(Campaign.objects.all())
+
+    cid = request.GET.get("campaign")
+    campaign = None
+    if cid and cid.isdigit():
+        campaign = next((c for c in campaigns if c.pk == int(cid)), None)
+    if campaign is None and campaigns:
+        campaign = campaigns[0]
+
+    if request.method == "POST":
+        nxt = request.POST.get("next") or "dashboard:recruitment"
+        if request.POST.get("action") == "set_result":
+            key = request.POST.get("result", "")
+            note = (request.POST.get("note") or "").strip()
+            ids = request.POST.getlist("ids")
+            if key not in _RECRUIT_RESULTS:
+                messages.error(request, "未知操作。")
+                return redirect(nxt)
+            apps = Application.objects.select_related("user").filter(pk__in=ids)
+            count = 0
+            for application in apps:
+                _apply_recruit_result(application, key, note, request.user)
+                count += 1
+            if count:
+                messages.success(request, f"已更新 {count} 名报名者：{_RECRUIT_RESULTS[key][2]}。")
+            else:
+                messages.warning(request, "没有选中任何报名者。")
+        return redirect(nxt)
+
+    status = request.GET.get("status", "")
+    applications = []
+    status_tabs = []
+    total_count = 0
+    if campaign:
+        base = campaign.applications.select_related("user", "user__position")
+        counts = {row["status"]: row["c"] for row in base.values("status").annotate(c=Count("id"))}
+        total_count = sum(counts.values())
+        status_tabs = [(value, label, counts.get(value, 0)) for value, label in Application.Status.choices]
+        applications = base if status not in Application.Status.values else base.filter(status=status)
+
+        if request.GET.get("export") == "csv":
+            import csv
+            from urllib.parse import quote
+
+            from django.http import HttpResponse
+
+            response = HttpResponse(content_type="text/csv; charset=utf-8-sig")
+            filename = quote(f"{campaign.name}-报名名单.csv")
+            response["Content-Disposition"] = f"attachment; filename*=UTF-8''{filename}"
+            writer = csv.writer(response)
+            writer.writerow(["姓名", "用户名", "学号", "学院", "年级", "意向部门", "特长", "进展", "面试备注", "报名时间"])
+            for a in applications:
+                writer.writerow([
+                    a.user.real_name, a.user.username, a.user.student_id, a.user.college, a.user.grade,
+                    a.get_department_display(), a.skills, a.get_status_display(),
+                    a.interview_note, a.created_at.astimezone().strftime("%Y-%m-%d %H:%M"),
+                ])
+            return response
+
+    context = {
+        "active_nav": "recruitment",
+        "campaigns": campaigns,
+        "campaign": campaign,
+        "applications": applications,
+        "status": status,
+        "status_tabs": status_tabs,
+        "total_count": total_count,
+        "is_admin": _is_admin(request.user),
+    }
+    return render(request, "dashboard/recruitment.html", context)
+
+
+@officer_required
+def campaign_edit(request, pk: int | None = None):
+    campaign = get_object_or_404(Campaign, pk=pk) if pk else None
+
+    if request.method == "POST":
+        form = CampaignForm(request.POST, instance=campaign)
+        if form.is_valid():
+            item = form.save()
+            messages.success(request, f"招新批次「{item.name}」已{'更新' if pk else '创建'}。")
+            return redirect(f"{reverse('dashboard:recruitment')}?campaign={item.pk}")
+    else:
+        form = CampaignForm(instance=campaign)
+
+    context = {"active_nav": "recruitment", "form": form, "campaign": campaign}
+    return render(request, "dashboard/campaign_form.html", context)
 
 
 # ---------------------------------------------------------------- 站点设置（仅管理员）

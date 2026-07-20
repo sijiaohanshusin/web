@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}招新 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}哈尔滨工程大学电子科技协会招新报名：填写报名表，线上跟踪面试进展。{% endblock %}
+
+{% block content %}
+<div class="container page-section">
+    <div class="page-head">
+        <p class="nf-eyebrow">// JOIN US</p>
+        <h1>加入电子科技协会</h1>
+        {% if campaign %}
+            <p>{{ campaign.name }} · <span class="badge {% if campaign.is_open %}badge-green{% else %}badge-gray{% endif %}">{{ campaign.status_label }}</span></p>
+        {% else %}
+            <p>招新通道平时关闭，开学季开放。先去 <a href="{% url 'core:recruit' %}">新生指南</a> 了解我们吧。</p>
+        {% endif %}
+    </div>
+
+    {% if campaign %}
+    <div class="recruit-apply-layout">
+        <div class="panel recruit-intro">
+            {% if campaign.intro %}
+                <div class="md-body">{{ campaign.intro_html }}</div>
+            {% else %}
+                <p>欢迎加入！填写右侧报名表，我们会通过站内通知告诉你面试安排与结果。</p>
+                <p>报名后你就是<strong>报名会员</strong>，可以解锁部分资料、参加面向报名会员的活动。通过一面成为<strong>预备会员</strong>，通过二面成为<strong>正式会员</strong>。</p>
+            {% endif %}
+            <p class="recruit-qq-line">招新 QQ 群：<strong>{{ site_config.recruit_qq_group }}</strong></p>
+        </div>
+
+        <div class="panel recruit-apply-box">
+            {% if not user.is_authenticated %}
+                <h2>先登录再报名</h2>
+                <p class="recruit-hint">报名需要一个账号，方便我们联系你、你也能随时查看进展。</p>
+                <div class="recruit-actions">
+                    <a class="btn btn-primary" href="{% url 'accounts:register' %}?next={% url 'recruitment:index' %}">注册</a>
+                    <a class="btn btn-outline" href="{% url 'accounts:login' %}?next={% url 'recruitment:index' %}">登录</a>
+                </div>
+            {% elif my_app %}
+                <h2>你的报名</h2>
+                <div class="recruit-status">
+                    <span class="recruit-status-badge" style="background:{{ my_app.status_color }};">{{ my_app.get_status_display }}</span>
+                    <span class="recruit-status-dept">{{ my_app.get_department_display }}</span>
+                </div>
+                <ul class="recruit-status-timeline">
+                    <li class="done">已报名 · {{ my_app.created_at|date:"m-d H:i" }}</li>
+                    <li class="{% if my_app.status == 'first_pass' or my_app.status == 'second_pass' %}done{% endif %}">一面通过 → 预备会员</li>
+                    <li class="{% if my_app.status == 'second_pass' %}done{% endif %}">二面通过 → 正式会员</li>
+                </ul>
+                {% if my_app.status == 'rejected' %}
+                    <p class="recruit-hint">本次结果为未录取，欢迎继续参加培训和活动，下次招新再来！</p>
+                {% else %}
+                    <p class="recruit-hint">面试安排与结果会通过<a href="{% url 'notify:list' %}">站内通知</a>告诉你，保持关注～</p>
+                {% endif %}
+            {% elif already_member %}
+                <h2>你已经是正式会员</h2>
+                <p class="recruit-hint">无需重复报名。去 <a href="{% url 'events:list' %}">活动</a> 或 <a href="{{ forum_url }}" target="_blank" rel="noopener">论坛</a> 看看吧。</p>
+            {% elif can_apply %}
+                <h2>报名表</h2>
+                <form method="post" action="{% url 'recruitment:apply' %}" class="recruit-form">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        {% include "includes/field.html" %}
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary btn-block">提交报名</button>
+                </form>
+            {% else %}
+                <h2>报名已关闭</h2>
+                <p class="recruit-hint">当前批次不在报名时间内。关注公告和 QQ 群获取下次招新消息。</p>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+        <div class="empty-hint">
+            <span class="empty-icon">{% include "includes/icon.html" with name="badge" cls="icon-lg" %}</span>
+            暂无进行中的招新。开学季见！
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

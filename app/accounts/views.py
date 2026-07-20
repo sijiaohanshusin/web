@@ -156,11 +156,15 @@ def profile(request):
     my_events = (
         request.user.event_signups.select_related("event").order_by("-created_at")[:10]
     )
+    my_application = (
+        request.user.applications.select_related("campaign").order_by("-created_at").first()
+    )
     return render(request, "accounts/profile.html", {
         "my_resources": my_resources,
         "my_medals": my_medals,
         "my_events": my_events,
         "my_points": total_for(request.user),
+        "my_application": my_application,
     })
 
 

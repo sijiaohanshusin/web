@@ -35,6 +35,9 @@
         <a href="{% url 'dashboard:events' %}" class="{% if active_nav == 'events' %}active{% endif %}">
             <span class="dash-nav-icon">{% include "includes/icon.html" with name="cal" %}</span>活动管理
         </a>
+        <a href="{% url 'dashboard:recruitment' %}" class="{% if active_nav == 'recruitment' %}active{% endif %}">
+            <span class="dash-nav-icon">{% include "includes/icon.html" with name="badge" %}</span>招新管理
+        </a>
         <a href="{% url 'dashboard:resources' %}" class="{% if active_nav == 'resources' %}active{% endif %}">
             <span class="dash-nav-icon">{% include "includes/icon.html" with name="folder" %}</span>资料管理
         </a>

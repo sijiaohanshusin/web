@@ -1,0 +1,102 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}招新管理{% endblock %}
+{% block page_title %}招新管理{% endblock %}
+
+{% block content %}
+
+<div class="dash-toolbar">
+    <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <label style="color:var(--muted);font-size:14px;">批次</label>
+        <select class="input" name="campaign" onchange="this.form.submit()">
+            {% for c in campaigns %}
+                <option value="{{ c.pk }}" {% if campaign and c.pk == campaign.pk %}selected{% endif %}>
+                    {{ c.name }}（{{ c.status_label }}）
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+    {% if campaign %}
+        <a class="btn btn-outline btn-sm" href="{% url 'dashboard:campaign_edit' campaign.pk %}">编辑批次</a>
+        <a class="btn btn-outline btn-sm" href="?campaign={{ campaign.pk }}&export=csv{% if status %}&status={{ status }}{% endif %}">导出 CSV</a>
+    {% endif %}
+    <a class="btn btn-primary btn-sm" href="{% url 'dashboard:campaign_create' %}" style="margin-left:auto;">+ 新建批次</a>
+</div>
+
+{% if not campaign %}
+    <div class="dash-empty">还没有招新批次，点右上角「新建批次」创建第一个（如「2026 秋季招新」）。</div>
+{% else %}
+
+<div class="dash-tabs">
+    <a href="?campaign={{ campaign.pk }}" class="{% if not status %}active{% endif %}">全部 <em>{{ total_count }}</em></a>
+    {% for value, label, count in status_tabs %}
+        <a href="?campaign={{ campaign.pk }}&status={{ value }}" class="{% if status == value %}active{% endif %}">
+            {{ label }} <em>{{ count }}</em>
+        </a>
+    {% endfor %}
+</div>
+
+<form method="post" id="recruit-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="set_result">
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+    <div class="dash-actions-bar">
+        <span class="hint">勾选后批量处理：</span>
+        <input class="input" type="text" name="note" placeholder="面试备注（可选，将写入所选记录）" style="flex:1;min-width:200px;">
+        <button type="submit" name="result" value="first_pass" class="btn btn-primary btn-sm">一面通过 → 预备</button>
+        <button type="submit" name="result" value="second_pass" class="btn btn-primary btn-sm">二面通过 → 正式</button>
+        <button type="submit" name="result" value="reject" class="btn btn-danger btn-sm">未录取</button>
+        <button type="submit" name="result" value="reset" class="btn btn-ghost btn-sm">重置</button>
+    </div>
+
+    <div class="dash-table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th style="width:36px;"><input type="checkbox" id="check-all"></th>
+                <th>报名人</th><th>意向</th><th>特长</th><th>自我介绍</th>
+                <th>当前等级</th><th>进展</th><th>面试备注</th><th>报名时间</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for a in applications %}
+                <tr>
+                    <td><input type="checkbox" name="ids" value="{{ a.pk }}" class="row-check"></td>
+                    <td>
+                        <strong>{{ a.user.display_name }}</strong>
+                        <small style="color:var(--muted);"> @{{ a.user.username }}</small><br>
+                        <small style="color:var(--muted);">{{ a.user.student_id|default:"—" }} · {{ a.user.college|default:"—" }} · {{ a.user.grade|default:"" }}</small>
+                    </td>
+                    <td>{{ a.get_department_display }}</td>
+                    <td>{{ a.skills|default:"—"|truncatechars:20 }}</td>
+                    <td><span title="{{ a.self_intro }}">{{ a.self_intro|truncatechars:36 }}</span></td>
+                    <td><span class="badge" style="color:#fff;background:{{ a.user.level_color }};border-color:{{ a.user.level_color }};">{{ a.user.level_label }}</span></td>
+                    <td><span class="badge" style="color:#fff;background:{{ a.status_color }};border-color:{{ a.status_color }};">{{ a.get_status_display }}</span></td>
+                    <td>{{ a.interview_note|default:"—"|truncatechars:24 }}</td>
+                    <td>{{ a.created_at|date:"m-d H:i" }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="9"><div class="dash-empty">该筛选下还没有报名者。</div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</form>
+
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var all = document.getElementById("check-all");
+    if (!all) return;
+    var boxes = document.querySelectorAll(".row-check");
+    all.addEventListener("change", function () {
+        boxes.forEach(function (b) { b.checked = all.checked; });
+    });
+})();
+</script>
+{% endblock %}

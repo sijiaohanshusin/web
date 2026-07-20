@@ -35,6 +35,7 @@
             <a href="{% url 'core:home' %}">首页</a>
             <a href="{% url 'news:list' %}">公告</a>
             <a href="{% url 'events:list' %}">活动</a>
+            {% if recruitment_open %}<a href="{% url 'recruitment:index' %}" class="nav-hot">招新</a>{% endif %}
             <a href="{% url 'core:recruit' %}">新生指南</a>
             <a href="/learn/electronics/">学习中心</a>
             <a href="{% url 'files:list' %}">资料站</a>

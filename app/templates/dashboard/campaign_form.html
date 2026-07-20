@@ -1,0 +1,30 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}{% if campaign %}编辑招新批次{% else %}新建招新批次{% endif %}{% endblock %}
+{% block page_title %}{% if campaign %}编辑招新批次{% else %}新建招新批次{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="dash-panel news-form-panel">
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            {% if field.name == "intro" %}
+                {% include "includes/md_editor.html" %}
+            {% else %}
+                {% include "includes/field.html" %}
+            {% endif %}
+        {% endfor %}
+        <div class="news-form-actions">
+            <button type="submit" class="btn btn-primary">{% if campaign %}保存修改{% else %}创建批次{% endif %}</button>
+            <a class="btn btn-ghost" href="{% url 'dashboard:recruitment' %}">取消</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/md-editor.js' %}" defer></script>
+{% endblock %}
