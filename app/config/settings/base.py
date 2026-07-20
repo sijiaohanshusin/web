@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "events",
     "points",
     "recruitment",
+    "projects",
 ]
 
 # ---- simpleui（Admin 美化）----

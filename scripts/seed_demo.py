@@ -20,6 +20,7 @@ from django.utils import timezone  # noqa: E402
 from accounts import roles  # noqa: E402
 from news.models import Post  # noqa: E402
 from notify.services import notify_user  # noqa: E402
+from projects.models import Project, ProjectFolder, ProjectMember  # noqa: E402
 from recruitment.models import Application, Campaign  # noqa: E402
 
 User = get_user_model()
@@ -87,5 +88,19 @@ for i in range(3):
             },
         )
 
+lead = User.objects.filter(username="demo0").first()
+project, _ = Project.objects.get_or_create(
+    name="电赛信号源复刻",
+    defaults={
+        "summary": "基于 AD9959 + H743 的多通道信号源，作为电赛模板项目沉淀设计文件与代码。",
+        "department": Project.Department.JOINT,
+        "created_by": lead,
+    },
+)
+if lead:
+    ProjectMember.objects.get_or_create(project=project, user=lead, defaults={"role": ProjectMember.Role.LEAD})
+for folder_name in ("设计文档", "固件代码", "PCB"):
+    ProjectFolder.objects.get_or_create(project=project, parent=None, name=folder_name, defaults={"created_by": lead})
+
 print("seeded ok, users:", User.objects.count(), "posts:", Post.objects.count(),
-      "applications:", Application.objects.count())
+      "applications:", Application.objects.count(), "projects:", Project.objects.count())

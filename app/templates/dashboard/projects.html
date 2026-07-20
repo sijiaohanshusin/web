@@ -1,0 +1,75 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}项目档案管理{% endblock %}
+{% block page_title %}项目档案管理{% endblock %}
+
+{% block content %}
+
+<div class="dash-toolbar">
+    <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;">
+        <input class="input" type="search" name="q" value="{{ query }}" placeholder="搜索项目名称或简介…">
+        <button type="submit" class="btn btn-outline btn-sm">搜索</button>
+    </form>
+    <a class="btn btn-primary" href="{% url 'dashboard:project_create' %}" style="margin-left:auto;">+ 新建项目</a>
+</div>
+
+<div class="dash-table-wrap">
+    <table class="table">
+        <thead>
+        <tr><th>项目</th><th>方向</th><th>成员</th><th>文件</th><th>状态</th><th style="width:280px;"></th></tr>
+        </thead>
+        <tbody>
+        {% for p in page.object_list %}
+            <tr>
+                <td>
+                    <a href="{% url 'projects:detail' p.pk %}" target="_blank" rel="noopener"><strong>{{ p.name }}</strong></a>
+                    {% if p.summary %}<br><small style="color:var(--muted);">{{ p.summary|truncatechars:40 }}</small>{% endif %}
+                </td>
+                <td><span class="badge badge-blue">{{ p.get_department_display }}</span></td>
+                <td>{{ p.member_total }}</td>
+                <td>{{ p.file_total }}</td>
+                <td>
+                    {% if p.status == 'archived' %}<span class="badge badge-gray">已归档</span>
+                    {% else %}<span class="badge badge-green">进行中</span>{% endif %}
+                </td>
+                <td class="dash-row-actions">
+                    <a class="btn btn-outline btn-sm" href="{% url 'dashboard:project_edit' p.pk %}">编辑</a>
+                    <form method="post" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" value="{{ p.pk }}">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        {% if p.status == 'archived' %}
+                            <input type="hidden" name="action" value="activate">
+                            <button type="submit" class="btn btn-ghost btn-sm">恢复</button>
+                        {% else %}
+                            <input type="hidden" name="action" value="archive">
+                            <button type="submit" class="btn btn-ghost btn-sm">归档</button>
+                        {% endif %}
+                    </form>
+                    {% if is_admin %}
+                    <form method="post" class="inline-form" onsubmit="return confirm('删除项目「{{ p.name }}」？所有文件将一并删除。');">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" value="{{ p.pk }}">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6"><div class="dash-empty">还没有项目，点右上角「新建项目」创建第一个。</div></td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if page.paginator.num_pages > 1 %}
+<div class="pagination">
+    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}">‹</a>{% endif %}
+    <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?page={{ page.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}">›</a>{% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

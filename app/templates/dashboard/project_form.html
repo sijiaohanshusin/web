@@ -1,0 +1,31 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{% if project %}编辑项目{% else %}新建项目{% endif %}{% endblock %}
+{% block page_title %}{% if project %}编辑项目{% else %}新建项目{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="dash-panel news-form-panel">
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            {% include "includes/field.html" %}
+        {% endfor %}
+        {% if not project %}
+        <div class="form-group">
+            <label for="lead-input">负责人（可选）</label>
+            <input class="input" id="lead-input" type="text" name="lead" placeholder="用户名或学号，创建后指派为负责人">
+            <small class="form-help">留空则稍后在项目页添加成员并指派负责人。</small>
+        </div>
+        {% endif %}
+        <div class="news-form-actions">
+            <button type="submit" class="btn btn-primary">{% if project %}保存修改{% else %}创建项目{% endif %}</button>
+            <a class="btn btn-ghost" href="{% url 'dashboard:projects' %}">取消</a>
+            {% if project %}
+                <a class="btn btn-outline" href="{% url 'projects:detail' project.pk %}" target="_blank" rel="noopener">打开项目 ↗</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+{% endblock %}

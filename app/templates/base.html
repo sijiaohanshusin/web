@@ -39,6 +39,7 @@
             <a href="{% url 'core:recruit' %}">新生指南</a>
             <a href="/learn/electronics/">学习中心</a>
             <a href="{% url 'files:list' %}">资料站</a>
+            {% if user.is_authenticated and user.is_member %}<a href="{% url 'projects:list' %}">项目</a>{% endif %}
             <a href="{{ forum_url }}" target="_blank" rel="noopener">论坛</a>
             <a href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">B 站频道 ↗</a>
         </nav>

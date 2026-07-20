@@ -1290,6 +1290,45 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 .recruit-status-timeline li.done::before { border-color: var(--accent); background: var(--accent); }
 
 /* ============================================================
+   项目档案库
+   ============================================================ */
+.proj-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.proj-card {
+    display: flex; flex-direction: column; gap: 8px; padding: 18px 20px;
+    border: 1px solid var(--line-d); border-radius: var(--radius); background: var(--panel);
+    transition: border-color .25s, transform .25s var(--ease-out);
+}
+a.proj-card:hover { border-color: rgba(13, 169, 205, .55); transform: translateY(-2px); }
+.proj-card-locked { opacity: .72; cursor: default; }
+.proj-card-head { display: flex; gap: 8px; flex-wrap: wrap; }
+.proj-card-title { color: #fff; font-size: 16.5px; }
+.proj-card-summary { color: var(--muted); font-size: 13.5px; line-height: 1.6; flex: 1; }
+.proj-card-foot { color: var(--accent-2); font-size: 12.5px; font-family: var(--font-mono); }
+.proj-card-locked .proj-card-foot { color: var(--muted); }
+
+.proj-summary { color: var(--text); font-size: 14.5px; line-height: 1.7; max-width: 720px; }
+.proj-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; }
+.proj-breadcrumb { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; font-size: 14px; }
+.proj-breadcrumb a { color: var(--accent-2); }
+.proj-breadcrumb .sep { color: var(--muted); }
+.proj-breadcrumb .cur { color: #fff; }
+.proj-ops { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+.proj-op-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.proj-op-form .input { max-width: 220px; }
+.proj-file-table td { vertical-align: middle; }
+.proj-folder-link { color: var(--accent-2); font-weight: 600; }
+.proj-file-ext {
+    display: inline-block; min-width: 42px; text-align: center; font-size: 11px; font-family: var(--font-mono);
+    color: var(--muted); border: 1px solid var(--line-d); border-radius: 6px; padding: 1px 6px; margin-right: 4px;
+}
+.proj-members { list-style: none; padding: 0; margin: 0 0 14px; display: flex; flex-direction: column; gap: 8px; }
+.proj-members li { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text); }
+.proj-members-empty { color: var(--muted); font-size: 13.5px; }
+.proj-member-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 2px; }
+.proj-member-remove:hover { color: var(--danger); }
+.proj-add-member { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; border-top: 1px solid var(--line-d); padding-top: 12px; }
+
+/* ============================================================
    响应式
    ============================================================ */
 @media (max-width: 1024px) {
@@ -1302,6 +1341,8 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
     .profile-grid { grid-template-columns: 1fr; }
     .recruit-layout { grid-template-columns: 1fr; }
     .recruit-apply-layout { grid-template-columns: 1fr; }
+    .proj-grid { grid-template-columns: repeat(2, 1fr); }
+    .proj-layout { grid-template-columns: 1fr; }
     .recruit-toc { position: static; display: flex; flex-wrap: wrap; gap: 6px; border-left: none; margin-bottom: 6px; }
     .recruit-toc a { border-left: none; border: 1px solid var(--line-d); border-radius: 999px; padding: 6px 14px; font-size: 13px; }
     .recruit-toc a.active { border-color: var(--accent); background: rgba(13, 169, 205, .08); }
@@ -1352,4 +1393,7 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
     .event-card-date { flex-direction: row; gap: 8px; width: auto; border-right: none; padding-right: 0; align-items: baseline; }
     .event-card-date strong { font-size: 22px; }
     .event-info-label { width: 60px; }
+
+    .proj-grid { grid-template-columns: 1fr; }
+    .proj-ops { flex-direction: column; gap: 10px; }
 }

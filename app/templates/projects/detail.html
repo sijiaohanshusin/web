@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container page-section">
+    <div class="page-head">
+        <p class="nf-eyebrow">// PROJECT</p>
+        <h1>{{ project.name }}</h1>
+        <p>
+            <span class="badge badge-blue">{{ project.get_department_display }}</span>
+            {% if project.status == 'archived' %}<span class="badge badge-gray">已归档</span>{% else %}<span class="badge badge-green">进行中</span>{% endif %}
+        </p>
+        {% if project.summary %}<p class="proj-summary">{{ project.summary }}</p>{% endif %}
+    </div>
+
+    <div class="proj-layout">
+        <div class="proj-main">
+            {# ---- 面包屑 ---- #}
+            <div class="proj-breadcrumb">
+                <a href="{% url 'projects:detail' project.pk %}">根目录</a>
+                {% for f in breadcrumb %}
+                    <span class="sep">/</span>
+                    {% if forloop.last %}<span class="cur">{{ f.name }}</span>{% else %}<a href="{% url 'projects:folder' project.pk f.pk %}">{{ f.name }}</a>{% endif %}
+                {% endfor %}
+            </div>
+
+            {# ---- 操作区（可编辑成员） ---- #}
+            {% if can_edit %}
+            <div class="proj-ops">
+                <form method="post" action="{% url 'projects:create_folder' project.pk %}" class="proj-op-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="parent" value="{{ folder.pk|default:'' }}">
+                    <input class="input" type="text" name="name" placeholder="新建目录名" maxlength="100" required>
+                    <button type="submit" class="btn btn-outline btn-sm">新建目录</button>
+                </form>
+                <form method="post" action="{% url 'projects:upload' project.pk %}" class="proj-op-form" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="folder" value="{{ folder.pk|default:'' }}">
+                    <input class="input" type="file" name="files" multiple required>
+                    <button type="submit" class="btn btn-primary btn-sm">上传文件</button>
+                </form>
+            </div>
+            {% endif %}
+
+            {# ---- 目录树当前层 ---- #}
+            <div class="dash-table-wrap">
+                <table class="table proj-file-table">
+                    <thead><tr><th>名称</th><th>大小</th><th>上传者</th><th>时间</th><th></th></tr></thead>
+                    <tbody>
+                    {% for sf in subfolders %}
+                        <tr>
+                            <td><a href="{% url 'projects:folder' project.pk sf.pk %}" class="proj-folder-link">📁 {{ sf.name }}</a></td>
+                            <td>—</td><td>{{ sf.created_by.display_name|default:"—" }}</td><td>{{ sf.created_at|date:"m-d H:i" }}</td>
+                            <td class="dash-row-actions">
+                                {% if can_edit %}
+                                <form method="post" action="{% url 'projects:delete_folder' project.pk sf.pk %}" class="inline-form"
+                                      onsubmit="return confirm('删除目录「{{ sf.name }}」及其中所有文件？');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% for f in files %}
+                        <tr>
+                            <td><span class="proj-file-ext">{{ f.extension }}</span> {{ f.name }}</td>
+                            <td>{{ f.size|filesizeformat }}</td>
+                            <td>{{ f.uploader.display_name|default:"—" }}</td>
+                            <td>{{ f.created_at|date:"m-d H:i" }}</td>
+                            <td class="dash-row-actions">
+                                <a class="btn btn-ghost btn-sm" href="{% url 'projects:download' project.pk f.pk %}">下载</a>
+                                {% if can_edit %}
+                                <form method="post" action="{% url 'projects:delete_file' project.pk f.pk %}" class="inline-form"
+                                      onsubmit="return confirm('删除文件「{{ f.name }}」？');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        {% if not subfolders %}
+                        <tr><td colspan="5"><div class="dash-empty">这个目录还是空的{% if can_edit %}，上传文件或新建子目录吧{% endif %}。</div></td></tr>
+                        {% endif %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <p style="margin-top:20px;"><a class="btn btn-ghost" href="{% url 'projects:list' %}">← 返回项目列表</a></p>
+        </div>
+
+        {# ---- 成员侧栏 ---- #}
+        <aside class="proj-side">
+            <div class="panel">
+                <h2>项目成员</h2>
+                <ul class="proj-members">
+                    {% for m in members %}
+                        <li>
+                            <span class="nav-user-dot"></span>
+                            {{ m.user.display_name }}
+                            {% if m.role == 'lead' %}<span class="badge badge-amber">负责人</span>{% endif %}
+                            {% if can_manage %}
+                            <form method="post" action="{% url 'projects:members' project.pk %}" class="inline-form"
+                                  onsubmit="return confirm('移除 {{ m.user.display_name }}？');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="remove">
+                                <input type="hidden" name="member_id" value="{{ m.pk }}">
+                                <button type="submit" class="proj-member-remove" title="移除">×</button>
+                            </form>
+                            {% endif %}
+                        </li>
+                    {% empty %}
+                        <li class="proj-members-empty">还没有成员</li>
+                    {% endfor %}
+                </ul>
+                {% if can_manage %}
+                <form method="post" action="{% url 'projects:members' project.pk %}" class="proj-add-member">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add">
+                    <input class="input" type="text" name="username" placeholder="用户名或学号" required>
+                    <select class="input" name="role">
+                        <option value="member">成员</option>
+                        <option value="lead">负责人</option>
+                    </select>
+                    <button type="submit" class="btn btn-outline btn-sm btn-block">添加成员</button>
+                </form>
+                {% endif %}
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}

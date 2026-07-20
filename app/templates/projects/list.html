@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}项目档案库 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}电子科技协会项目档案库：课题与作品的资料归档，成员协作。{% endblock %}
+
+{% block content %}
+<div class="container page-section">
+    <div class="page-head">
+        <p class="nf-eyebrow">// PROJECTS</p>
+        <h1>项目档案库</h1>
+        <p>课题与作品的资料归档空间。项目成员可上传管理文件，其他会员可浏览项目名片。</p>
+    </div>
+
+    <div class="filter-bar">
+        <div class="filter-tabs">
+            <a href="?status=active{% if dept %}&dept={{ dept }}{% endif %}" class="{% if status == 'active' %}active{% endif %}">进行中</a>
+            <a href="?status=archived{% if dept %}&dept={{ dept }}{% endif %}" class="{% if status == 'archived' %}active{% endif %}">已归档</a>
+        </div>
+        <div class="filter-spacer"></div>
+        <div class="filter-tabs">
+            <a href="?status={{ status }}" class="{% if not dept %}active{% endif %}">全部方向</a>
+            {% for value, label in departments %}
+                <a href="?status={{ status }}&dept={{ value }}" class="{% if dept == value %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if projects %}
+        <div class="proj-grid">
+            {% for p in projects %}
+            {% if p.pk in my_project_ids or is_officer %}
+                <a class="proj-card" href="{% url 'projects:detail' p.pk %}">
+            {% else %}
+                <div class="proj-card proj-card-locked" title="加入项目后可查看文件">
+            {% endif %}
+                <span class="proj-card-head">
+                    <span class="badge badge-blue">{{ p.get_department_display }}</span>
+                    {% if p.status == 'archived' %}<span class="badge badge-gray">已归档</span>{% endif %}
+                    {% if p.pk in my_project_ids %}<span class="badge badge-green">我的项目</span>{% endif %}
+                </span>
+                <strong class="proj-card-title">{{ p.name }}</strong>
+                <span class="proj-card-summary">{{ p.summary|default:"暂无简介"|truncatechars:60 }}</span>
+                <span class="proj-card-foot">
+                    {{ p.members.count }} 名成员
+                    {% if p.pk in my_project_ids or is_officer %} · 查看文件 →{% else %} · 🔒 仅成员可见文件{% endif %}
+                </span>
+            {% if p.pk in my_project_ids or is_officer %}
+                </a>
+            {% else %}
+                </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-hint">
+            <span class="empty-icon">{% include "includes/icon.html" with name="folder" cls="icon-lg" %}</span>
+            {% if status == 'archived' %}还没有已归档的项目{% else %}还没有进行中的项目{% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

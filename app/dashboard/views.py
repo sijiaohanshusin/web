@@ -29,6 +29,8 @@ from points.models import PointLog
 from points.services import award_points
 from recruitment.forms import CampaignForm
 from recruitment.models import Application, Campaign
+from projects.forms import ProjectForm
+from projects.models import Project, ProjectMember
 
 from .decorators import admin_required, officer_required
 from .forms import CarouselImageForm, SiteConfigForm
@@ -810,6 +812,83 @@ def campaign_edit(request, pk: int | None = None):
 
     context = {"active_nav": "recruitment", "form": form, "campaign": campaign}
     return render(request, "dashboard/campaign_form.html", context)
+
+
+# ---------------------------------------------------------------- 项目档案管理
+
+@officer_required
+def projects_manage(request):
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+        project = get_object_or_404(Project, pk=request.POST.get("id"))
+        if action == "archive":
+            project.status = Project.Status.ARCHIVED
+            project.save(update_fields=["status", "updated_at"])
+            messages.success(request, f"项目「{project.name}」已归档。")
+        elif action == "activate":
+            project.status = Project.Status.ACTIVE
+            project.save(update_fields=["status", "updated_at"])
+            messages.success(request, f"项目「{project.name}」已恢复为进行中。")
+        elif action == "delete":
+            if not _is_admin(request.user):
+                messages.error(request, "删除项目需要管理员权限。")
+            else:
+                name = project.name
+                for f in project.files.all():
+                    f.file.delete(save=False)
+                project.delete()
+                messages.success(request, f"项目「{name}」及其文件已删除。")
+        return redirect(request.POST.get("next") or "dashboard:projects")
+
+    items = Project.objects.select_related("created_by").annotate(
+        member_total=Count("members", distinct=True),
+        file_total=Count("files", distinct=True),
+    )
+    query = request.GET.get("q", "").strip()
+    if query:
+        items = items.filter(Q(name__icontains=query) | Q(summary__icontains=query))
+
+    paginator = Paginator(items, 20)
+    page = paginator.get_page(request.GET.get("page"))
+
+    context = {
+        "active_nav": "projects",
+        "page": page,
+        "query": query,
+        "is_admin": _is_admin(request.user),
+    }
+    return render(request, "dashboard/projects.html", context)
+
+
+@officer_required
+def project_edit(request, pk: int | None = None):
+    project = get_object_or_404(Project, pk=pk) if pk else None
+
+    if request.method == "POST":
+        form = ProjectForm(request.POST, instance=project)
+        lead_name = (request.POST.get("lead") or "").strip()
+        if form.is_valid():
+            item = form.save(commit=False)
+            if item.created_by_id is None:
+                item.created_by = request.user
+            item.save()
+            # 指派负责人（用用户名或学号）
+            if lead_name:
+                lead = User.objects.filter(username=lead_name).first() or \
+                    User.objects.filter(student_id=lead_name).first()
+                if lead is None:
+                    messages.warning(request, f"项目已保存，但没找到负责人「{lead_name}」，请到项目页手动指派。")
+                else:
+                    ProjectMember.objects.update_or_create(
+                        project=item, user=lead, defaults={"role": ProjectMember.Role.LEAD},
+                    )
+            messages.success(request, f"项目「{item.name}」已{'更新' if pk else '创建'}。")
+            return redirect("dashboard:projects")
+    else:
+        form = ProjectForm(instance=project)
+
+    context = {"active_nav": "projects", "form": form, "project": project}
+    return render(request, "dashboard/project_form.html", context)
 
 
 # ---------------------------------------------------------------- 站点设置（仅管理员）
