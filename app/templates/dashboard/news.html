@@ -1,0 +1,90 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}公告管理{% endblock %}
+{% block page_title %}公告管理{% endblock %}
+
+{% block content %}
+
+<div class="dash-tabs">
+    <a href="{% url 'dashboard:news' %}" class="{% if not category %}active{% endif %}">全部</a>
+    {% for value, label in categories %}
+        <a href="?category={{ value }}" class="{% if category == value %}active{% endif %}">{{ label }}</a>
+    {% endfor %}
+</div>
+
+<div class="dash-toolbar">
+    <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;">
+        {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+        <input class="input" type="search" name="q" value="{{ query }}" placeholder="搜索标题或正文…">
+        <button type="submit" class="btn btn-outline btn-sm">搜索</button>
+    </form>
+    <a class="btn btn-primary" href="{% url 'dashboard:news_create' %}" style="margin-left:auto;">+ 写公告</a>
+</div>
+
+<div class="dash-table-wrap">
+    <table class="table">
+        <thead>
+        <tr><th>标题</th><th>栏目</th><th>可见范围</th><th>状态</th><th>浏览</th><th>作者</th><th>发布时间</th><th style="width:220px;"></th></tr>
+        </thead>
+        <tbody>
+        {% for p in page.object_list %}
+            <tr>
+                <td>
+                    <a href="{% url 'news:detail' p.pk %}" target="_blank" rel="noopener"><strong>{{ p.title }}</strong></a>
+                    {% if p.pinned %}<span class="badge badge-amber">置顶</span>{% endif %}
+                </td>
+                <td><span class="badge badge-blue">{{ p.get_category_display }}</span></td>
+                <td>
+                    {% if p.min_level == 0 %}<span class="badge badge-green">公开</span>
+                    {% else %}<span class="badge badge-amber">{{ p.get_min_level_display }}</span>{% endif %}
+                </td>
+                <td>
+                    {% if p.is_published %}<span class="badge badge-green">已发布</span>
+                    {% else %}<span class="badge badge-gray">已下架</span>{% endif %}
+                </td>
+                <td>{{ p.view_count }}</td>
+                <td>{{ p.author.display_name|default:"—" }}</td>
+                <td>{{ p.published_at|date:"Y-m-d H:i" }}</td>
+                <td class="dash-row-actions">
+                    <a class="btn btn-outline btn-sm" href="{% url 'dashboard:news_edit' p.pk %}">编辑</a>
+                    <form method="post" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" value="{{ p.pk }}">
+                        <input type="hidden" name="action" value="pin">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-ghost btn-sm">{% if p.pinned %}取消置顶{% else %}置顶{% endif %}</button>
+                    </form>
+                    <form method="post" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" value="{{ p.pk }}">
+                        <input type="hidden" name="action" value="toggle_publish">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-ghost btn-sm">{% if p.is_published %}下架{% else %}发布{% endif %}</button>
+                    </form>
+                    {% if is_admin or p.author_id == user.pk %}
+                    <form method="post" class="inline-form" onsubmit="return confirm('删除公告「{{ p.title }}」？不可恢复。');">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" value="{{ p.pk }}">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="8"><div class="dash-empty">还没有公告，点右上角「写公告」发第一篇。</div></td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if page.paginator.num_pages > 1 %}
+<div class="pagination">
+    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}{% if category %}&category={{ category }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}">‹</a>{% endif %}
+    <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?page={{ page.next_page_number }}{% if category %}&category={{ category }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}">›</a>{% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

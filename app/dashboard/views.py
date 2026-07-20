@@ -10,12 +10,18 @@ from django.views.decorators.http import require_POST
 
 from django.utils import timezone
 
+import uuid
+
 from accounts import roles
 from accounts.models import Medal, Position, UserMedal
 from core import bilibili
 from core.models import CarouselImage, Feedback, SiteConfig
 from files.forms import ResourceUploadForm
 from files.models import Resource
+from news.forms import PostForm
+from news.models import Post
+from notify.models import Notification
+from notify.services import notify_user
 
 from .decorators import admin_required, officer_required
 from .forms import CarouselImageForm, SiteConfigForm
@@ -242,6 +248,11 @@ def feedbacks(request):
             item.resolved_by = request.user
             item.resolved_at = timezone.now()
             item.save(update_fields=["status", "admin_note", "resolved_by", "resolved_at"])
+            notify_user(
+                item.user, f"你的反馈 #{item.pk} 已处理",
+                kind=Notification.Kind.FEEDBACK, body=item.admin_note,
+                url=f"/feedback/{item.pk}/",
+            )
             messages.success(request, f"反馈 #{item.pk} 已标记为已处理。")
         elif action == "reopen":
             item.status = Feedback.Status.PENDING
@@ -295,10 +306,16 @@ def medals(request):
         if form == "grant":
             medal = get_object_or_404(Medal, pk=request.POST.get("medal_id"))
             user = get_object_or_404(User, pk=request.POST.get("user_id"))
+            reason = request.POST.get("reason", "").strip()
             _, created = UserMedal.objects.get_or_create(
                 user=user, medal=medal,
-                defaults={"reason": request.POST.get("reason", "").strip(), "granted_by": request.user},
+                defaults={"reason": reason, "granted_by": request.user},
             )
+            if created:
+                notify_user(
+                    user, f"你获得了勋章「{medal.icon} {medal.name}」",
+                    kind=Notification.Kind.MEDAL, body=reason, url="/accounts/profile/",
+                )
             messages.success(request, f"已授予 {user.display_name}「{medal.name}」。" if created else "该成员已拥有此勋章。")
             return redirect("dashboard:medals")
         if form == "delete_medal":
@@ -406,6 +423,103 @@ def resource_delete(request, pk: int):
     resource.delete()
     messages.success(request, f"已删除资料「{title}」。")
     return redirect("dashboard:resources")
+
+
+# ---------------------------------------------------------------- 公告管理
+
+@officer_required
+def news_manage(request):
+    if request.method == "POST":
+        item = get_object_or_404(Post, pk=request.POST.get("id"))
+        action = request.POST.get("action", "")
+        if action == "pin":
+            item.pinned = not item.pinned
+            item.save(update_fields=["pinned"])
+            messages.success(request, f"「{item.title}」已{'置顶' if item.pinned else '取消置顶'}。")
+        elif action == "toggle_publish":
+            item.is_published = not item.is_published
+            item.save(update_fields=["is_published"])
+            messages.success(request, f"「{item.title}」已{'重新发布' if item.is_published else '下架'}。")
+        elif action == "delete":
+            if not (_is_admin(request.user) or item.author_id == request.user.pk):
+                messages.error(request, "只能删除自己发布的公告（或需要管理员权限）。")
+            else:
+                title = item.title
+                if item.cover:
+                    item.cover.delete(save=False)
+                item.delete()
+                messages.success(request, f"公告「{title}」已删除。")
+        return redirect(request.POST.get("next") or "dashboard:news")
+
+    items = Post.objects.select_related("author")
+    query = request.GET.get("q", "").strip()
+    if query:
+        items = items.filter(Q(title__icontains=query) | Q(body__icontains=query))
+    category = request.GET.get("category", "")
+    if category in Post.Category.values:
+        items = items.filter(category=category)
+
+    paginator = Paginator(items, 20)
+    page = paginator.get_page(request.GET.get("page"))
+
+    context = {
+        "active_nav": "news",
+        "page": page,
+        "query": query,
+        "category": category,
+        "categories": Post.Category.choices,
+        "is_admin": _is_admin(request.user),
+    }
+    return render(request, "dashboard/news.html", context)
+
+
+@officer_required
+def news_edit(request, pk: int | None = None):
+    post = get_object_or_404(Post, pk=pk) if pk else None
+
+    if request.method == "POST":
+        form = PostForm(request.POST, request.FILES, instance=post)
+        if form.is_valid():
+            item = form.save(commit=False)
+            if item.author_id is None:
+                item.author = request.user
+            item.save()
+            messages.success(request, f"公告「{item.title}」已{'更新' if pk else '发布'}。")
+            return redirect("dashboard:news")
+    else:
+        form = PostForm(instance=post)
+
+    context = {
+        "active_nav": "news",
+        "form": form,
+        "post": post,
+    }
+    return render(request, "dashboard/news_form.html", context)
+
+
+_INLINE_IMAGE_TYPES = {"image/jpeg": ".jpg", "image/png": ".png", "image/gif": ".gif", "image/webp": ".webp"}
+
+
+@officer_required
+@require_POST
+def news_upload_image(request):
+    """公告正文配图上传（AJAX），返回可直接插入 Markdown 的 URL。"""
+    from django.core.files.storage import default_storage
+    from django.http import JsonResponse
+    from django.utils import timezone as tz
+
+    file = request.FILES.get("image")
+    if not file:
+        return JsonResponse({"ok": False, "msg": "没有收到图片。"}, status=400)
+    ext = _INLINE_IMAGE_TYPES.get(file.content_type)
+    if not ext:
+        return JsonResponse({"ok": False, "msg": "仅支持 JPG / PNG / GIF / WebP 图片。"}, status=400)
+    if file.size > 10 * 1024 * 1024:
+        return JsonResponse({"ok": False, "msg": "图片超过 10MB，请压缩后再传。"}, status=400)
+
+    name = f"news/inline/{tz.now():%Y/%m}/{uuid.uuid4().hex[:12]}{ext}"
+    saved = default_storage.save(name, file)
+    return JsonResponse({"ok": True, "url": default_storage.url(saved)})
 
 
 # ---------------------------------------------------------------- 站点设置（仅管理员）

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}公告 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}哈尔滨工程大学电子科技协会通知公告、协会动态与获奖喜报。{% endblock %}
+
+{% block content %}
+<div class="container page-section">
+    <div class="page-head">
+        <p class="nf-eyebrow">// NEWS</p>
+        <h1>公告</h1>
+        <p>协会的通知公告、最新动态与获奖喜报。</p>
+    </div>
+
+    <div class="filter-bar">
+        <div class="filter-tabs">
+            <a href="{% url 'news:list' %}" class="{% if not category %}active{% endif %}">全部</a>
+            {% for value, label in categories %}
+                <a href="?category={{ value }}" class="{% if category == value %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if page.object_list %}
+        <div class="news-grid">
+            {% for p in page.object_list %}
+            <a class="news-card" href="{% url 'news:detail' p.pk %}">
+                {% if p.cover %}
+                    <span class="news-card-cover"><img src="{{ p.cover.url }}" alt="{{ p.title }}" loading="lazy"></span>
+                {% endif %}
+                <span class="news-card-body">
+                    <span class="news-card-meta">
+                        {% if p.pinned %}<span class="badge badge-amber">置顶</span>{% endif %}
+                        <span class="badge badge-blue">{{ p.get_category_display }}</span>
+                        {% if p.min_level > 0 %}<span class="badge badge-gray">{{ p.get_min_level_display }}</span>{% endif %}
+                    </span>
+                    <strong class="news-card-title">{{ p.title }}</strong>
+                    <span class="news-card-excerpt">{{ p.excerpt }}</span>
+                    <span class="news-card-foot">{{ p.published_at|date:"Y-m-d" }} · {{ p.view_count }} 次浏览</span>
+                </span>
+            </a>
+            {% endfor %}
+        </div>
+
+        {% if page.paginator.num_pages > 1 %}
+            <div class="pagination">
+                {% if page.has_previous %}
+                    <a href="?page={{ page.previous_page_number }}{% if category %}&category={{ category }}{% endif %}">‹</a>
+                {% endif %}
+                <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+                {% if page.has_next %}
+                    <a href="?page={{ page.next_page_number }}{% if category %}&category={{ category }}{% endif %}">›</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-hint">
+            <span class="empty-icon">{% include "includes/icon.html" with name="news" cls="icon-lg" %}</span>
+            这里还没有公告
+            {% if not user.is_authenticated %}<br><br><a href="{% url 'accounts:login' %}">登录</a>后可查看更多会员公告{% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

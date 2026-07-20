@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""本地开发演示数据：造几个会员和待审核用户（幂等，仅限本地调试用）。"""
+"""本地开发演示数据：会员、待审核用户、公告、通知（幂等，仅限本地调试用）。"""
 import os
 import sys
 from pathlib import Path
@@ -12,10 +12,12 @@ import django  # noqa: E402
 django.setup()
 
 from django.contrib.auth import get_user_model  # noqa: E402
-from django.contrib.auth.models import Group  # noqa: E402
+
+from accounts import roles  # noqa: E402
+from news.models import Post  # noqa: E402
+from notify.services import notify_user  # noqa: E402
 
 User = get_user_model()
-member_group = Group.objects.get(name="会员")
 
 MEMBERS = [
     ("张三", "2025", "信通学院"),
@@ -33,7 +35,7 @@ for i, (name, grade, college) in enumerate(MEMBERS):
         user.set_password("demo12345")
         user.is_active = True
         user.save()
-        user.groups.add(member_group)
+        user.set_level(roles.LEVEL_FORMAL, note="演示数据")
 
 PENDING = ["小明", "小红", "小刚"]
 for i, name in enumerate(PENDING):
@@ -45,4 +47,17 @@ for i, name in enumerate(PENDING):
         },
     )
 
-print("seeded ok, total users:", User.objects.count())
+author = User.objects.filter(username="demo0").first()
+POSTS = [
+    ("2026 秋季招新即将启动", Post.Category.NOTICE, "# 招新啦\n\n**9 月开学季**，欢迎 2026 级新同学！\n\n- 免费培训\n- 实验室开放\n- 电赛梯队", True),
+    ("暑期电赛集训队获佳绩", Post.Category.HONOR, "恭喜我协成员在 2026 年电子设计竞赛中获得 **国家一等奖** 2 项！", False),
+    ("资料站新增运放专题课件", Post.Category.ACTIVITY, "学习中心与资料站同步更新第 4 章运放高级应用配套课件，欢迎下载。", False),
+]
+for title, category, body, pinned in POSTS:
+    _, created = Post.objects.get_or_create(
+        title=title, defaults={"category": category, "body": body, "pinned": pinned, "author": author},
+    )
+    if created and author:
+        notify_user(author, f"演示：你发布的「{title}」已上线", kind="news", url="/news/")
+
+print("seeded ok, users:", User.objects.count(), "posts:", Post.objects.count())

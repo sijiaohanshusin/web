@@ -9,6 +9,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.templatetags.static import static
 
 from accounts.roles import is_officer
+from news.models import Post
+from notify.models import Notification
+from notify.services import notify_user
 
 from . import bilibili
 from .models import CarouselImage, Feedback, FeedbackReply, SiteConfig
@@ -51,12 +54,15 @@ def home(request):
 
     years = datetime.date.today().year - config.founding_year
 
+    latest_posts = list(Post.objects.published().visible_to(request.user)[:3])
+
     context = {
         "bili_stats": stats,
         "bili_videos": videos,
         "recruit_video": recruit_video,
         "gallery": gallery,
         "years": years,
+        "latest_posts": latest_posts,
     }
     return render(request, "core/home.html", context)
 
@@ -143,6 +149,13 @@ def feedback_detail(request, pk: int):
             messages.error(request, "回复内容超长（最多 2000 字）。")
         else:
             FeedbackReply.objects.create(feedback=fb, author=request.user, content=content)
+            # 管理组回复 -> 站内通知提交人（提交人自己回复不通知自己）
+            if fb.user_id and fb.user_id != request.user.pk:
+                notify_user(
+                    fb.user, f"你的反馈 #{fb.pk} 有新回复",
+                    kind=Notification.Kind.FEEDBACK, body=content[:200],
+                    url=f"/feedback/{fb.pk}/",
+                )
             # 提交人追问已处理的反馈 -> 自动重新打开，管理组会再次看到
             if fb.user_id == request.user.pk and fb.status == Feedback.Status.RESOLVED:
                 fb.status = Feedback.Status.PENDING

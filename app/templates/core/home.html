@@ -29,6 +29,31 @@
     </div>
 </section>
 
+<!-- ============ 最新公告（有公告才显示） ============ -->
+{% if latest_posts %}
+<section class="nf-news-strip nf-dark" data-nav="dark">
+    <div class="container">
+        <div class="nf-news-head">
+            <p class="nf-eyebrow">// 最新公告</p>
+            <a class="nf-link-more" href="{% url 'news:list' %}">全部公告 <span>→</span></a>
+        </div>
+        <div class="nf-news-row">
+            {% for p in latest_posts %}
+            <a class="nf-news-item reveal" href="{% url 'news:detail' p.pk %}">
+                <span class="nf-news-meta">
+                    {% if p.pinned %}<span class="badge badge-amber">置顶</span>{% endif %}
+                    <span class="badge badge-blue">{{ p.get_category_display }}</span>
+                    <time>{{ p.published_at|date:"m-d" }}</time>
+                </span>
+                <strong>{{ p.title }}</strong>
+                <span class="nf-news-excerpt">{{ p.excerpt|truncatechars:56 }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
 <!-- ============ 白色区：三个理由（照片卡骑跨黑白分界线） ============ -->
 <section class="nf-section nf-light nf-bridge" data-nav="light">
     <div class="container">

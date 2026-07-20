@@ -33,6 +33,7 @@
         </a>
         <nav class="nav-links" id="nav-links">
             <a href="{% url 'core:home' %}">首页</a>
+            <a href="{% url 'news:list' %}">公告</a>
             <a href="{% url 'core:recruit' %}">新生指南</a>
             <a href="/learn/electronics/">学习中心</a>
             <a href="{% url 'files:list' %}">资料站</a>
@@ -44,6 +45,22 @@
                 {% if user.is_officer %}
                     <a class="btn btn-outline btn-sm" href="{% url 'dashboard:overview' %}">管理</a>
                 {% endif %}
+                <div class="nav-bell-wrap" id="nav-bell-wrap">
+                    <a class="nav-bell" id="nav-bell" href="{% url 'notify:list' %}" title="通知中心"
+                       data-latest-url="{% url 'notify:latest_json' %}" aria-haspopup="true" aria-expanded="false">
+                        {% include "includes/icon.html" with name="bell" %}
+                        {% if unread_notifications %}<em class="nav-bell-badge">{{ unread_notifications }}</em>{% endif %}
+                    </a>
+                    <div class="bell-menu" id="bell-menu" hidden>
+                        <div class="bell-menu-head">
+                            <strong>通知</strong>
+                            <a href="{% url 'notify:list' %}">查看全部 →</a>
+                        </div>
+                        <div class="bell-menu-list" id="bell-menu-list">
+                            <div class="bell-menu-empty">加载中…</div>
+                        </div>
+                    </div>
+                </div>
                 <a class="nav-user" href="{% url 'accounts:profile' %}">
                     <span class="nav-user-dot"></span>{{ user.display_name }}
                 </a>
@@ -92,6 +109,7 @@
         </div>
         <div class="footer-col">
             <h4>快速入口</h4>
+            <a href="{% url 'news:list' %}">公告</a>
             <a href="{% url 'core:recruit' %}">新生指南</a>
             <a href="/learn/electronics/">电子学学习中心</a>
             <a href="{% url 'files:list' %}">资料站</a>
@@ -147,6 +165,7 @@
 {% endif %}
 
 <script src="{% static 'js/site.js' %}" defer></script>
+{% if user.is_authenticated %}<script src="{% static 'js/notify.js' %}" defer></script>{% endif %}
 {% block extra_js %}{% endblock %}
 </body>
 </html>

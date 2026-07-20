@@ -29,6 +29,9 @@
             <span class="dash-nav-icon">{% include "includes/icon.html" with name="chip" %}</span>会员管理
             {% if pending_count %}<em class="dash-badge">{{ pending_count }}</em>{% endif %}
         </a>
+        <a href="{% url 'dashboard:news' %}" class="{% if active_nav == 'news' %}active{% endif %}">
+            <span class="dash-nav-icon">{% include "includes/icon.html" with name="news" %}</span>公告管理
+        </a>
         <a href="{% url 'dashboard:resources' %}" class="{% if active_nav == 'resources' %}active{% endif %}">
             <span class="dash-nav-icon">{% include "includes/icon.html" with name="folder" %}</span>资料管理
         </a>

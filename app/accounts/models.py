@@ -97,7 +97,7 @@ class User(AbstractUser):
         return roles.is_admin(self)
 
     def set_level(self, level: int, actor=None, note: str = "") -> None:
-        """变更等级：写日志 + 同步激活状态与 Django 组。"""
+        """变更等级：写日志 + 同步激活状态与 Django 组 + 站内通知本人。"""
         old = self.member_level
         self.member_level = level
         if level >= roles.LEVEL_APPLICANT:
@@ -108,6 +108,18 @@ class User(AbstractUser):
             LevelLog.objects.create(
                 user=self, from_level=old, to_level=level,
                 operator=actor if getattr(actor, "pk", None) else None, note=note,
+            )
+            # 运行时导入，避免 notify ↔ accounts 启动期循环依赖
+            from notify.models import Notification
+            from notify.services import notify_user
+
+            action = "晋升" if level > old else "调整"
+            notify_user(
+                self,
+                f"你的会员等级已{action}为「{roles.LEVEL_LABELS.get(level, level)}」",
+                kind=Notification.Kind.LEVEL,
+                body=note or "",
+                url="/accounts/profile/",
             )
 
 

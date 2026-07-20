@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}通知中心 | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container page-section">
+    <div class="page-head">
+        <p class="nf-eyebrow">// NOTIFICATIONS</p>
+        <h1>通知中心</h1>
+        <p>等级变更、勋章授予、反馈回复等站内消息都在这里。</p>
+    </div>
+
+    <div class="filter-bar">
+        <div class="filter-tabs">
+            <a href="{% url 'notify:list' %}" class="{% if tab != 'unread' %}active{% endif %}">全部</a>
+            <a href="?tab=unread" class="{% if tab == 'unread' %}active{% endif %}">
+                未读{% if unread_count %}（{{ unread_count }}）{% endif %}
+            </a>
+        </div>
+        <div class="filter-spacer"></div>
+        {% if unread_count %}
+        <form method="post" action="{% url 'notify:read_all' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="btn btn-outline btn-sm">全部标为已读</button>
+        </form>
+        {% endif %}
+    </div>
+
+    {% if page.object_list %}
+        <div class="ntf-list">
+            {% for n in page.object_list %}
+            <a class="ntf-item {% if not n.is_read %}ntf-unread{% endif %}" href="{% url 'notify:go' n.pk %}">
+                <span class="ntf-dot" aria-hidden="true"></span>
+                <span class="ntf-main">
+                    <span class="ntf-title">
+                        <span class="badge badge-blue">{{ n.get_kind_display }}</span>
+                        {{ n.title }}
+                    </span>
+                    {% if n.body %}<span class="ntf-body">{{ n.body }}</span>{% endif %}
+                </span>
+                <time class="ntf-time">{{ n.created_at|naturaltime }}</time>
+            </a>
+            {% endfor %}
+        </div>
+
+        {% if page.paginator.num_pages > 1 %}
+            <div class="pagination">
+                {% if page.has_previous %}
+                    <a href="?page={{ page.previous_page_number }}{% if tab == 'unread' %}&tab=unread{% endif %}">‹</a>
+                {% endif %}
+                <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+                {% if page.has_next %}
+                    <a href="?page={{ page.next_page_number }}{% if tab == 'unread' %}&tab=unread{% endif %}">›</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-hint">
+            <span class="empty-icon">{% include "includes/icon.html" with name="bell" cls="icon-lg" %}</span>
+            {% if tab == 'unread' %}没有未读通知，清爽！{% else %}还没有收到任何通知{% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

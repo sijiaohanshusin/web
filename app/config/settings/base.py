@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     "accounts",
     "files",
     "dashboard",
+    "notify",
+    "news",
 ]
 
 # ---- simpleui（Admin 美化）----
@@ -83,6 +85,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.site",
                 "dashboard.context_processors.pending_members",
+                "notify.context_processors.unread",
             ],
         },
     },

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}{{ post.excerpt }}{% endblock %}
+{% block og_title %}{{ post.title }} | {{ site_config.site_name_en }}{% endblock %}
+{% block og_description %}{{ post.excerpt }}{% endblock %}
+
+{% block content %}
+<div class="container page-section">
+    <article class="news-article">
+        <header class="news-article-head">
+            <p class="nf-eyebrow">// {{ post.get_category_display }}</p>
+            <h1>{{ post.title }}</h1>
+            <div class="news-article-meta">
+                {% if post.pinned %}<span class="badge badge-amber">置顶</span>{% endif %}
+                {% if not post.is_published %}<span class="badge badge-gray">未发布（仅管理组可见）</span>{% endif %}
+                <span>{{ post.author.display_name|default:"管理组" }}</span>
+                <span>·</span>
+                <time>{{ post.published_at|date:"Y 年 n 月 j 日" }}</time>
+                <span>·</span>
+                <span>{{ post.view_count }} 次浏览</span>
+                {% if can_manage %}
+                    <a class="btn btn-outline btn-sm" href="{% url 'dashboard:news_edit' post.pk %}">编辑</a>
+                {% endif %}
+            </div>
+        </header>
+
+        {% if post.cover %}
+            <figure class="news-article-cover"><img src="{{ post.cover.url }}" alt="{{ post.title }}"></figure>
+        {% endif %}
+
+        <div class="news-article-body md-body">{{ post.body_html }}</div>
+
+        <footer class="news-article-foot">
+            <a class="btn btn-ghost" href="{% url 'news:list' %}?category={{ post.category }}">← 返回{{ post.get_category_display }}</a>
+        </footer>
+    </article>
+
+    {% if related %}
+    <aside class="news-related">
+        <h2>相关{{ post.get_category_display }}</h2>
+        <ul>
+            {% for p in related %}
+            <li>
+                <a href="{% url 'news:detail' p.pk %}">{{ p.title }}</a>
+                <small>{{ p.published_at|date:"Y-m-d" }}</small>
+            </li>
+            {% endfor %}
+        </ul>
+    </aside>
+    {% endif %}
+</div>
+{% endblock %}
