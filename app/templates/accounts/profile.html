@@ -33,6 +33,7 @@
             </div>
             {% endif %}
             <ul class="profile-meta">
+                <li><span>积分</span><span><a href="{% url 'points:mine' %}">{{ my_points }} 分 →</a></span></li>
                 <li><span>学号</span><span>{{ user.student_id|default:"—" }}</span></li>
                 <li><span>学院</span><span>{{ user.college|default:"—" }}</span></li>
                 <li><span>年级</span><span>{{ user.grade|default:"—" }}</span></li>
@@ -68,6 +69,36 @@
                     </div>
                 {% else %}
                     <div class="empty-hint"><span class="empty-icon">{% include "includes/icon.html" with name="medal" cls="icon-lg" %}</span>还没有勋章，参与活动、做出贡献即可获得</div>
+                {% endif %}
+            </div>
+            <div class="panel">
+                <h2>我的活动</h2>
+                {% if my_events %}
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead>
+                            <tr><th>活动</th><th>时间</th><th>状态</th></tr>
+                            </thead>
+                            <tbody>
+                            {% for s in my_events %}
+                                <tr>
+                                    <td><a href="{% url 'events:detail' s.event.pk %}">{{ s.event.title }}</a></td>
+                                    <td>{{ s.event.start_at|date:"Y-m-d H:i" }}</td>
+                                    <td>
+                                        {% if s.checked_in %}<span class="badge badge-green">已签到</span>
+                                        {% elif s.event.is_finished %}<span class="badge badge-gray">未签到</span>
+                                        {% else %}<span class="badge badge-blue">已报名</span>{% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-hint">
+                        <span class="empty-icon">{% include "includes/icon.html" with name="cal" cls="icon-lg" %}</span>
+                        还没有参加过活动，<a href="{% url 'events:list' %}">去看看近期安排</a>
+                    </div>
                 {% endif %}
             </div>
             <div class="panel">

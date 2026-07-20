@@ -29,6 +29,8 @@ INSTALLED_APPS = [
     "dashboard",
     "notify",
     "news",
+    "events",
+    "points",
 ]
 
 # ---- simpleui（Admin 美化）----

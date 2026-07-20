@@ -1,0 +1,33 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}{% if event %}编辑活动{% else %}创建活动{% endif %}{% endblock %}
+{% block page_title %}{% if event %}编辑活动{% else %}创建活动{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="dash-panel news-form-panel">
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            {% if field.name == "description" %}
+                {% include "includes/md_editor.html" %}
+            {% else %}
+                {% include "includes/field.html" %}
+            {% endif %}
+        {% endfor %}
+        <div class="news-form-actions">
+            <button type="submit" class="btn btn-primary">{% if event %}保存修改{% else %}创建活动{% endif %}</button>
+            <a class="btn btn-ghost" href="{% url 'dashboard:events' %}">取消</a>
+            {% if event %}
+                <a class="btn btn-outline" href="{% url 'events:detail' event.pk %}" target="_blank" rel="noopener">预览 ↗</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/md-editor.js' %}" defer></script>
+{% endblock %}

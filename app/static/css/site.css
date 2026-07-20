@@ -1185,12 +1185,81 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 .md-body th { background: rgba(255, 255, 255, .05); color: #fff; }
 .md-body hr { border: none; border-top: 1px dashed var(--line-d); margin: 1.6em 0; }
 
-/* 公告编辑（驾驶舱） */
+/* 公告/活动编辑（驾驶舱） */
 .news-form-panel { max-width: 860px; }
 .md-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
 .md-toolbar-hint { color: var(--muted); font-size: 12.5px; }
 .md-img-btn { cursor: pointer; }
 .news-form-actions { display: flex; gap: 10px; margin-top: 18px; }
+
+/* ============================================================
+   活动：列表卡片 + 详情信息面板 + 报名/签到操作区
+   ============================================================ */
+.event-grid { display: flex; flex-direction: column; gap: 14px; }
+.event-card {
+    display: flex; align-items: stretch; gap: 20px; padding: 18px 22px;
+    border: 1px solid var(--line-d); border-radius: var(--radius); background: var(--panel);
+    transition: border-color .25s, transform .25s var(--ease-out);
+}
+.event-card:hover { border-color: rgba(13, 169, 205, .55); transform: translateY(-2px); }
+.event-card-date {
+    flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 74px; border-right: 1px dashed var(--line-d); padding-right: 20px;
+}
+.event-card-date strong { font-family: var(--font-mono); font-size: 30px; color: var(--accent-2); line-height: 1.1; }
+.event-card-date small { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+.event-card-main { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.event-card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.event-card-title { color: #fff; font-size: 16.5px; line-height: 1.5; }
+.event-card-info { color: var(--muted); font-size: 13px; font-family: var(--font-mono); }
+.event-points-hint { margin-top: 30px; text-align: center; color: var(--muted); font-size: 13.5px; }
+.event-points-hint a { color: var(--accent-2); }
+
+.event-info-panel {
+    margin-top: 26px; padding: 18px 22px; display: grid; gap: 10px;
+    border: 1px solid var(--line-d); border-radius: var(--radius); background: var(--panel);
+}
+.event-info-item { display: flex; gap: 14px; font-size: 14.5px; color: var(--text); }
+.event-info-label { flex: none; width: 72px; color: var(--muted); }
+
+.event-action-box {
+    margin-top: 16px; padding: 18px 22px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    border: 1px dashed var(--line-d-strong); border-radius: var(--radius);
+    background: rgba(13, 169, 205, .05);
+}
+.event-action-status { color: var(--text); font-size: 14.5px; }
+.event-action-status.ok { color: var(--ok); font-weight: 600; }
+.event-spots { color: var(--muted); font-size: 13px; }
+.event-checkin-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.event-checkin-input { width: 130px; font-family: var(--font-mono); letter-spacing: 3px; text-align: center; }
+.event-checkin-hint { flex-basis: 100%; color: var(--muted); font-size: 12.5px; }
+.event-code {
+    font-family: var(--font-mono); font-size: 18px; letter-spacing: 4px; color: var(--accent-2);
+    background: rgba(65, 216, 232, .08); border: 1px solid rgba(65, 216, 232, .35);
+    border-radius: 8px; padding: 3px 10px;
+}
+
+/* ============================================================
+   积分：明细 + 排行榜
+   ============================================================ */
+.points-pos { color: var(--ok); font-weight: 700; font-family: var(--font-mono); }
+.points-neg { color: var(--danger); font-weight: 700; font-family: var(--font-mono); }
+.lb-list { display: flex; flex-direction: column; gap: 10px; max-width: 720px; }
+.lb-row {
+    display: flex; align-items: center; gap: 16px; padding: 13px 20px;
+    border: 1px solid var(--line-d); border-radius: 14px; background: var(--panel);
+}
+.lb-top { border-color: rgba(201, 138, 61, .45); background: rgba(201, 138, 61, .06); }
+.lb-rank { flex: none; width: 34px; text-align: center; font-family: var(--font-mono); font-size: 17px; color: var(--muted); }
+.lb-avatar { flex: none; width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line-d-strong); }
+.lb-avatar-fallback {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(13, 169, 205, .18); color: var(--accent-2); font-weight: 700; font-size: 16px;
+}
+.lb-name { flex: 1; min-width: 0; color: #fff; font-weight: 600; font-size: 15px; display: flex; flex-direction: column; }
+.lb-name small { color: var(--muted); font-weight: 400; font-size: 12.5px; margin-top: 2px; }
+.lb-score { font-family: var(--font-mono); font-size: 20px; font-weight: 700; color: var(--accent-2); }
+.lb-score small { font-size: 12px; color: var(--muted); font-weight: 400; }
 
 /* ============================================================
    响应式
@@ -1249,4 +1318,9 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
     .nf-news-row { grid-template-columns: 1fr; }
     .news-grid { grid-template-columns: 1fr; }
     .site-nav.nav-open .nav-auth .nav-bell-wrap { flex: none; }
+
+    .event-card { flex-direction: column; gap: 12px; }
+    .event-card-date { flex-direction: row; gap: 8px; width: auto; border-right: none; padding-right: 0; align-items: baseline; }
+    .event-card-date strong { font-size: 22px; }
+    .event-info-label { width: 60px; }
 }

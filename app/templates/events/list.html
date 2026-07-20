@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}活动 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}哈尔滨工程大学电子科技协会培训、讲座与竞赛宣讲活动，在线报名与签到。{% endblock %}
+
+{% block content %}
+<div class="container page-section">
+    <div class="page-head">
+        <p class="nf-eyebrow">// EVENTS</p>
+        <h1>活动</h1>
+        <p>培训、讲座、竞赛宣讲——在线报名，现场口令/扫码签到，签到得积分。</p>
+    </div>
+
+    <div class="filter-bar">
+        <div class="filter-tabs">
+            <a href="?tab=upcoming{% if kind %}&kind={{ kind }}{% endif %}" class="{% if tab == 'upcoming' %}active{% endif %}">进行中 / 即将开始</a>
+            <a href="?tab=past{% if kind %}&kind={{ kind }}{% endif %}" class="{% if tab == 'past' %}active{% endif %}">往期回顾</a>
+        </div>
+        <div class="filter-spacer"></div>
+        <div class="filter-tabs">
+            <a href="?tab={{ tab }}" class="{% if not kind %}active{% endif %}">全部</a>
+            {% for value, label in kinds %}
+                <a href="?tab={{ tab }}&kind={{ value }}" class="{% if kind == value %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if page.object_list %}
+        <div class="event-grid">
+            {% for e in page.object_list %}
+            <a class="event-card" href="{% url 'events:detail' e.pk %}">
+                <span class="event-card-date">
+                    <strong>{{ e.start_at|date:"d" }}</strong>
+                    <small>{{ e.start_at|date:"n 月" }}</small>
+                </span>
+                <span class="event-card-main">
+                    <span class="event-card-meta">
+                        <span class="badge badge-blue">{{ e.get_kind_display }}</span>
+                        {% if e.status_label == '报名中' %}<span class="badge badge-green">报名中</span>
+                        {% elif e.status_label == '进行中' %}<span class="badge badge-amber">进行中</span>
+                        {% else %}<span class="badge badge-gray">{{ e.status_label }}</span>{% endif %}
+                        {% if e.min_level > 0 %}<span class="badge badge-gray">{{ e.get_min_level_display }}</span>{% endif %}
+                        {% if e.pk in my_signup_ids %}<span class="badge badge-green">已报名</span>{% endif %}
+                    </span>
+                    <strong class="event-card-title">{{ e.title }}</strong>
+                    <span class="event-card-info">
+                        {{ e.start_at|date:"Y-m-d H:i" }}{% if e.location %} · {{ e.location }}{% endif %}
+                        {% if e.points_reward %} · 签到 +{{ e.points_reward }} 分{% endif %}
+                    </span>
+                </span>
+            </a>
+            {% endfor %}
+        </div>
+
+        {% if page.paginator.num_pages > 1 %}
+            <div class="pagination">
+                {% if page.has_previous %}
+                    <a href="?tab={{ tab }}&page={{ page.previous_page_number }}{% if kind %}&kind={{ kind }}{% endif %}">‹</a>
+                {% endif %}
+                <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+                {% if page.has_next %}
+                    <a href="?tab={{ tab }}&page={{ page.next_page_number }}{% if kind %}&kind={{ kind }}{% endif %}">›</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-hint">
+            <span class="empty-icon">{% include "includes/icon.html" with name="cal" cls="icon-lg" %}</span>
+            {% if tab == 'past' %}还没有往期活动{% else %}近期没有安排活动，关注公告与论坛获取最新消息{% endif %}
+        </div>
+    {% endif %}
+
+    <p class="event-points-hint">
+        参加活动签到可得积分，看看 <a href="{% url 'points:leaderboard' %}">积分排行榜 →</a>
+    </p>
+</div>
+{% endblock %}

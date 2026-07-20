@@ -65,9 +65,12 @@ ln -sf /etc/nginx/sites-available/heuesta.cn /etc/nginx/sites-enabled/heuesta.cn
 nginx -t
 systemctl reload nginx
 
-echo "==> 安装/刷新每日备份定时器"
-cp "$REPO_DIR/ops/heuesta-backup.service" "$REPO_DIR/ops/heuesta-backup.timer" /etc/systemd/system/
+echo "==> 安装/刷新定时器（每日备份 + 活动开场提醒）"
+cp "$REPO_DIR/ops/heuesta-backup.service" "$REPO_DIR/ops/heuesta-backup.timer" \
+   "$REPO_DIR/ops/heuesta-event-reminder.service" "$REPO_DIR/ops/heuesta-event-reminder.timer" \
+   /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable --now heuesta-backup.timer >/dev/null 2>&1 || true
+systemctl enable --now heuesta-event-reminder.timer >/dev/null 2>&1 || true
 
 echo "==> 部署完成：https://heuesta.cn"

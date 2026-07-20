@@ -1,0 +1,19 @@
+{% comment %}
+Markdown 正文编辑器（公告/活动共用）：字段 + 图片上传工具条。
+用法：{% include "includes/md_editor.html" with field=form.body %}
+要求字段 widget 的 id 为 post-body。
+{% endcomment %}
+<div class="form-group {% if field.errors %}has-error{% endif %}">
+    <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="req">*</span>{% endif %}</label>
+    <div class="md-toolbar">
+        <label class="btn btn-outline btn-sm md-img-btn">
+            插入图片
+            <input type="file" id="md-img-input" accept="image/jpeg,image/png,image/gif,image/webp" hidden
+                   data-upload-url="{% url 'dashboard:inline_image_upload' %}">
+        </label>
+        <span class="md-toolbar-hint" id="md-img-status">支持 Markdown 语法；图片上传后自动插入正文</span>
+    </div>
+    {{ field }}
+    {% if field.help_text %}<small class="form-help">{{ field.help_text|safe }}</small>{% endif %}
+    {% for error in field.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
+</div>

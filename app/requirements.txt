@@ -7,3 +7,4 @@ django-simpleui>=2025.1
 PyJWT>=2.9
 Markdown>=3.7
 nh3>=0.2
+qrcode>=8.0

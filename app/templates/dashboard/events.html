@@ -1,0 +1,93 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}活动管理{% endblock %}
+{% block page_title %}活动管理{% endblock %}
+
+{% block content %}
+
+<div class="dash-toolbar">
+    <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;">
+        <input class="input" type="search" name="q" value="{{ query }}" placeholder="搜索活动名称或地点…">
+        <button type="submit" class="btn btn-outline btn-sm">搜索</button>
+    </form>
+    <a class="btn btn-primary" href="{% url 'dashboard:event_create' %}" style="margin-left:auto;">+ 创建活动</a>
+</div>
+
+<div class="dash-table-wrap">
+    <table class="table">
+        <thead>
+        <tr><th>活动</th><th>类型</th><th>时间</th><th>报名 / 签到</th><th>状态</th><th>签到口令</th><th style="width:300px;"></th></tr>
+        </thead>
+        <tbody>
+        {% for e in page.object_list %}
+            <tr>
+                <td>
+                    <a href="{% url 'events:detail' e.pk %}" target="_blank" rel="noopener"><strong>{{ e.title }}</strong></a>
+                    {% if e.location %}<br><small style="color:var(--muted);">{{ e.location }}</small>{% endif %}
+                </td>
+                <td><span class="badge badge-blue">{{ e.get_kind_display }}</span></td>
+                <td>{{ e.start_at|date:"m-d H:i" }}<br><small style="color:var(--muted);">至 {{ e.end_at|date:"m-d H:i" }}</small></td>
+                <td>
+                    <a href="{% url 'dashboard:event_signups' e.pk %}">{{ e.signup_total }}{% if e.capacity %} / {{ e.capacity }}{% endif %} · 签到 {{ e.checkin_total }}</a>
+                </td>
+                <td>
+                    {% if not e.is_published %}<span class="badge badge-gray">未发布</span>
+                    {% elif e.status_label == '报名中' %}<span class="badge badge-green">报名中</span>
+                    {% elif e.status_label == '进行中' %}<span class="badge badge-amber">进行中</span>
+                    {% else %}<span class="badge badge-gray">{{ e.status_label }}</span>{% endif %}
+                </td>
+                <td>
+                    {% if e.checkin_open %}
+                        <code class="event-code">{{ e.checkin_code }}</code>
+                    {% else %}
+                        <span style="color:var(--muted);">—</span>
+                    {% endif %}
+                </td>
+                <td class="dash-row-actions">
+                    <a class="btn btn-outline btn-sm" href="{% url 'dashboard:event_edit' e.pk %}">编辑</a>
+                    <form method="post" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" value="{{ e.pk }}">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        {% if e.checkin_open %}
+                            <input type="hidden" name="action" value="close_checkin">
+                            <button type="submit" class="btn btn-ghost btn-sm">关闭签到</button>
+                        {% else %}
+                            <input type="hidden" name="action" value="open_checkin">
+                            <button type="submit" class="btn btn-primary btn-sm">开启签到</button>
+                        {% endif %}
+                    </form>
+                    <form method="post" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" value="{{ e.pk }}">
+                        <input type="hidden" name="action" value="toggle_publish">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-ghost btn-sm">{% if e.is_published %}下架{% else %}发布{% endif %}</button>
+                    </form>
+                    {% if is_admin or e.created_by_id == user.pk %}
+                    <form method="post" class="inline-form" onsubmit="return confirm('删除活动「{{ e.title }}」？报名记录将一并删除。');">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" value="{{ e.pk }}">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="7"><div class="dash-empty">还没有活动，点右上角「创建活动」发布第一场。</div></td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if page.paginator.num_pages > 1 %}
+<div class="pagination">
+    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}">‹</a>{% endif %}
+    <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?page={{ page.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}">›</a>{% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

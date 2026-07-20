@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}积分排行榜 | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container page-section">
+    <div class="page-head">
+        <p class="nf-eyebrow">// LEADERBOARD</p>
+        <h1>积分排行榜</h1>
+        <p>参加培训、讲座并签到即可积累积分。{% if my_total is not None %}你当前有 <strong>{{ my_total }}</strong> 分，<a href="{% url 'points:mine' %}">查看明细 →</a>{% endif %}</p>
+    </div>
+
+    {% if rows %}
+        <div class="lb-list">
+            {% for u in rows %}
+            <div class="lb-row {% if forloop.counter <= 3 %}lb-top{% endif %}">
+                <span class="lb-rank">
+                    {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}{{ forloop.counter }}{% endif %}
+                </span>
+                {% if u.avatar %}
+                    <img class="lb-avatar" src="{{ u.avatar.url }}" alt="">
+                {% else %}
+                    <span class="lb-avatar lb-avatar-fallback">{{ u.display_name|first }}</span>
+                {% endif %}
+                <span class="lb-name">
+                    {{ u.display_name }}
+                    <small>{{ u.full_title }}</small>
+                </span>
+                <span class="lb-score">{{ u.total }} <small>分</small></span>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-hint">
+            <span class="empty-icon">{% include "includes/icon.html" with name="spark" cls="icon-lg" %}</span>
+            还没有人获得积分，第一个上榜的会是你吗？
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

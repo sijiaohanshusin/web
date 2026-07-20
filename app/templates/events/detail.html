@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event.title }} | {{ site_config.site_name_en }}{% endblock %}
+{% block og_title %}{{ event.title }} | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container page-section">
+    <article class="news-article">
+        <header class="news-article-head">
+            <p class="nf-eyebrow">// {{ event.get_kind_display }}</p>
+            <h1>{{ event.title }}</h1>
+            <div class="news-article-meta">
+                {% if event.status_label == '报名中' %}<span class="badge badge-green">报名中</span>
+                {% elif event.status_label == '进行中' %}<span class="badge badge-amber">进行中</span>
+                {% else %}<span class="badge badge-gray">{{ event.status_label }}</span>{% endif %}
+                {% if not event.is_published %}<span class="badge badge-gray">未发布（仅管理组可见）</span>{% endif %}
+                {% if event.min_level > 0 %}<span class="badge badge-amber">{{ event.get_min_level_display }}</span>{% endif %}
+                {% if can_manage %}
+                    <a class="btn btn-outline btn-sm" href="{% url 'dashboard:event_edit' event.pk %}">编辑</a>
+                    <a class="btn btn-outline btn-sm" href="{% url 'dashboard:event_signups' event.pk %}">报名名单</a>
+                {% endif %}
+            </div>
+        </header>
+
+        <div class="event-info-panel">
+            <div class="event-info-item">
+                <span class="event-info-label">时间</span>
+                <span>{{ event.start_at|date:"Y-m-d H:i" }} ~ {{ event.end_at|date:"H:i" }}{% if event.end_at|date:"Ymd" != event.start_at|date:"Ymd" %}（{{ event.end_at|date:"m-d" }}）{% endif %}</span>
+            </div>
+            <div class="event-info-item">
+                <span class="event-info-label">地点</span>
+                <span>{{ event.location|default:"待定 / 见群通知" }}</span>
+            </div>
+            <div class="event-info-item">
+                <span class="event-info-label">名额</span>
+                <span>
+                    已报名 {{ signup_count }}{% if event.capacity %} / {{ event.capacity }}{% else %} 人（不限名额）{% endif %}
+                    {% if event.is_finished %} · 签到 {{ checkin_count }} 人{% endif %}
+                </span>
+            </div>
+            <div class="event-info-item">
+                <span class="event-info-label">报名截止</span>
+                <span>{{ event.effective_deadline|date:"Y-m-d H:i" }}</span>
+            </div>
+            {% if event.points_reward %}
+            <div class="event-info-item">
+                <span class="event-info-label">积分</span>
+                <span>现场签到 +{{ event.points_reward }} 分</span>
+            </div>
+            {% endif %}
+        </div>
+
+        {# ---- 报名 / 签到操作区 ---- #}
+        <div class="event-action-box">
+            {% if not user.is_authenticated %}
+                <p><a href="{% url 'accounts:login' %}?next={{ request.path }}">登录</a>后即可报名参加。</p>
+            {% else %}
+                {% if my_signup %}
+                    {% if my_signup.checked_in %}
+                        <p class="event-action-status ok">✓ 已签到（{{ my_signup.checkin_at|date:"m-d H:i" }}）{% if my_signup.is_walkin %} · 现场参加{% endif %}</p>
+                    {% else %}
+                        <p class="event-action-status">✓ 已报名（{{ my_signup.created_at|date:"m-d H:i" }}），开场后凭现场口令或扫码签到</p>
+                        {% if not event.is_finished %}
+                        <form method="post" action="{% url 'events:cancel' event.pk %}" class="inline-form"
+                              onsubmit="return confirm('确定取消报名？');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-ghost btn-sm">取消报名</button>
+                        </form>
+                        {% endif %}
+                    {% endif %}
+                {% elif can_signup %}
+                    <form method="post" action="{% url 'events:signup' event.pk %}" class="inline-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary">立即报名</button>
+                    </form>
+                    {% if spots_left is not None %}<span class="event-spots">剩余 {{ spots_left }} 个名额</span>{% endif %}
+                {% elif event.is_finished %}
+                    <p class="event-action-status">活动已结束</p>
+                {% elif event.signup_closed %}
+                    <p class="event-action-status">报名已截止{% if event.checkin_open %}，未报名也可现场签到{% endif %}</p>
+                {% else %}
+                    <p class="event-action-status">名额已满</p>
+                {% endif %}
+
+                {% if event.checkin_open and user.is_authenticated %}
+                    {% if not my_signup or not my_signup.checked_in %}
+                    <form method="post" action="{% url 'events:checkin' event.pk %}" class="event-checkin-form">
+                        {% csrf_token %}
+                        <input class="input event-checkin-input" name="code" maxlength="6" required
+                               placeholder="签到口令" value="{{ prefill_code }}"
+                               autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;">
+                        <button type="submit" class="btn btn-primary">签到{% if event.points_reward %}（+{{ event.points_reward }} 分）{% endif %}</button>
+                    </form>
+                    <p class="event-checkin-hint">口令由现场工作人员公布，扫签到二维码会自动填好</p>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <div class="news-article-body md-body">{{ event.description_html }}</div>
+
+        <footer class="news-article-foot">
+            <a class="btn btn-ghost" href="{% url 'events:list' %}">← 返回活动列表</a>
+        </footer>
+    </article>
+</div>
+{% endblock %}

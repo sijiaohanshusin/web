@@ -10,6 +10,8 @@ urlpatterns = [
     path("dashboard/", include("dashboard.urls")),
     path("notify/", include("notify.urls")),
     path("news/", include("news.urls")),
+    path("events/", include("events.urls")),
+    path("points/", include("points.urls")),
     path("admin/", admin.site.urls),
 ]
 

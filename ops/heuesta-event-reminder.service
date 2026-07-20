@@ -1,0 +1,8 @@
+[Unit]
+Description=HEU ESTA event reminders (in-site notifications for events starting within 24h)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec heuesta-app-1 python manage.py send_event_reminders

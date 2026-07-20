@@ -149,11 +149,18 @@ def forgot_password(request):
 
 @login_required
 def profile(request):
+    from points.services import total_for
+
     my_resources = request.user.resources.all()[:20] if hasattr(request.user, "resources") else []
     my_medals = request.user.medals.select_related("medal").all()
+    my_events = (
+        request.user.event_signups.select_related("event").order_by("-created_at")[:10]
+    )
     return render(request, "accounts/profile.html", {
         "my_resources": my_resources,
         "my_medals": my_medals,
+        "my_events": my_events,
+        "my_points": total_for(request.user),
     })
 
 

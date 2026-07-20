@@ -88,6 +88,12 @@
                     onclick="return confirm('确定拒绝并删除选中的待审核账号？此操作不可恢复。')">✕ 拒绝并删除</button>
         {% endif %}
     </div>
+    <div class="dash-actions-bar">
+        <span class="hint">批量积分（竞赛获奖、值班等线下贡献）：</span>
+        <input class="input" type="number" name="points_delta" min="-999" max="999" placeholder="±分值" style="width:100px;">
+        <input class="input" name="points_note" maxlength="100" placeholder="说明（成员在积分明细可见）" style="width:260px;">
+        <button type="submit" name="action" value="points_adjust" class="btn btn-outline btn-sm">发放 / 扣除</button>
+    </div>
     {% endif %}
 </form>
 

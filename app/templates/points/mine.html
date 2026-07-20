@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}我的积分 | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container page-section">
+    <div class="page-head">
+        <p class="nf-eyebrow">// POINTS</p>
+        <h1>我的积分</h1>
+        <p>参加活动签到即可获得积分。</p>
+        <div class="page-stats">
+            <span class="page-stat"><strong>{{ total }}</strong>总积分</span>
+            <span class="page-stat-sep" aria-hidden="true"></span>
+            <span class="page-stat"><a href="{% url 'points:leaderboard' %}">查看排行榜 →</a></span>
+        </div>
+    </div>
+
+    {% if page.object_list %}
+        <div class="panel table-wrap" style="padding:8px 16px;">
+            <table class="table">
+                <thead>
+                <tr><th>变化</th><th>来源</th><th>说明</th><th>时间</th></tr>
+                </thead>
+                <tbody>
+                {% for log in page.object_list %}
+                    <tr>
+                        <td class="{% if log.delta >= 0 %}points-pos{% else %}points-neg{% endif %}">
+                            {% if log.delta >= 0 %}+{% endif %}{{ log.delta }}
+                        </td>
+                        <td><span class="badge badge-blue">{{ log.get_source_display }}</span></td>
+                        <td>{{ log.note|default:"—" }}</td>
+                        <td>{{ log.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page.paginator.num_pages > 1 %}
+            <div class="pagination">
+                {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">‹</a>{% endif %}
+                <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+                {% if page.has_next %}<a href="?page={{ page.next_page_number }}">›</a>{% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-hint">
+            <span class="empty-icon">{% include "includes/icon.html" with name="spark" cls="icon-lg" %}</span>
+            还没有积分记录，去<a href="{% url 'events:list' %}">活动页</a>报名参加吧
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

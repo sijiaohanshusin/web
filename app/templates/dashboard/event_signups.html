@@ -1,0 +1,88 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}报名名单 · {{ event.title }}{% endblock %}
+{% block page_title %}报名名单 · {{ event.title|truncatechars:24 }}{% endblock %}
+
+{% block content %}
+
+<div class="event-signup-head">
+    <div class="dash-panel event-stat-panel">
+        <div class="event-stat"><strong>{{ signup_total }}</strong><span>报名{% if event.capacity %} / 上限 {{ event.capacity }}{% endif %}</span></div>
+        <div class="event-stat"><strong>{{ checkin_total }}</strong><span>已签到</span></div>
+        <div class="event-stat">
+            {% if event.checkin_open %}
+                <strong class="event-code">{{ event.checkin_code }}</strong><span>签到口令（现场公布）</span>
+            {% else %}
+                <strong>—</strong><span>签到未开启</span>
+            {% endif %}
+        </div>
+        <div class="event-stat-actions">
+            <form method="post" action="{% url 'dashboard:events' %}" class="inline-form">
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ event.pk }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                {% if event.checkin_open %}
+                    <input type="hidden" name="action" value="close_checkin">
+                    <button type="submit" class="btn btn-ghost">关闭签到</button>
+                {% else %}
+                    <input type="hidden" name="action" value="open_checkin">
+                    <button type="submit" class="btn btn-primary">开启签到</button>
+                {% endif %}
+            </form>
+            <a class="btn btn-outline" href="?export=csv">导出 CSV</a>
+            <a class="btn btn-ghost" href="{% url 'dashboard:events' %}">← 返回活动管理</a>
+        </div>
+    </div>
+
+    {% if event.checkin_open %}
+    <div class="dash-panel event-qr-panel">
+        <img src="{% url 'dashboard:event_qr' event.pk %}" alt="签到二维码" width="180" height="180">
+        <p>现场投屏此二维码<br>成员扫码自动填入口令</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="dash-table-wrap">
+    <table class="table">
+        <thead>
+        <tr><th>#</th><th>姓名</th><th>学号</th><th>学院</th><th>等级</th><th>报名时间</th><th>签到</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for s in signups %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>
+                    <strong>{{ s.user.display_name }}</strong>
+                    <small style="color:var(--muted);"> @{{ s.user.username }}</small>
+                    {% if s.is_walkin %}<span class="badge badge-amber">现场</span>{% endif %}
+                </td>
+                <td>{{ s.user.student_id|default:"—" }}</td>
+                <td>{{ s.user.college|default:"—" }}</td>
+                <td><span class="badge" style="color:#fff;background:{{ s.user.level_color }};border-color:{{ s.user.level_color }};">{{ s.user.level_label }}</span></td>
+                <td>{{ s.created_at|date:"m-d H:i" }}</td>
+                <td>
+                    {% if s.checked_in %}
+                        <span class="badge badge-green">✓ {{ s.checkin_at|date:"H:i" }}</span>
+                    {% else %}
+                        <span style="color:var(--muted);">未签到</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not s.checked_in %}
+                    <form method="post" class="inline-form" onsubmit="return confirm('为 {{ s.user.display_name }} 手动签到？');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="manual_checkin">
+                        <input type="hidden" name="signup_id" value="{{ s.pk }}">
+                        <button type="submit" class="btn btn-ghost btn-sm">代签到</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="8"><div class="dash-empty">还没有人报名</div></td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

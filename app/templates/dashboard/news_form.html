@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load static %}
 
 {% block title %}{% if post %}编辑公告{% else %}写公告{% endif %}{% endblock %}
 {% block page_title %}{% if post %}编辑公告{% else %}写公告{% endif %}{% endblock %}
@@ -10,20 +11,7 @@
         {% csrf_token %}
         {% for field in form %}
             {% if field.name == "body" %}
-                <div class="form-group {% if field.errors %}has-error{% endif %}">
-                    <label for="{{ field.id_for_label }}">{{ field.label }} <span class="req">*</span></label>
-                    <div class="md-toolbar">
-                        <label class="btn btn-outline btn-sm md-img-btn">
-                            插入图片
-                            <input type="file" id="md-img-input" accept="image/jpeg,image/png,image/gif,image/webp" hidden
-                                   data-upload-url="{% url 'dashboard:news_upload_image' %}">
-                        </label>
-                        <span class="md-toolbar-hint" id="md-img-status">支持 Markdown 语法；图片上传后自动插入正文</span>
-                    </div>
-                    {{ field }}
-                    {% if field.help_text %}<small class="form-help">{{ field.help_text|safe }}</small>{% endif %}
-                    {% for error in field.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
-                </div>
+                {% include "includes/md_editor.html" %}
             {% else %}
                 {% include "includes/field.html" %}
             {% endif %}
@@ -41,34 +29,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-(function () {
-    "use strict";
-    var input = document.getElementById("md-img-input");
-    var status = document.getElementById("md-img-status");
-    var body = document.getElementById("post-body");
-    if (!input || !body) return;
-
-    input.addEventListener("change", function () {
-        var file = input.files[0];
-        if (!file) return;
-        status.textContent = "上传中…";
-        var data = new FormData();
-        data.append("image", file);
-        fetch(input.getAttribute("data-upload-url"), {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "X-CSRFToken": document.querySelector('input[name="csrfmiddlewaretoken"]').value },
-            body: data
-        }).then(function (r) { return r.json(); }).then(function (res) {
-            if (!res.ok) { status.textContent = res.msg || "上传失败"; return; }
-            var md = "\n![图片](" + res.url + ")\n";
-            var start = body.selectionStart || body.value.length;
-            body.value = body.value.slice(0, start) + md + body.value.slice(start);
-            status.textContent = "已插入图片";
-            input.value = "";
-        }).catch(function () { status.textContent = "上传失败，请重试"; });
-    });
-})();
-</script>
+<script src="{% static 'js/md-editor.js' %}" defer></script>
 {% endblock %}

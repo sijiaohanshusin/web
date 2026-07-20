@@ -93,6 +93,25 @@
 
 .dash-table-wrap { border: 1px solid var(--line-d); border-radius: 14px; overflow: auto; background: rgba(255, 255, 255, .015); }
 .dash-table-wrap .table th { position: sticky; top: 0; background: var(--black-2); }
+.dash-row-actions { white-space: nowrap; }
+.dash-row-actions .inline-form { display: inline-block; margin-left: 4px; }
+
+/* 活动报名名单页 */
+.event-signup-head { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 16px; }
+.event-stat-panel { flex: 1 1 420px; display: flex; gap: 18px 34px; align-items: center; flex-wrap: wrap; min-width: 280px; }
+.event-stat { display: flex; flex-direction: column; gap: 4px; }
+.event-stat strong { font-family: var(--font-mono); font-size: 26px; color: #fff; line-height: 1.15; }
+.event-stat .event-code { letter-spacing: 3px; color: var(--accent-2); }
+.event-stat span { color: var(--muted); font-size: 12.5px; }
+.event-stat-actions { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.event-qr-panel { flex: 0 0 auto; text-align: center; align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
+.event-qr-panel img { border-radius: 10px; background: #fff; padding: 6px; }
+.event-qr-panel p { color: var(--muted); font-size: 12.5px; margin-top: 10px; line-height: 1.6; }
+
+@media (max-width: 720px) {
+    .event-stat-actions { width: 100%; margin-left: 0; }
+    .event-qr-panel { width: 100%; }
+}
 .dash-actions-bar {
     display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
     padding: 12px 0; margin-top: 4px;

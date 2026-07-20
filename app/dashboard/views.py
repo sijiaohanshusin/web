@@ -16,12 +16,16 @@ from accounts import roles
 from accounts.models import Medal, Position, UserMedal
 from core import bilibili
 from core.models import CarouselImage, Feedback, SiteConfig
+from events.forms import EventForm
+from events.models import Event, EventSignup
 from files.forms import ResourceUploadForm
 from files.models import Resource
 from news.forms import PostForm
 from news.models import Post
 from notify.models import Notification
 from notify.services import notify_user
+from points.models import PointLog
+from points.services import award_points
 
 from .decorators import admin_required, officer_required
 from .forms import CarouselImageForm, SiteConfigForm
@@ -217,6 +221,26 @@ def member_action(request):
         count = targets.filter(member_level=roles.LEVEL_PENDING).count()
         targets.filter(member_level=roles.LEVEL_PENDING).delete()
         messages.success(request, f"已拒绝并删除 {count} 个待审核账号。")
+        return redirect(nxt)
+
+    if action == "points_adjust":
+        try:
+            delta = int(request.POST.get("points_delta", ""))
+        except (TypeError, ValueError):
+            delta = 0
+        if not delta:
+            messages.warning(request, "请填写非零的分值。")
+            return redirect(nxt)
+        note = (request.POST.get("points_note") or "").strip() or "管理组发放"
+        count = 0
+        for user in User.objects.filter(pk__in=ids):
+            award_points(user, delta, source=PointLog.Source.ADMIN_ADJUST, note=note, operator=request.user)
+            notify_user(
+                user, f"积分{'+' if delta > 0 else ''}{delta}：{note}",
+                kind=Notification.Kind.POINTS, url="/points/",
+            )
+            count += 1
+        messages.success(request, f"已为 {count} 名成员调整积分 {delta:+d}。")
         return redirect(nxt)
 
     if action in _LEVEL_ACTIONS:
@@ -502,8 +526,8 @@ _INLINE_IMAGE_TYPES = {"image/jpeg": ".jpg", "image/png": ".png", "image/gif": "
 
 @officer_required
 @require_POST
-def news_upload_image(request):
-    """公告正文配图上传（AJAX），返回可直接插入 Markdown 的 URL。"""
+def inline_image_upload(request):
+    """正文配图上传（公告/活动共用，AJAX），返回可直接插入 Markdown 的 URL。"""
     from django.core.files.storage import default_storage
     from django.http import JsonResponse
     from django.utils import timezone as tz
@@ -517,9 +541,152 @@ def news_upload_image(request):
     if file.size > 10 * 1024 * 1024:
         return JsonResponse({"ok": False, "msg": "图片超过 10MB，请压缩后再传。"}, status=400)
 
-    name = f"news/inline/{tz.now():%Y/%m}/{uuid.uuid4().hex[:12]}{ext}"
+    name = f"uploads/inline/{tz.now():%Y/%m}/{uuid.uuid4().hex[:12]}{ext}"
     saved = default_storage.save(name, file)
     return JsonResponse({"ok": True, "url": default_storage.url(saved)})
+
+
+# ---------------------------------------------------------------- 活动管理
+
+@officer_required
+def events_manage(request):
+    if request.method == "POST":
+        item = get_object_or_404(Event, pk=request.POST.get("id"))
+        action = request.POST.get("action", "")
+        if action == "toggle_publish":
+            item.is_published = not item.is_published
+            item.save(update_fields=["is_published"])
+            messages.success(request, f"「{item.title}」已{'发布' if item.is_published else '下架'}。")
+        elif action == "open_checkin":
+            code = item.open_checkin()
+            messages.success(request, f"「{item.title}」签到已开启，口令：{code}")
+        elif action == "close_checkin":
+            item.close_checkin()
+            messages.success(request, f"「{item.title}」签到已关闭。")
+        elif action == "delete":
+            if not (_is_admin(request.user) or item.created_by_id == request.user.pk):
+                messages.error(request, "只能删除自己发布的活动（或需要管理员权限）。")
+            else:
+                title = item.title
+                item.delete()
+                messages.success(request, f"活动「{title}」已删除。")
+        return redirect(request.POST.get("next") or "dashboard:events")
+
+    items = Event.objects.select_related("created_by").annotate(
+        signup_total=Count("signups"),
+        checkin_total=Count("signups", filter=Q(signups__checkin_at__isnull=False)),
+    )
+    query = request.GET.get("q", "").strip()
+    if query:
+        items = items.filter(Q(title__icontains=query) | Q(location__icontains=query))
+
+    paginator = Paginator(items, 20)
+    page = paginator.get_page(request.GET.get("page"))
+
+    context = {
+        "active_nav": "events",
+        "page": page,
+        "query": query,
+        "is_admin": _is_admin(request.user),
+    }
+    return render(request, "dashboard/events.html", context)
+
+
+@officer_required
+def event_edit(request, pk: int | None = None):
+    event = get_object_or_404(Event, pk=pk) if pk else None
+
+    if request.method == "POST":
+        form = EventForm(request.POST, instance=event)
+        if form.is_valid():
+            item = form.save(commit=False)
+            if item.created_by_id is None:
+                item.created_by = request.user
+            item.save()
+            messages.success(request, f"活动「{item.title}」已{'更新' if pk else '创建'}。")
+            return redirect("dashboard:events")
+    else:
+        form = EventForm(instance=event)
+
+    context = {
+        "active_nav": "events",
+        "form": form,
+        "event": event,
+    }
+    return render(request, "dashboard/event_form.html", context)
+
+
+@officer_required
+def event_signups(request, pk: int):
+    event = get_object_or_404(Event, pk=pk)
+
+    if request.method == "POST" and request.POST.get("action") == "manual_checkin":
+        # 现场兜底：工作人员替没带手机的成员手动签到
+        signup = get_object_or_404(EventSignup, pk=request.POST.get("signup_id"), event=event)
+        if not signup.checked_in:
+            signup.checkin_at = timezone.now()
+            signup.save(update_fields=["checkin_at"])
+            if event.points_reward:
+                award_points(
+                    signup.user, event.points_reward,
+                    source=PointLog.Source.EVENT_CHECKIN,
+                    note=f"活动签到（工作人员代签）：{event.title}", operator=request.user,
+                )
+            messages.success(request, f"已为 {signup.user.display_name} 手动签到。")
+        return redirect("dashboard:event_signups", pk=event.pk)
+
+    signups = event.signups.select_related("user", "user__position").order_by("created_at")
+
+    if request.GET.get("export") == "csv":
+        import csv
+
+        from django.http import HttpResponse
+        from urllib.parse import quote
+
+        response = HttpResponse(content_type="text/csv; charset=utf-8-sig")
+        filename = quote(f"{event.title}-报名名单.csv")
+        response["Content-Disposition"] = f"attachment; filename*=UTF-8''{filename}"
+        writer = csv.writer(response)
+        writer.writerow(["姓名", "用户名", "学号", "学院", "年级", "等级", "报名时间", "签到时间", "现场参加"])
+        for s in signups:
+            writer.writerow([
+                s.user.real_name, s.user.username, s.user.student_id, s.user.college,
+                s.user.grade, s.user.level_label,
+                s.created_at.astimezone().strftime("%Y-%m-%d %H:%M"),
+                s.checkin_at.astimezone().strftime("%Y-%m-%d %H:%M") if s.checkin_at else "",
+                "是" if s.is_walkin else "",
+            ])
+        return response
+
+    context = {
+        "active_nav": "events",
+        "event": event,
+        "signups": signups,
+        "signup_total": signups.count(),
+        "checkin_total": signups.filter(checkin_at__isnull=False).count(),
+    }
+    return render(request, "dashboard/event_signups.html", context)
+
+
+@officer_required
+def event_checkin_qr(request, pk: int):
+    """签到二维码：扫码直达活动页并自动填入口令。"""
+    import io
+
+    import qrcode
+    from django.http import HttpResponse
+
+    event = get_object_or_404(Event, pk=pk)
+    if not event.checkin_code:
+        from django.http import Http404
+
+        raise Http404("尚未开启签到")
+
+    url = request.build_absolute_uri(f"/events/{event.pk}/?code={event.checkin_code}")
+    img = qrcode.make(url, box_size=10, border=2)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return HttpResponse(buf.getvalue(), content_type="image/png")
 
 
 # ---------------------------------------------------------------- 站点设置（仅管理员）
