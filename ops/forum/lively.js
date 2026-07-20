@@ -25,9 +25,9 @@ nconf.defaults({
 
     /* ---------- 1. 彩色头衔组（MCBBS 风格用户组徽章） ---------- */
     const groupDefs = [
-        { name: '管理员', userTitle: '管理组', labelColor: '#ef4444', icon: 'fa-shield-halved' },
-        { name: '干事', userTitle: '干事', labelColor: '#f59e0b', icon: 'fa-screwdriver-wrench' },
-        { name: '会员', userTitle: '正式会员', labelColor: '#0ea5e9', icon: 'fa-bolt' },
+        { name: '管理员', userTitle: '管理组', labelColor: '#e05450', icon: 'fa-shield-halved' },
+        { name: '干事', userTitle: '干事', labelColor: '#c98a3d', icon: 'fa-screwdriver-wrench' },
+        { name: '会员', userTitle: '正式会员', labelColor: '#0da9cd', icon: 'fa-bolt' },
     ];
     for (const def of groupDefs) {
         const exists = await Groups.exists(def.name);
@@ -86,7 +86,7 @@ nconf.defaults({
         useCustomCSS: 1,
         customCSS: [
             '/* 品牌色微调，与主站呼应 */',
-            ':root { --bs-link-color: #0284c7; --bs-link-hover-color: #0ea5e9; }',
+            ':root { --bs-link-color: #0a8cad; --bs-link-hover-color: #0da9cd; }',
             '.pinned-topic-highlight, [component="category/topic"].pinned { background: rgba(14,165,233,.05); }',
         ].join('\n'),
     });

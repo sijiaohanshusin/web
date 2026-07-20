@@ -11,14 +11,31 @@
     var submitBtn = document.getElementById("fb-submit");
 
     function open() {
+        mask.classList.remove("closing");
         mask.hidden = false;
         document.body.style.overflow = "hidden";
         setTimeout(function () { content.focus(); }, 50);
     }
     function close() {
-        mask.hidden = true;
-        document.body.style.overflow = "";
-        msg.hidden = true;
+        if (mask.hidden || mask.classList.contains("closing")) return;
+        var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        function finish() {
+            mask.classList.remove("closing");
+            mask.hidden = true;
+            document.body.style.overflow = "";
+            msg.hidden = true;
+        }
+        if (reduced) { finish(); return; }
+        // 播放缩退动画，结束后再真正隐藏（超时兜底）
+        mask.classList.add("closing");
+        var done = false;
+        mask.addEventListener("animationend", function handler() {
+            if (done) return;
+            done = true;
+            mask.removeEventListener("animationend", handler);
+            finish();
+        });
+        setTimeout(function () { if (!done) { done = true; finish(); } }, 320);
     }
 
     fab.addEventListener("click", open);

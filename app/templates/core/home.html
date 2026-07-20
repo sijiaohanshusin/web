@@ -29,12 +29,12 @@
     </div>
 </section>
 
-<!-- ============ 白色区：三个理由 ============ -->
-<section class="nf-section nf-light" data-nav="light">
+<!-- ============ 白色区：三个理由（照片卡骑跨黑白分界线） ============ -->
+<section class="nf-section nf-light nf-bridge" data-nav="light">
     <div class="container">
         <div class="nf-split">
-            <div class="nf-split-media reveal">
-                <figure class="nf-photo-card tilt-card" id="reason-photo">
+            <div class="nf-split-media">
+                <figure class="nf-photo-card tilt-card reveal" id="reason-photo">
                     <img src="{% static 'img/carousel/pcb.webp' %}" alt="协会成员制作的 PCB">
                     <figcaption>成员作品 · PCB 实物</figcaption>
                 </figure>
@@ -224,36 +224,40 @@
         <p class="nf-eyebrow reveal">// RESOURCES</p>
         <h2 class="nf-display reveal">技术传承<span class="accent">从未停歇</span></h2>
 
-        <div class="nf-res-grid">
-            <a class="nf-res-card reveal" href="/learn/electronics/">
-                <span class="nf-res-num">01</span>
-                <h3>电子学学习中心</h3>
-                <p>21 章正文 + 6 篇附录，从电路理论到数据转换的系统教材。</p>
-                <span class="nf-link-more">进入课程 <span>→</span></span>
+        <!-- 学习资源：终端目录清单 -->
+        <div class="nf-res-term reveal">
+            <div class="term-bar" aria-hidden="true">
+                <span class="term-prompt">esta@heuesta:~$</span> ls ./学习资源<span class="term-caret">▍</span>
+            </div>
+            <a class="nf-res-row" href="/learn/electronics/">
+                <span class="res-branch" aria-hidden="true">├─</span>
+                <span class="res-name">电子学学习中心</span>
+                <span class="res-desc">21 章正文 + 6 篇附录，从电路理论到数据转换的系统教材</span>
+                <span class="res-go">进入课程 <span>→</span></span>
             </a>
-            <a class="nf-res-card reveal" href="{% url 'files:list' %}">
-                <span class="nf-res-num">02</span>
-                <h3>资料站</h3>
-                <p>培训课件、竞赛资料、工具软件，注册会员解锁全部内容。</p>
-                <span class="nf-link-more">浏览资料 <span>→</span></span>
+            <a class="nf-res-row" href="{% url 'files:list' %}">
+                <span class="res-branch" aria-hidden="true">├─</span>
+                <span class="res-name">资料站</span>
+                <span class="res-desc">培训课件、竞赛资料、工具软件，注册会员解锁全部内容</span>
+                <span class="res-go">浏览资料 <span>→</span></span>
             </a>
-            <a class="nf-res-card reveal" href="{{ forum_url }}" target="_blank" rel="noopener">
-                <span class="nf-res-num">03</span>
-                <h3>会员论坛</h3>
-                <p>提问、晒作品、找队友，主站账号直接登录，无需再注册。</p>
-                <span class="nf-link-more">进入论坛 <span>→</span></span>
+            <a class="nf-res-row" href="{{ forum_url }}" target="_blank" rel="noopener">
+                <span class="res-branch" aria-hidden="true">├─</span>
+                <span class="res-name">会员论坛</span>
+                <span class="res-desc">提问、晒作品、找队友，主站账号直接登录</span>
+                <span class="res-go">进入论坛 <span>→</span></span>
             </a>
-            <a class="nf-res-card reveal" href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">
-                <span class="nf-res-num">04</span>
-                <h3>B 站视频教程</h3>
-                <p>STM32 系列教程、硬件培训回放、竞赛题解，持续更新。</p>
-                <span class="nf-link-more">前往 B 站 <span>→</span></span>
+            <a class="nf-res-row" href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">
+                <span class="res-branch" aria-hidden="true">└─</span>
+                <span class="res-name">B 站视频教程</span>
+                <span class="res-desc">STM32 系列教程、硬件培训回放、竞赛题解，持续更新</span>
+                <span class="res-go">前往 B 站 <span>→</span></span>
             </a>
         </div>
 
         {% if bili_videos %}
         <div class="nf-bili-head reveal">
-            <h3>最新培训视频</h3>
+            <h3>精选培训视频</h3>
             <a class="nf-link-more" href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">全部 {% firstof bili_stats.videos 93 %} 个视频 <span>↗</span></a>
         </div>
         <div class="bili-grid">

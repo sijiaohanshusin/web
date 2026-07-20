@@ -68,10 +68,10 @@ nconf.defaults({
     }
 
     const wanted = [
-        ['新生答疑', '萌新提问专区：不懂就问，没有蠢问题', 'fa-question-circle', '#0ea5e9'],
-        ['硬件电路', '模拟电路 · PCB 设计 · 电源 · 焊接工艺', 'fa-microchip', '#f59e0b'],
+        ['新生答疑', '萌新提问专区：不懂就问，没有蠢问题', 'fa-question-circle', '#0da9cd'],
+        ['硬件电路', '模拟电路 · PCB 设计 · 电源 · 焊接工艺', 'fa-microchip', '#c98a3d'],
         ['嵌入式与软件', 'STM32 / MSPM0 / C 语言 / 上位机 / 算法', 'fa-code', '#10b981'],
-        ['竞赛专区', '电赛与各类竞赛：组队、真题、经验分享', 'fa-trophy', '#ef4444'],
+        ['竞赛专区', '电赛与各类竞赛：组队、真题、经验分享', 'fa-trophy', '#e05450'],
         ['畅所欲言', '社团生活 · 作品展示 · 灌水闲聊', 'fa-comments', '#8b5cf6'],
     ];
     for (const [name, description, icon, bgColor] of wanted) {

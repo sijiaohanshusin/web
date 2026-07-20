@@ -16,11 +16,11 @@ nconf.defaults({
 
 // 与主站 accounts/roles.py、accounts/models.Position 对齐
 const LEVEL_GROUPS = [
-    { name: '报名会员', color: '#38bdf8' },
-    { name: '预备会员', color: '#0ea5e9' },
-    { name: '正式会员', color: '#2563eb' },
-    { name: '干事', color: '#f59e0b' },
-    { name: '管理员', color: '#ef4444' },
+    { name: '报名会员', color: '#41d8e8' },
+    { name: '预备会员', color: '#0da9cd' },
+    { name: '正式会员', color: '#2568c8' },
+    { name: '干事', color: '#c98a3d' },
+    { name: '管理员', color: '#e05450' },
 ];
 const POSITION_GROUPS = [
     { name: '主席', color: '#b8860b' },

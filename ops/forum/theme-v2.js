@@ -25,8 +25,8 @@ const CUSTOM_CSS = `
   --esta-paper: #fdf6e3;       /* 米黄纸张 */
   --esta-paper-dark: #f4e8c9;  /* 纸张加深 */
   --esta-ink: #3b3226;         /* 纸上墨色 */
-  --esta-blue: #0ea5e9;        /* ESTA 蓝 */
-  --esta-blue-dark: #0369a1;
+  --esta-blue: #0da9cd;        /* ESTA 蓝 */
+  --esta-blue-dark: #087c99;
   --bs-body-bg: transparent;
   --bs-body-color: var(--esta-ink);
   --bs-link-color: var(--esta-blue-dark);
@@ -234,7 +234,7 @@ ul.category-children a i { margin-right: 4px; }
   position: fixed; right: 22px; bottom: 76px; z-index: 1000;
   display: inline-flex; align-items: center; gap: 9px;
   padding: 15px 24px; border-radius: 999px;
-  background: linear-gradient(135deg, #f97316, #ef4444);
+  background: linear-gradient(135deg, #f97316, #e05450);
   color: #fff !important; font-weight: 800; font-size: 16px;
   box-shadow: 0 12px 34px rgba(239,68,68,.5); text-decoration: none;
 }
@@ -255,7 +255,7 @@ const CUSTOM_HTML = `
 (function () {
   'use strict';
   var FLOORS = { 0: '楼主', 1: '沙发', 2: '板凳', 3: '地板' };
-  var GROUP_COLORS = { '管理员': '#ef4444', '干事': '#f59e0b', '会员': '#0ea5e9', 'administrators': '#ef4444' };
+  var GROUP_COLORS = { '管理员': '#e05450', '干事': '#c98a3d', '会员': '#0da9cd', 'administrators': '#e05450' };
   var GROUP_LABELS = { '管理员': '管理组', '干事': '干事', '会员': '正式会员', 'administrators': '管理组' };
 
   function userMap() {
@@ -296,7 +296,7 @@ const CUSTOM_HTML = `
         avatar.appendChild(img);
       } else {
         avatar.textContent = (u['icon:text'] || '?');
-        avatar.style.background = u['icon:bgColor'] || '#0ea5e9';
+        avatar.style.background = u['icon:bgColor'] || '#0da9cd';
       }
       side.appendChild(avatar);
 

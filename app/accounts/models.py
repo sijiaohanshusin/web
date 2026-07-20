@@ -69,7 +69,7 @@ class User(AbstractUser):
 
     @property
     def level_color(self) -> str:
-        return roles.LEVEL_COLORS.get(self.member_level, "#94a3b8")
+        return roles.LEVEL_COLORS.get(self.member_level, "#97a1b3")
 
     @property
     def full_title(self) -> str:
@@ -116,7 +116,7 @@ class Medal(models.Model):
 
     name = models.CharField("勋章名称", max_length=40, unique=True)
     icon = models.CharField("图标", max_length=40, default="🏅", help_text="直接填 emoji（推荐），如 🏅🥇⚡🔧")
-    color = models.CharField("颜色", max_length=20, default="#f59e0b")
+    color = models.CharField("颜色", max_length=20, default="#c98a3d")
     description = models.CharField("说明", max_length=200, blank=True)
     sort_order = models.PositiveIntegerField("排序", default=100)
 

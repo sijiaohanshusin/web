@@ -6,7 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ site_config.site_name }} | {{ site_config.site_name_en }}{% endblock %}</title>
     <meta name="description" content="{% block description %}哈尔滨工程大学电子科技协会（HEU ESTA）官方网站：招新信息、电子学培训、竞赛资料与学习资源。{% endblock %}">
-    <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
+    {# 社交分享卡（QQ/微信/Telegram 等抓取 og 协议） #}
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ site_config.site_name }}">
+    <meta property="og:title" content="{% block og_title %}{{ site_config.site_name }} | {{ site_config.site_name_en }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}招新信息、电子学培训、竞赛资料与学习资源。焊接每一个奇思妙想。{% endblock %}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/og-card.png' %}">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
+    <link rel="preload" href="{% static 'fonts/JetBrainsMono-subset.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{% static 'css/site.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
@@ -15,7 +25,7 @@
 <header class="site-nav" id="site-nav">
     <div class="container nav-inner">
         <a class="nav-brand" href="{% url 'core:home' %}">
-            <img src="{% static 'img/logo.png' %}" alt="会标" class="nav-logo">
+            <img src="{% static 'img/logo-mark.png' %}" alt="会标" class="nav-logo">
             <span class="nav-title">
                 <strong>电子科技协会</strong>
                 <small>HEU ESTA</small>
@@ -65,10 +75,14 @@
 </main>
 
 <footer class="site-footer">
+    <svg class="footer-wave" viewBox="0 0 1440 40" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0,20 C60,4 120,4 180,20 C240,36 300,36 360,20 C420,4 480,4 540,20 C600,36 660,36 720,20 C780,4 840,4 900,20 C960,36 1020,36 1080,20 C1140,4 1200,4 1260,20 C1320,36 1380,36 1440,20"
+              fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </svg>
     <div class="container footer-grid">
         <div class="footer-col footer-brand">
             <div class="footer-logo-row">
-                <img src="{% static 'img/logo.png' %}" alt="会标">
+                <img src="{% static 'img/logo-mark.png' %}" alt="会标">
                 <div>
                     <strong>{{ site_config.site_name }}</strong>
                     <small>{{ site_config.site_name_en }} · EST. {{ site_config.founding_year }}</small>
@@ -104,13 +118,13 @@
 
 {% if site_config.beta_mode %}
 <button class="beta-fab" id="beta-fab" type="button" title="内测反馈：提 Bug / 提建议">
-    <span class="beta-fab-icon">🐛</span>
+    <span class="beta-fab-icon">{% include "includes/icon.html" with name="bug" %}</span>
     <span class="beta-fab-text">内测反馈</span>
 </button>
 <div class="fb-mask" id="fb-mask" hidden>
     <div class="fb-modal" role="dialog" aria-label="内测反馈">
         <div class="fb-head">
-            <strong>🐛 内测反馈</strong>
+            <strong>{% include "includes/icon.html" with name="bug" %} 内测反馈</strong>
             <button type="button" class="fb-close" id="fb-close" aria-label="关闭">×</button>
         </div>
         <p class="fb-tip">遇到 Bug、体验别扭、想要新功能，都写这儿。反馈会进入系统，我们统一审阅、逐条处理。</p>

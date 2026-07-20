@@ -29,7 +29,12 @@ def home(request):
     config = SiteConfig.load()
 
     stats = bilibili.get_stats(config.bilibili_mid)
-    videos = bilibili.get_latest_videos(config.bilibili_mid, limit=6)
+    # 精选优先（后台配置 BV 号，封面可控），未配置时回退到最新 3 个投稿
+    featured = config.featured_bvid_list
+    if featured:
+        videos = bilibili.get_videos_by_bvids(featured)
+    else:
+        videos = bilibili.get_latest_videos(config.bilibili_mid, limit=3)
     recruit_video = bilibili.get_video_info(config.recruit_video_bvid)
 
     db_images = list(CarouselImage.objects.filter(is_active=True))

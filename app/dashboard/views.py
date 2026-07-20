@@ -287,7 +287,7 @@ def medals(request):
             if name:
                 Medal.objects.get_or_create(name=name, defaults={
                     "icon": request.POST.get("icon", "🏅").strip() or "🏅",
-                    "color": request.POST.get("color", "#f59e0b").strip() or "#f59e0b",
+                    "color": request.POST.get("color", "#c98a3d").strip() or "#c98a3d",
                     "description": request.POST.get("description", "").strip(),
                 })
                 messages.success(request, f"勋章「{name}」已创建。")

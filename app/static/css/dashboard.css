@@ -22,12 +22,13 @@
     transition: background .2s, color .2s;
 }
 .dash-nav a:hover { background: rgba(255, 255, 255, .05); color: #fff; }
-.dash-nav a.active { background: rgba(14, 165, 233, .14); color: var(--accent-2); }
+.dash-nav a.active { background: rgba(13, 169, 205, .14); color: var(--accent-2); }
 .dash-nav a.active::before {
     content: ""; position: absolute; left: 0; top: 22%; bottom: 22%; width: 3px;
     border-radius: 2px; background: var(--accent);
 }
-.dash-nav-icon { width: 20px; text-align: center; font-size: 15px; }
+.dash-nav-icon { width: 20px; display: inline-flex; align-items: center; justify-content: center; opacity: .85; }
+.dash-nav-icon .icon { width: 18px; height: 18px; }
 .dash-badge {
     margin-left: auto; font-style: normal; font-size: 11.5px; font-weight: 700;
     background: var(--danger); color: #fff; border-radius: 999px; padding: 1px 8px;
@@ -50,7 +51,7 @@
 /* ---------- 提醒横幅 ---------- */
 .dash-banner {
     display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-    border: 1px solid rgba(251, 191, 36, .4); background: rgba(251, 191, 36, .08);
+    border: 1px solid rgba(244, 182, 63, .4); background: rgba(244, 182, 63, .08);
     border-radius: 14px; padding: 14px 20px; margin-bottom: 22px;
 }
 .dash-banner strong { color: var(--warn); }
@@ -87,7 +88,7 @@
 .dash-toolbar select.input { width: 140px; }
 .dash-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
 .dash-tabs a { padding: 8px 18px; border-radius: 999px; border: 1px solid var(--line-d); color: var(--muted); font-size: 14px; }
-.dash-tabs a.active { border-color: var(--accent); color: var(--accent-2); background: rgba(14, 165, 233, .1); }
+.dash-tabs a.active { border-color: var(--accent); color: var(--accent-2); background: rgba(13, 169, 205, .1); }
 .dash-tabs a em { font-style: normal; color: var(--warn); font-weight: 700; }
 
 .dash-table-wrap { border: 1px solid var(--line-d); border-radius: 14px; overflow: auto; background: rgba(255, 255, 255, .015); }
@@ -97,8 +98,8 @@
     padding: 12px 0; margin-top: 4px;
 }
 .dash-actions-bar .hint { color: var(--muted); font-size: 13px; }
-.btn-danger { background: rgba(248, 113, 113, .14); color: var(--danger); border: 1px solid rgba(248, 113, 113, .4); }
-.btn-danger:hover { background: rgba(248, 113, 113, .25); color: #fff; }
+.btn-danger { background: rgba(240, 113, 110, .14); color: var(--danger); border: 1px solid rgba(240, 113, 110, .4); }
+.btn-danger:hover { background: rgba(240, 113, 110, .25); color: #fff; }
 
 /* ---------- 轮播图管理 ---------- */
 .dash-carousel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
@@ -143,7 +144,7 @@
 .fb-card-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
 .fb-card-head strong { color: #fff; }
 .fb-card-meta { color: var(--muted); font-size: 13px; }
-.fb-card-body { color: #e2e8f0; font-size: 14.5px; line-height: 1.7; background: rgba(255,255,255,.03); border-radius: 10px; padding: 12px 14px; }
+.fb-card-body { color: var(--text); font-size: 14.5px; line-height: 1.7; background: rgba(255,255,255,.03); border-radius: 10px; padding: 12px 14px; }
 .fb-card-note { margin-top: 10px; color: var(--muted); font-size: 13px; }
 .fb-card-actions { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 .fb-resolve-form { display: flex; gap: 8px; flex: 1; min-width: 260px; }

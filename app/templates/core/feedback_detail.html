@@ -5,6 +5,7 @@
 {% block content %}
 <div class="container">
     <div class="auth-card auth-card-wide">
+        <p class="nf-eyebrow">// FEEDBACK</p>
         <div class="fbd-head">
             <h1>反馈 #{{ fb.pk }}</h1>
             <span class="badge {% if fb.status == 'resolved' %}badge-green{% else %}badge-amber{% endif %}">{{ fb.get_status_display }}</span>

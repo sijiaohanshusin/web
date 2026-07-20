@@ -31,14 +31,14 @@ LEVEL_LABELS = {
 
 LEVEL_CHOICES = [(k, v) for k, v in sorted(LEVEL_LABELS.items())]
 
-# 徽章配色（主站 + 论坛共用同一套色板）
+# 徽章配色（主站 + 论坛共用同一套色板：信号青阶梯 + 干事焊锡铜）
 LEVEL_COLORS = {
-    LEVEL_PENDING: "#94a3b8",
-    LEVEL_APPLICANT: "#38bdf8",
-    LEVEL_PREPARATORY: "#0ea5e9",
-    LEVEL_FORMAL: "#2563eb",
-    LEVEL_OFFICER: "#f59e0b",
-    LEVEL_ADMIN: "#ef4444",
+    LEVEL_PENDING: "#97a1b3",
+    LEVEL_APPLICANT: "#41d8e8",
+    LEVEL_PREPARATORY: "#0da9cd",
+    LEVEL_FORMAL: "#2568c8",
+    LEVEL_OFFICER: "#c98a3d",
+    LEVEL_ADMIN: "#e05450",
 }
 
 # 等级 -> Django 组名（同时是论坛头衔组名）。待审核不入组。

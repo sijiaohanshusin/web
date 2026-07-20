@@ -94,7 +94,7 @@
     "use strict";
     var data = JSON.parse(document.getElementById("charts-data").textContent);
 
-    var BLUE = "#0ea5e9", LIGHT = "#38bdf8", CYAN = "#22d3ee";
+    var BLUE = "#0da9cd", LIGHT = "#41d8e8", CYAN = "#63e2ef";
     var GRID = "rgba(148,163,184,.12)", TICK = "#8aa3c6";
 
     Chart.defaults.color = TICK;
@@ -122,8 +122,8 @@
                     tension: .35, fill: true,
                     backgroundColor: function (ctx) {
                         var g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 240);
-                        g.addColorStop(0, "rgba(14,165,233,.25)");
-                        g.addColorStop(1, "rgba(14,165,233,0)");
+                        g.addColorStop(0, "rgba(13,169,205,.25)");
+                        g.addColorStop(1, "rgba(13,169,205,0)");
                         return g;
                     }
                 }]
@@ -137,7 +137,7 @@
             type: "bar",
             data: {
                 labels: data.gradeDist.labels,
-                datasets: [{ data: data.gradeDist.data, backgroundColor: "rgba(14,165,233,.55)", borderColor: BLUE, borderWidth: 1.5, borderRadius: 6 }]
+                datasets: [{ data: data.gradeDist.data, backgroundColor: "rgba(13,169,205,.55)", borderColor: BLUE, borderWidth: 1.5, borderRadius: 6 }]
             },
             options: { maintainAspectRatio: false, scales: axis() }
         });
@@ -150,7 +150,7 @@
                 labels: data.categoryDist.labels,
                 datasets: [{
                     data: data.categoryDist.data,
-                    backgroundColor: ["rgba(14,165,233,.75)", "rgba(34,211,238,.65)", "rgba(56,189,248,.5)", "rgba(148,163,184,.4)"],
+                    backgroundColor: ["rgba(13,169,205,.75)", "rgba(99,226,239,.65)", "rgba(65,216,232,.5)", "rgba(148,163,184,.4)"],
                     borderColor: "#0b0b0e", borderWidth: 2
                 }]
             },
@@ -163,7 +163,7 @@
             type: "bar",
             data: {
                 labels: data.topDownloads.labels,
-                datasets: [{ data: data.topDownloads.data, backgroundColor: "rgba(34,211,238,.5)", borderColor: CYAN, borderWidth: 1.5, borderRadius: 5 }]
+                datasets: [{ data: data.topDownloads.data, backgroundColor: "rgba(99,226,239,.5)", borderColor: CYAN, borderWidth: 1.5, borderRadius: 5 }]
             },
             options: { indexAxis: "y", maintainAspectRatio: false, scales: axis() }
         });

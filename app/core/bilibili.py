@@ -130,7 +130,19 @@ def get_video_info(bvid: str) -> dict | None:
         "bvid": bvid,
         "title": data.get("title", ""),
         "pic": _https(data.get("pic", "")),
+        "duration": _format_duration(data.get("duration", 0)),
         "view": _format_view((data.get("stat") or {}).get("view", 0)),
+        "url": f"https://www.bilibili.com/video/{bvid}",
     }
     cache.set(cache_key, info, 24 * 3600)
     return info
+
+
+def get_videos_by_bvids(bvids: list[str]) -> list[dict]:
+    """按 BV 号列表取视频（用于首页精选）。取不到的条目跳过。"""
+    videos = []
+    for bvid in bvids:
+        info = get_video_info(bvid)
+        if info:
+            videos.append(info)
+    return videos

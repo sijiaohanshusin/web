@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}管理驾驶舱{% endblock %} | {{ site_config.site_name_en }}</title>
     <meta name="robots" content="noindex">
-    <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
+    <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
     <link rel="stylesheet" href="{% static 'css/site.css' %}">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
     {% block extra_head %}{% endblock %}
@@ -15,7 +15,7 @@
 
 <aside class="dash-side">
     <a class="dash-brand" href="{% url 'core:home' %}">
-        <img src="{% static 'img/logo.png' %}" alt="会标">
+        <img src="{% static 'img/logo-mark.png' %}" alt="会标">
         <span>
             <strong>电子科技协会</strong>
             <small>管理驾驶舱</small>
@@ -23,28 +23,28 @@
     </a>
     <nav class="dash-nav">
         <a href="{% url 'dashboard:overview' %}" class="{% if active_nav == 'overview' %}active{% endif %}">
-            <span class="dash-nav-icon">◧</span>数据总览
+            <span class="dash-nav-icon">{% include "includes/icon.html" with name="scope" %}</span>数据总览
         </a>
         <a href="{% url 'dashboard:members' %}" class="{% if active_nav == 'members' %}active{% endif %}">
-            <span class="dash-nav-icon">◉</span>会员管理
+            <span class="dash-nav-icon">{% include "includes/icon.html" with name="chip" %}</span>会员管理
             {% if pending_count %}<em class="dash-badge">{{ pending_count }}</em>{% endif %}
         </a>
         <a href="{% url 'dashboard:resources' %}" class="{% if active_nav == 'resources' %}active{% endif %}">
-            <span class="dash-nav-icon">▤</span>资料管理
+            <span class="dash-nav-icon">{% include "includes/icon.html" with name="folder" %}</span>资料管理
         </a>
         <a href="{% url 'dashboard:feedbacks' %}" class="{% if active_nav == 'feedbacks' %}active{% endif %}">
-            <span class="dash-nav-icon">🐛</span>反馈管理
+            <span class="dash-nav-icon">{% include "includes/icon.html" with name="bug" %}</span>反馈管理
             {% if feedback_pending %}<em class="dash-badge">{{ feedback_pending }}</em>{% endif %}
         </a>
         {% if user.is_staff or user.is_superuser %}
         <a href="{% url 'dashboard:medals' %}" class="{% if active_nav == 'medals' %}active{% endif %}">
-            <span class="dash-nav-icon">🏅</span>勋章管理
+            <span class="dash-nav-icon">{% include "includes/icon.html" with name="medal" %}</span>勋章管理
         </a>
         <a href="{% url 'dashboard:positions' %}" class="{% if active_nav == 'positions' %}active{% endif %}">
-            <span class="dash-nav-icon">👔</span>职位管理
+            <span class="dash-nav-icon">{% include "includes/icon.html" with name="badge" %}</span>职位管理
         </a>
         <a href="{% url 'dashboard:site_settings' %}" class="{% if active_nav == 'site' %}active{% endif %}">
-            <span class="dash-nav-icon">⚙</span>站点设置
+            <span class="dash-nav-icon">{% include "includes/icon.html" with name="pot" %}</span>站点设置
         </a>
         {% endif %}
     </nav>

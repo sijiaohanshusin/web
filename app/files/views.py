@@ -1,3 +1,4 @@
+from datetime import timedelta
 from urllib.parse import quote
 
 from django.conf import settings
@@ -8,6 +9,7 @@ from django.core.paginator import Paginator
 from django.db.models import F, Q
 from django.http import FileResponse, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from accounts.roles import effective_level, is_officer
 
@@ -33,12 +35,18 @@ def resource_list(request):
     paginator = Paginator(resources, 20)
     page = paginator.get_page(request.GET.get("page"))
 
+    # 页头统计：当前用户可见范围内的总数 / 最近 7 天新增（不受搜索与分类筛选影响）
+    visible = Resource.objects.filter(min_level__lte=level)
+    week_ago = timezone.now() - timedelta(days=7)
+
     context = {
         "page": page,
         "query": query,
         "category": category,
         "categories": Resource.Category.choices,
         "can_upload": is_officer(request.user),
+        "total_count": visible.count(),
+        "week_count": visible.filter(created_at__gte=week_ago).count(),
     }
     return render(request, "files/list.html", context)
 

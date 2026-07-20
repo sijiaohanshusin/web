@@ -6,6 +6,7 @@
 {% block content %}
 <div class="container">
     <div class="auth-card auth-card-wide">
+        <p class="nf-eyebrow">// JOIN US</p>
         <h1>注册会员</h1>
         <p class="auth-sub">
             {% if site_config.beta_mode %}内测阶段：注册后自动激活，可直接体验全部功能
@@ -19,21 +20,34 @@
         {% endif %}
         <form method="post">
             {% csrf_token %}
-            {% for field in form %}
-                {% if field.name == "code" %}
-                    <div class="form-group {% if field.errors %}has-error{% endif %}">
-                        <label for="{{ field.id_for_label }}">{{ field.label }} <span class="req">*</span></label>
-                        <div class="code-row">
-                            {{ field }}
-                            <button type="button" class="btn btn-outline" data-send-code="register" data-email="#id_email">获取验证码</button>
-                        </div>
-                        <small class="form-help" id="code-msg">{{ field.help_text }}</small>
-                        {% for error in field.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
+
+            <fieldset class="form-section">
+                <legend class="form-section-title"><span>01</span>账号信息</legend>
+                {% include "includes/field.html" with field=form.username %}
+                {% include "includes/field.html" with field=form.email %}
+                <div class="form-group {% if form.code.errors %}has-error{% endif %}">
+                    <label for="{{ form.code.id_for_label }}">{{ form.code.label }} <span class="req">*</span></label>
+                    <div class="code-row">
+                        {{ form.code }}
+                        <button type="button" class="btn btn-outline" data-send-code="register" data-email="#id_email">获取验证码</button>
                     </div>
-                {% else %}
-                    {% include "includes/field.html" %}
-                {% endif %}
-            {% endfor %}
+                    <small class="form-help" id="code-msg">{{ form.code.help_text }}</small>
+                    {% for error in form.code.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
+                </div>
+                {% include "includes/field.html" with field=form.password1 %}
+                {% include "includes/field.html" with field=form.password2 %}
+            </fieldset>
+
+            <fieldset class="form-section">
+                <legend class="form-section-title"><span>02</span>个人信息</legend>
+                {% include "includes/field.html" with field=form.real_name %}
+                {% include "includes/field.html" with field=form.student_id %}
+                {% include "includes/field.html" with field=form.college %}
+                {% include "includes/field.html" with field=form.grade %}
+                {% include "includes/field.html" with field=form.phone %}
+                {% include "includes/field.html" with field=form.qq %}
+            </fieldset>
+
             <button type="submit" class="btn btn-primary btn-block">提交注册</button>
         </form>
         <p class="auth-alt">已有账号？<a href="{% url 'accounts:login' %}">直接登录</a></p>

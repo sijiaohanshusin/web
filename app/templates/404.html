@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}404 · 信号丢失 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}页面不存在{% endblock %}
+
+{% block content %}
+<section class="error-hero nf-dark">
+    <div class="container nf-center">
+        <p class="nf-eyebrow">// NO SIGNAL</p>
+        <div class="error-code" aria-hidden="true">404</div>
+
+        <svg class="error-wave" viewBox="0 0 800 120" preserveAspectRatio="none" aria-hidden="true">
+            <polyline points="0,60 250,60 262,60 270,18 278,98 286,34 294,86 302,12 310,104 318,42 326,78 334,22 342,95 350,50 358,70 366,60 540,60 800,60"
+                      fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+        </svg>
+
+        <h1>信号丢失</h1>
+        <p class="error-sub">你要找的页面不在任何通道上。检查一下接线——网址可能拼错了，或者这份内容已经下线。</p>
+        <div class="error-actions">
+            <a class="btn btn-primary" href="/">回到首页</a>
+            <a class="nf-link-more" href="/recruit/">先看《新生指南》 <span>→</span></a>
+        </div>
+    </div>
+</section>
+{% endblock %}

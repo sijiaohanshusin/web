@@ -37,7 +37,7 @@
         c.fillRect(0, 0, size, size);
         return s;
     }
-    var spriteCyan = makeSprite(56, 189, 248);
+    var spriteCyan = makeSprite(65, 216, 232);
     var spriteWhite = makeSprite(235, 248, 255);
 
     /* ---------- 布局 ---------- */

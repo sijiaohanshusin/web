@@ -8,7 +8,7 @@
 
 <div class="recruit-hero">
     <div class="container">
-        <span class="section-tag">// FRESHMAN GUIDE</span>
+        <p class="nf-eyebrow">// FRESHMAN GUIDE</p>
         <h1>新生指南 · 从零开始的电子之旅</h1>
         <p>欢迎加入电子科技协会！这份指南带你认识协会的培训体系、常用元件与工具、开发软件和学习资源。看不懂没关系，一年后回头看，你会惊讶自己走了多远。</p>
     </div>
@@ -56,7 +56,7 @@
                 </div>
             </details>
 
-            <details class="fold">
+            <details class="fold" open>
                 <summary>软件部培训安排</summary>
                 <div class="fold-body table-wrap">
                     <table class="table">
@@ -410,23 +410,41 @@
 
 {% block extra_js %}
 <script>
-// 目录高亮当前章节
+// 目录高亮当前章节：IO 驱动 + 左侧滑动指示条 + 点击立即响应
 (function () {
     "use strict";
-    var links = document.querySelectorAll("#recruit-toc a");
+    var toc = document.getElementById("recruit-toc");
+    var links = toc.querySelectorAll("a");
     var sections = Array.from(links).map(function (a) {
         return document.querySelector(a.getAttribute("href"));
     });
+
+    var marker = document.createElement("span");
+    marker.className = "toc-marker";
+    marker.setAttribute("aria-hidden", "true");
+    toc.appendChild(marker);
+
+    function setActive(link) {
+        links.forEach(function (a) { a.classList.toggle("active", a === link); });
+        marker.style.height = link.offsetHeight + "px";
+        marker.style.transform = "translateY(" + link.offsetTop + "px)";
+        toc.classList.add("toc-live");
+    }
+
     var observer = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-            if (entry.isIntersecting) {
-                links.forEach(function (a) {
-                    a.classList.toggle("active", a.getAttribute("href") === "#" + entry.target.id);
-                });
-            }
+            if (!entry.isIntersecting) return;
+            links.forEach(function (a) {
+                if (a.getAttribute("href") === "#" + entry.target.id) setActive(a);
+            });
         });
     }, { rootMargin: "-20% 0px -70% 0px" });
     sections.forEach(function (s) { if (s) observer.observe(s); });
+
+    // 点击立即高亮，不等滚动到位
+    links.forEach(function (a) {
+        a.addEventListener("click", function () { setActive(a); });
+    });
 })();
 </script>
 {% endblock %}

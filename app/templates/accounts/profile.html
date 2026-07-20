@@ -6,22 +6,32 @@
 {% block content %}
 <div class="container page-section">
     <div class="page-head">
+        <p class="nf-eyebrow">// PROFILE</p>
         <h1>个人中心</h1>
     </div>
     <div class="profile-grid">
-        <div class="panel profile-side">
+        <div class="panel profile-side id-card">
+            {# 实验室工牌：等级色顶带 + 挂绳穿孔 + ACCESS LEVEL #}
+            <div class="id-card-band" style="background:{{ user.level_color }};" aria-hidden="true">
+                <span class="id-card-slot"></span>
+            </div>
             {% if user.avatar %}
                 <img class="profile-avatar" src="{{ user.avatar.url }}" alt="头像">
             {% else %}
                 <div class="profile-avatar-fallback">{{ user.display_name|first }}</div>
             {% endif %}
             <h2>{{ user.display_name }}</h2>
-            <div class="profile-username">@{{ user.username }}</div>
+            <div class="profile-username">@{{ user.username }}{% if user.student_id %} · NO.{{ user.student_id }}{% endif %}</div>
+            <div class="id-card-access">
+                <span class="id-card-access-label">ACCESS LEVEL</span>
+                <span class="id-card-access-value" style="color:{{ user.level_color }};">{{ user.level_label }}</span>
+            </div>
+            {% if user.cohort_label or user.position %}
             <div class="profile-badges">
                 {% if user.cohort_label %}<span class="badge badge-gray">{{ user.cohort_label }}</span>{% endif %}
-                <span class="badge" style="color:#fff;background:{{ user.level_color }};border-color:{{ user.level_color }};">{{ user.level_label }}</span>
                 {% if user.position %}<span class="badge" style="color:#fff;background:{{ user.position.color }};border-color:{{ user.position.color }};">{{ user.position.name }}</span>{% endif %}
             </div>
+            {% endif %}
             <ul class="profile-meta">
                 <li><span>学号</span><span>{{ user.student_id|default:"—" }}</span></li>
                 <li><span>学院</span><span>{{ user.college|default:"—" }}</span></li>
@@ -57,7 +67,7 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="empty-hint"><span class="empty-icon">🏅</span>还没有勋章，参与活动、做出贡献即可获得</div>
+                    <div class="empty-hint"><span class="empty-icon">{% include "includes/icon.html" with name="medal" cls="icon-lg" %}</span>还没有勋章，参与活动、做出贡献即可获得</div>
                 {% endif %}
             </div>
             <div class="panel">
@@ -83,7 +93,7 @@
                     </div>
                 {% else %}
                     <div class="empty-hint">
-                        <span class="empty-icon">🗂️</span>
+                        <span class="empty-icon">{% include "includes/icon.html" with name="folder" cls="icon-lg" %}</span>
                         还没有上传过资料{% if user.is_officer %}，<a href="{% url 'files:upload' %}">去上传第一份</a>{% endif %}
                     </div>
                 {% endif %}

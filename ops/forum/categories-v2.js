@@ -17,7 +17,7 @@ const STRUCTURE = [
     {
         section: { name: '站务中心', icon: 'fa-landmark', bgColor: '#475569', description: '公告、版务与意见反馈' },
         children: [
-            { exist: '公告板', name: '公告板', icon: 'fa-bullhorn', bgColor: '#ef4444', description: '协会与论坛官方公告' },
+            { exist: '公告板', name: '公告板', icon: 'fa-bullhorn', bgColor: '#e05450', description: '协会与论坛官方公告' },
             { name: '意见反馈', icon: 'fa-comment-medical', bgColor: '#f97316', description: '网站与论坛的 Bug 反馈、功能建议' },
         ],
     },
@@ -25,13 +25,13 @@ const STRUCTURE = [
         section: { name: '新人专区', icon: 'fa-seedling', bgColor: '#22c55e', description: '从这里开始你的科协之旅' },
         children: [
             { name: '新人报到', icon: 'fa-hand-wave', bgColor: '#10b981', description: '新同学报到刷存在感，混个脸熟' },
-            { exist: '新生答疑', name: '新生答疑', icon: 'fa-question-circle', bgColor: '#0ea5e9', description: '萌新提问专区：不懂就问，没有蠢问题' },
+            { exist: '新生答疑', name: '新生答疑', icon: 'fa-question-circle', bgColor: '#0da9cd', description: '萌新提问专区：不懂就问，没有蠢问题' },
         ],
     },
     {
-        section: { name: '硬件天地', icon: 'fa-microchip', bgColor: '#f59e0b', description: '从元件到整机的硬件世界' },
+        section: { name: '硬件天地', icon: 'fa-microchip', bgColor: '#c98a3d', description: '从元件到整机的硬件世界' },
         children: [
-            { exist: '硬件电路', name: '模拟电路', icon: 'fa-wave-square', bgColor: '#f59e0b', description: '运放、滤波器、信号链设计与调试' },
+            { exist: '硬件电路', name: '模拟电路', icon: 'fa-wave-square', bgColor: '#c98a3d', description: '运放、滤波器、信号链设计与调试' },
             { name: 'PCB 与焊接', icon: 'fa-bezier-curve', bgColor: '#d97706', description: '原理图、Layout、打样与焊接工艺' },
             { name: '电源与功率', icon: 'fa-bolt', bgColor: '#eab308', description: '线性电源、开关电源、功率电子' },
             { name: '仪器仪表', icon: 'fa-gauge-high', bgColor: '#a16207', description: '示波器、信号源、万用表使用与选购' },
@@ -47,9 +47,9 @@ const STRUCTURE = [
         ],
     },
     {
-        section: { name: '竞赛与项目', icon: 'fa-trophy', bgColor: '#ef4444', description: '以赛促学，以项目会友' },
+        section: { name: '竞赛与项目', icon: 'fa-trophy', bgColor: '#e05450', description: '以赛促学，以项目会友' },
         children: [
-            { exist: '竞赛专区', name: '电赛专区', icon: 'fa-trophy', bgColor: '#ef4444', description: '全国大学生电子设计竞赛：真题、备赛、经验' },
+            { exist: '竞赛专区', name: '电赛专区', icon: 'fa-trophy', bgColor: '#e05450', description: '全国大学生电子设计竞赛：真题、备赛、经验' },
             { name: '组队招募', icon: 'fa-people-group', bgColor: '#f43f5e', description: '找队友、找项目，车队在此发车' },
             { name: '作品展示', icon: 'fa-lightbulb', bgColor: '#e11d48', description: '晒出你的作品：电路、程序、整活皆可' },
         ],

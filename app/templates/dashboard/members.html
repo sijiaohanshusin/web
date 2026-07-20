@@ -65,7 +65,7 @@
                     <span class="badge" style="color:#fff;background:{{ u.level_color }};border-color:{{ u.level_color }};">{{ u.level_label }}</span>
                     {% if u.position %}<span class="badge" style="color:#fff;background:{{ u.position.color }};border-color:{{ u.position.color }};">{{ u.position.name }}</span>{% endif %}
                 </td>
-                <td>{% if u.medal_count %}🏅 {{ u.medal_count }}{% else %}—{% endif %}</td>
+                <td>{% if u.medal_count %}{% include "includes/icon.html" with name="medal" cls="icon-sm" %} {{ u.medal_count }}{% else %}—{% endif %}</td>
                 <td>{{ u.date_joined|date:"Y-m-d H:i" }}</td>
             </tr>
             {% empty %}

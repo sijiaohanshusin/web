@@ -1,8 +1,11 @@
+import re
+
 from django.conf import settings
 from django.core.cache import cache
 from django.db import models
 
-SITE_CONFIG_CACHE_KEY = "core:site_config"
+# 加字段后 bump 版本号，避免部署后读到缺新字段的旧 pickle
+SITE_CONFIG_CACHE_KEY = "core:site_config:v2"
 
 
 class SiteConfig(models.Model):
@@ -19,6 +22,13 @@ class SiteConfig(models.Model):
     )
     recruit_qq_group = models.CharField("招新 QQ 群号", max_length=20, default="1015304209")
     bilibili_mid = models.CharField("B 站账号 UID", max_length=20, default="70859324")
+    featured_video_bvids = models.TextField(
+        "首页精选视频 BV 号",
+        blank=True,
+        default="",
+        help_text="每行一个 BV 号，最多取前 3 个，作为首页「精选培训视频」展示；"
+                  "留空则自动展示最新 3 个投稿。挑封面干净的视频放这里。",
+    )
 
     beta_mode = models.BooleanField(
         "内测模式", default=True,
@@ -44,6 +54,12 @@ class SiteConfig(models.Model):
     @property
     def bilibili_space_url(self):
         return f"https://space.bilibili.com/{self.bilibili_mid}"
+
+    @property
+    def featured_bvid_list(self) -> list[str]:
+        """解析精选视频 BV 号（每行一个，容忍逗号/空格分隔），最多 3 个。"""
+        bvids = re.split(r"[\s,，]+", self.featured_video_bvids.strip())
+        return [b for b in bvids if b][:3]
 
     @classmethod
     def load(cls) -> "SiteConfig":

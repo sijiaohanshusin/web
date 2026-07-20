@@ -5,7 +5,8 @@
 {% block content %}
 <div class="container">
     <div class="auth-card auth-card-wide">
-        <h1>🐛 内测反馈</h1>
+        <p class="nf-eyebrow">// FEEDBACK</p>
+        <h1>{% include "includes/icon.html" with name="bug" %} 内测反馈</h1>
         <p class="auth-sub">遇到 Bug、体验别扭、想要新功能，都写这儿。所有反馈进入系统，我们统一审阅、逐条处理。</p>
 
         <form method="post" action="{% url 'core:feedback' %}">
