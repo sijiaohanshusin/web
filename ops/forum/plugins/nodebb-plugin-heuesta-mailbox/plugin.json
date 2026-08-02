@@ -1,0 +1,14 @@
+{
+  "id": "nodebb-plugin-heuesta-mailbox",
+  "name": "HEU ESTA Public Mailbox",
+  "description": "Archives new Gmail inbox messages in a private, read-only NodeBB category.",
+  "url": "https://github.com/sijiaohanshusin/web",
+  "library": "./library.js",
+  "hooks": [
+    { "hook": "static:app.load", "method": "init" },
+    { "hook": "filter:admin.header.build", "method": "addAdminNavigation" },
+    { "hook": "filter:topic.post", "method": "guardTopicPost" },
+    { "hook": "filter:topic.reply", "method": "guardTopicReply" }
+  ],
+  "templates": "static/templates"
+}

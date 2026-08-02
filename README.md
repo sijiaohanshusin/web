@@ -2,7 +2,7 @@
 
 线上地址：[heuesta.cn](https://heuesta.cn)
 
-这是协会官网的完整代码仓库：Django 全栈站点（官网 + 会员系统 + 资料站）+ 静态电子学学习中心 + 部署运维脚本。
+这是协会官网的完整代码仓库：Django 全栈站点（官网 + 会员系统 + 资料站）+ NodeBB 会员论坛 + 静态电子学学习中心 + 部署运维脚本。
 
 ## 仓库结构
 
@@ -16,7 +16,8 @@ web/
 │   ├── templates/      页面模板
 │   └── static/         CSS / JS / 图片（无构建链，改完即生效）
 ├── learn/electronics/  电子学学习中心（纯静态，nginx 直接服务）
-├── ops/                部署：Dockerfile、compose、nginx 配置、部署/备份脚本
+├── ops/                主站与论坛的 Docker、nginx、部署和备份脚本
+│   └── forum/plugins/  协会自研 NodeBB 插件（含公共邮箱只读归档）
 ├── scripts/            工具脚本（图片压缩等）
 └── docs/维护手册.md     ★ 接手维护先读这个
 ```
@@ -52,6 +53,12 @@ sudo /opt/heuesta/web/ops/deploy.sh
 
 日常更新流程：本地改代码 → 推送到 GitHub `main` → 服务器上跑 `deploy.sh`。
 
+论坛单独更新，不会重启主站：
+
+```bash
+sudo /opt/heuesta/web/ops/forum/deploy-forum.sh
+```
+
 ## 常用运维
 
 | 操作 | 入口 / 命令 |
@@ -59,6 +66,7 @@ sudo /opt/heuesta/web/ops/deploy.sh
 | 部署 / 更新 | `sudo /opt/heuesta/web/ops/deploy.sh` |
 | 看应用日志 | `cd /opt/heuesta/web && docker compose -f ops/docker-compose.yml --env-file /opt/heuesta/.env logs -f app` |
 | 手动备份 | `sudo /opt/heuesta/web/ops/backup.sh` |
+| 部署 / 更新论坛 | `sudo /opt/heuesta/web/ops/forum/deploy-forum.sh` |
 | 审核会员 / 数据图表 / 传资料 / 改配置 / 轮播图 | **管理驾驶舱** `heuesta.cn/dashboard/`（干事及以上） |
 | 底层数据管理 | 高级后台 `heuesta.cn/admin/`（管理员，simpleui 主题） |
 
@@ -67,6 +75,7 @@ sudo /opt/heuesta/web/ops/deploy.sh
 ## 技术栈
 
 - **后端**：Django 5.2 LTS（Python 3.12）+ PostgreSQL 16（生产）/ SQLite（开发）
-- **前端**：Django 模板 + 手写 CSS/JS，零构建链，零 Node 依赖
+- **主站前端**：Django 模板 + 手写 CSS/JS，无前端构建链
+- **会员论坛**：NodeBB 4 + Node.js 22，自研插件随论坛 Docker 镜像发布
 - **部署**：Docker Compose + 宿主机 nginx + Let's Encrypt，站点前置 CDN
 - **历史版本**：旧静态站保存在 `legacy-static` 分支
