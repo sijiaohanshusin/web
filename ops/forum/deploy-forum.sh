@@ -47,7 +47,7 @@ wait_for_forum
 echo "==> 启用公共邮箱插件并重建 NodeBB 模板"
 $COMPOSE exec -T forum ./nodebb activate nodebb-plugin-heuesta-mailbox
 # 插件没有前端 JS/CSS，只选择性构建模板，避免小规格服务器执行完整 webpack 构建。
-$COMPOSE exec -T forum ./nodebb build tpl
+$COMPOSE exec -T forum timeout --signal=TERM --kill-after=15s 120 ./nodebb build tpl
 $COMPOSE restart forum
 wait_for_forum
 
