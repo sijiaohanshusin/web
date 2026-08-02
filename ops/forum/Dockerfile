@@ -34,7 +34,7 @@ RUN npm config set registry https://registry.npmmirror.com \
     && rm -f /tmp/nodebb-plugin-heuesta-mailbox-*.tgz \
     && rm -rf /tmp/nodebb-plugin-heuesta-mailbox \
     && npm cache clean --force \
-    && chown -R node:node /usr/src/app
+    && chown -R node:node /usr/src/app/node_modules/nodebb-plugin-heuesta-mailbox
 
 COPY --chmod=755 entrypoint.sh /entrypoint.sh
 
