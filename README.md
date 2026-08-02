@@ -59,6 +59,8 @@ sudo /opt/heuesta/web/ops/deploy.sh
 sudo /opt/heuesta/web/ops/forum/deploy-forum.sh
 ```
 
+论坛“公共邮箱”通过 Gmail IMAP 只读归档新邮件；应用专用密码只保存在服务器 `/opt/heuesta/forum.env`，配置和轮换方法见[维护手册 8.4](docs/维护手册.md#84-公共邮箱只读归档)。
+
 ## 常用运维
 
 | 操作 | 入口 / 命令 |

@@ -1,98 +1,96 @@
 'use strict';
 
 const { htmlToText } = require('html-to-text');
-const iconv = require('iconv-lite');
-const libmime = require('libmime');
-const addressparser = require('nodemailer/lib/addressparser');
 
-const DEFAULT_CHARSET = 'utf-8';
+const MAX_TEXT_PART_BYTES = 512 * 1024;
+const MAX_BODY_CHARS = 120000;
 
-function decodeBase64Url(value) {
-	if (!value) {
-		return Buffer.alloc(0);
-	}
-	return Buffer.from(value.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+function partFilename(node) {
+	return String(
+		node && node.dispositionParameters && node.dispositionParameters.filename ||
+		node && node.parameters && node.parameters.name ||
+		''
+	).trim();
 }
 
-function headerMap(headers = []) {
-	return headers.reduce((result, header) => {
-		const key = String(header.name || '').toLowerCase();
-		if (key && result[key] === undefined) {
-			result[key] = libmime.decodeWords(String(header.value || ''));
-		}
+function isAttachment(node) {
+	const type = String(node && node.type || '').toLowerCase();
+	const topType = type.split('/')[0];
+	return String(node && node.disposition || '').toLowerCase() === 'attachment' ||
+		Boolean(partFilename(node)) ||
+		Boolean(type && topType !== 'text' && topType !== 'multipart' && !node.childNodes);
+}
+
+function inspectBodyStructure(node, result = { plain: [], html: [], attachments: [] }) {
+	if (!node) {
 		return result;
-	}, {});
-}
-
-function getCharset(headers) {
-	const contentType = headers['content-type'] || '';
-	const match = contentType.match(/charset\s*=\s*["']?([^;\s"']+)/i);
-	return match ? match[1].trim().toLowerCase() : DEFAULT_CHARSET;
-}
-
-function decodePart(part) {
-	const headers = headerMap(part.headers);
-	const charset = getCharset(headers);
-	const data = decodeBase64Url(part.body && part.body.data);
-	try {
-		return iconv.decode(data, iconv.encodingExists(charset) ? charset : DEFAULT_CHARSET);
-	} catch (err) {
-		return data.toString('utf8');
 	}
-}
-
-function isAttachment(part) {
-	const headers = headerMap(part.headers);
-	return Boolean(part.filename) || /attachment/i.test(headers['content-disposition'] || '');
-}
-
-function walkParts(part, result) {
-	if (!part) {
-		return;
-	}
-	if (isAttachment(part)) {
+	if (isAttachment(node)) {
 		result.attachments.push({
-			filename: libmime.decodeWords(part.filename || '(未命名附件)'),
-			mimeType: part.mimeType || 'application/octet-stream',
-			size: Number(part.body && part.body.size) || 0,
+			filename: partFilename(node) || '(未命名附件)',
+			mimeType: String(node.type || 'application/octet-stream').toLowerCase(),
+			size: Number(node.size) || 0,
 		});
-		return;
+		return result;
 	}
 
-	const mimeType = String(part.mimeType || '').toLowerCase();
-	if (mimeType === 'text/plain' && part.body && part.body.data) {
-		result.plain.push(decodePart(part));
-	} else if (mimeType === 'text/html' && part.body && part.body.data) {
-		result.html.push(decodePart(part));
+	const type = String(node.type || '').toLowerCase();
+	if (type === 'text/plain' && node.part) {
+		result.plain.push(node);
+	} else if (type === 'text/html' && node.part) {
+		result.html.push(node);
 	}
-	for (const child of part.parts || []) {
-		walkParts(child, result);
+	for (const child of node.childNodes || []) {
+		inspectBodyStructure(child, result);
 	}
+	return result;
 }
 
-function parseFrom(value, messageId) {
-	const addresses = addressparser(value || '');
-	const first = addresses.find(item => item && item.address);
-	if (!first) {
-		return {
-			displayName: '无法识别发件人',
-			email: `unknown-${messageId}@mail.invalid`,
-		};
+async function streamToText(stream) {
+	const chunks = [];
+	for await (const chunk of stream) {
+		chunks.push(Buffer.from(chunk));
+	}
+	return Buffer.concat(chunks).toString('utf8');
+}
+
+async function downloadTextParts(client, uid, nodes) {
+	const values = [];
+	for (const node of nodes) {
+		const result = await client.download(uid, node.part, {
+			uid: true,
+			maxBytes: MAX_TEXT_PART_BYTES,
+		});
+		if (result && result.content) {
+			values.push(await streamToText(result.content));
+		}
+	}
+	return values.join('\n\n').trim();
+}
+
+function firstSender(envelope, messageId) {
+	const sender = envelope && Array.isArray(envelope.from) ? envelope.from.find(item => item && item.address) : null;
+	if (!sender) {
+		return { displayName: '无法识别发件人', email: `unknown-${messageId}@mail.invalid` };
 	}
 	return {
-		displayName: String(first.name || '').trim(),
-		email: String(first.address).trim().toLowerCase(),
+		displayName: String(sender.name || '').trim(),
+		email: String(sender.address).trim().toLowerCase(),
 	};
 }
 
-function parseMessage(message) {
-	const headers = headerMap(message.payload && message.payload.headers);
-	const parts = { plain: [], html: [], attachments: [] };
-	walkParts(message.payload, parts);
+function stableMessageId(message, uidValidity) {
+	const emailId = String(message && message.emailId || '').trim();
+	return emailId ? `gmail:${emailId}` : `imap:${uidValidity}:${Number(message && message.uid)}`;
+}
 
-	let body = parts.plain.join('\n\n').trim();
+async function parseImapMessage(client, message, uidValidity) {
+	const id = stableMessageId(message, uidValidity);
+	const parts = inspectBodyStructure(message.bodyStructure);
+	let body = await downloadTextParts(client, message.uid, parts.plain);
 	if (!body && parts.html.length) {
-		body = htmlToText(parts.html.join('\n'), {
+		const html = await downloadTextParts(client, message.uid, parts.html);
+		body = htmlToText(html, {
 			wordwrap: false,
 			selectors: [
 				{ selector: 'img', format: 'skip' },
@@ -103,26 +101,30 @@ function parseMessage(message) {
 	}
 	if (!body) {
 		body = '(邮件没有可显示的文本正文)';
+	} else if (body.length > MAX_BODY_CHARS) {
+		body = `${body.slice(0, MAX_BODY_CHARS)}\n\n[正文过长，论坛归档已截断]`;
 	}
 
-	const from = parseFrom(headers.from, message.id);
+	const envelope = message.envelope || {};
+	const from = firstSender(envelope, id.replace(/[^a-z0-9]/gi, '').slice(-32));
 	return {
-		id: String(message.id),
-		historyId: String(message.historyId || ''),
-		internalDate: Number(message.internalDate) || Date.now(),
-		subject: String(headers.subject || '(无主题)').trim() || '(无主题)',
+		id,
+		internalDate: new Date(message.internalDate || envelope.date || Date.now()).getTime(),
+		subject: String(envelope.subject || '(无主题)').trim() || '(无主题)',
 		fromName: from.displayName,
 		fromEmail: from.email,
 		senderKey: from.email.toLowerCase(),
 		body,
 		attachments: parts.attachments,
-		labelIds: message.labelIds || [],
 	};
 }
 
 module.exports = {
-	decodeBase64Url,
-	headerMap,
-	parseMessage,
-	walkParts,
+	MAX_TEXT_PART_BYTES,
+	MAX_BODY_CHARS,
+	downloadTextParts,
+	inspectBodyStructure,
+	isAttachment,
+	parseImapMessage,
+	stableMessageId,
 };

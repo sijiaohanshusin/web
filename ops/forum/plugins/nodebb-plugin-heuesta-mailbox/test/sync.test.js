@@ -1,71 +1,70 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const { Readable } = require('node:stream');
 const test = require('node:test');
-const { MailboxSynchronizer, collectHistoryMessageIds, safeError } = require('../lib/sync');
+const { MailboxSynchronizer, safeError } = require('../lib/sync');
 
-test('collects only messages that entered INBOX and removes duplicates', () => {
-	const ids = collectHistoryMessageIds([
-		{
-			messagesAdded: [
-				{ message: { id: 'a', labelIds: ['INBOX'] } },
-				{ message: { id: 'spam', labelIds: ['SPAM'] } },
-			],
-			labelsAdded: [{ message: { id: 'a' }, labelIds: ['INBOX'] }],
-		},
-		{ labelsAdded: [{ message: { id: 'b' }, labelIds: ['INBOX'] }] },
-	]);
-	assert.deepEqual(ids.sort(), ['a', 'b']);
-});
-
-test('sanitizes common Gmail errors without serializing OAuth responses', () => {
-	assert.match(safeError({ code: 429, message: 'quota' }), /rate limit/);
-	assert.match(safeError({ code: 401, message: 'invalid_grant', response: { data: { access_token: 'secret' } } }), /reauthorization/);
-	assert.doesNotMatch(safeError({ code: 401, response: { data: { access_token: 'secret' } } }), /secret/);
-});
-
-test('sorts messages by internalDate and advances the cursor after publishing', async () => {
-	const updates = [];
-	const published = [];
-	const store = {
-		isMessageComplete: async () => false,
-		markMessage: async () => {},
-		addRetry: async () => {},
-		removeRetry: async () => {},
-		updateState: async value => updates.push(value),
-	};
-	const synchronizer = new MailboxSynchronizer({
-		store,
-		oauth: {},
+function synchronizer(overrides = {}) {
+	return new MailboxSynchronizer({
+		store: {},
+		imap: {},
 		archive: {},
 		logger: { error: () => {} },
 		pollSeconds: 300,
+		...overrides,
 	});
-	synchronizer.fetchMessage = async (gmail, id) => ({ id, internalDate: id === 'later' ? 200 : 100 });
-	synchronizer.processFetchedMessage = async (message) => {
-		published.push(message.id);
-		return true;
+}
+
+function metadata(uid, date = uid * 1000) {
+	return {
+		uid,
+		emailId: `email-${uid}`,
+		internalDate: new Date(date),
+		envelope: { subject: `Mail ${uid}`, from: [{ address: `sender${uid}@example.com` }] },
+		bodyStructure: { part: '1', type: 'text/plain', size: 4 },
 	};
-	const gmail = {
-		users: {
-			history: {
-				list: async () => ({
-					data: {
-						history: [{ messagesAdded: [
-							{ message: { id: 'later', labelIds: ['INBOX'] } },
-							{ message: { id: 'earlier', labelIds: ['INBOX'] } },
-						] }],
-						historyId: '202',
-					},
-				}),
-			},
+}
+
+test('sanitizes credential and connection failures', () => {
+	assert.match(safeError({ code: 'AUTHENTICATIONFAILED', message: 'secret response' }), /应用专用密码/);
+	assert.doesNotMatch(safeError({ code: 'AUTHENTICATIONFAILED', message: 'secret response' }), /secret/);
+	assert.match(safeError({ code: 'ETIMEDOUT' }), /稍后自动重试/);
+});
+
+test('first successful connection records a baseline without importing history', async () => {
+	const updates = [];
+	const store = {
+		getState: async () => ({}),
+		updateState: async value => updates.push(value),
+	};
+	const imap = {
+		user: 'heuesta@gmail.com',
+		isConfigured: () => true,
+		withInbox: async callback => callback({}, { uidValidity: 123n, uidNext: 51 }),
+	};
+	const result = await synchronizer({ store, imap }).runSync();
+	assert.equal(result.baseline, true);
+	assert.equal(updates[0].imapUidValidity, '123');
+	assert.equal(updates[0].imapLastUid, 50);
+});
+
+test('fetches a bounded UID range and advances the cursor after processing', async () => {
+	const updates = [];
+	const ranges = [];
+	const store = { updateState: async value => updates.push(value) };
+	const sync = synchronizer({ store });
+	sync.processMetadata = async (client, items) => items.length;
+	const client = {
+		fetchAll: async (range) => {
+			ranges.push(range);
+			return [metadata(11), metadata(12)];
 		},
 	};
-
-	const result = await synchronizer.syncHistory(gmail, { historyId: '101', startedAt: 0 });
-	assert.deepEqual(published, ['earlier', 'later']);
+	const result = await sync.syncInbox(client, { uidNext: 13 }, { imapLastUid: 10, startedAt: 0 }, '123');
+	assert.deepEqual(ranges, ['11:12']);
 	assert.equal(result.published, 2);
-	assert.deepEqual(updates.at(-1), { historyId: '202' });
+	assert.deepEqual(updates.at(-1), { imapLastUid: 12 });
 });
 
 test('queues a malformed message without blocking later messages', async () => {
@@ -74,29 +73,31 @@ test('queues a malformed message without blocking later messages', async () => {
 	const store = {
 		isMessageComplete: async () => false,
 		markMessage: async () => {},
-		addRetry: async (id, error) => retries.push({ id, error }),
+		addRetry: async (id, error, details) => retries.push({ id, error, details }),
 		removeRetry: async () => {},
 	};
-	const synchronizer = new MailboxSynchronizer({
-		store,
-		oauth: {},
-		archive: {},
-		logger: { error: () => {} },
-		pollSeconds: 300,
-	});
-	synchronizer.fetchMessage = async (gmail, id) => {
-		if (id === 'bad') {
-			throw new Error('malformed MIME');
-		}
-		return { id, internalDate: 200 };
+	const archive = {
+		publish: async (mail) => {
+			published.push(mail.id);
+			return { duplicate: false };
+		},
 	};
-	synchronizer.processFetchedMessage = async (message) => {
-		published.push(message.id);
-		return true;
+	const client = {
+		download: async (uid) => {
+			if (uid === 1) {
+				throw new Error('malformed MIME');
+			}
+			return { content: Readable.from(['body']) };
+		},
 	};
-
-	const count = await synchronizer.processMessageIds({}, ['bad', 'good'], 0);
+	const count = await synchronizer({ store, archive }).processMetadata(
+		client,
+		[metadata(1, 100), metadata(2, 200)],
+		'123',
+		0
+	);
 	assert.equal(count, 1);
-	assert.deepEqual(published, ['good']);
-	assert.equal(retries[0].id, 'bad');
+	assert.deepEqual(published, ['gmail:email-2']);
+	assert.equal(retries[0].id, 'gmail:email-1');
+	assert.equal(retries[0].details.uid, 1);
 });

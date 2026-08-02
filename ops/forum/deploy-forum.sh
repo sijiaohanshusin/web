@@ -12,9 +12,9 @@ if [ ! -f "$ENV_FILE" ]; then
     exit 1
 fi
 
-for key in GMAIL_OAUTH_CLIENT_ID GMAIL_OAUTH_CLIENT_SECRET MAILBOX_TOKEN_ENCRYPTION_KEY; do
+for key in GMAIL_IMAP_USER GMAIL_APP_PASSWORD; do
     if ! grep -Eq "^${key}=.+" "$ENV_FILE"; then
-        echo "警告：$ENV_FILE 尚未配置 $key，公共邮箱版块会部署，但 Gmail 同步保持未连接状态" >&2
+        echo "警告：$ENV_FILE 尚未配置 $key，公共邮箱版块会部署，但 Gmail IMAP 同步保持未连接状态" >&2
     fi
 done
 

@@ -1,71 +1,93 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const { Readable } = require('node:stream');
 const test = require('node:test');
-const iconv = require('iconv-lite');
-const { parseMessage } = require('../lib/mail-parser');
+const {
+	inspectBodyStructure,
+	parseImapMessage,
+	stableMessageId,
+} = require('../lib/mail-parser');
 
-function encoded(value, encoding = 'utf8') {
-	const buffer = encoding === 'utf8' ? Buffer.from(value) : iconv.encode(value, encoding);
-	return buffer.toString('base64url');
+function textNode(part, type = 'text/plain') {
+	return { part, type, size: 20, parameters: { charset: 'utf-8' } };
 }
 
-function message(payload, overrides = {}) {
+function message(overrides = {}) {
 	return {
-		id: 'gmail-1',
-		historyId: '101',
-		internalDate: '1785657600000',
-		labelIds: ['INBOX'],
-		payload,
+		uid: 42,
+		emailId: '1789000000000000',
+		internalDate: new Date('2026-08-02T10:00:00Z'),
+		envelope: {
+			subject: 'Hello',
+			from: [{ name: 'Alice', address: 'Alice+Tag@example.com' }],
+		},
+		bodyStructure: textNode('1'),
 		...overrides,
 	};
 }
 
-test('prefers plain text and preserves a normalized full sender address', () => {
-	const parsed = parseMessage(message({
-		mimeType: 'multipart/alternative',
-		headers: [
-			{ name: 'From', value: 'Alice <Alice+Tag@example.com>' },
-			{ name: 'Subject', value: 'Hello' },
-		],
-		parts: [
-			{ mimeType: 'text/plain', headers: [], body: { data: encoded('plain body'), size: 10 } },
-			{ mimeType: 'text/html', headers: [], body: { data: encoded('<b>html body</b>'), size: 16 } },
-		],
-	}));
+test('uses Gmail emailId for permanent deduplication and preserves the full sender address', async () => {
+	const requested = [];
+	const client = {
+		download: async (uid, part) => {
+			requested.push({ uid, part });
+			return { content: Readable.from(['plain body']) };
+		},
+	};
+	const parsed = await parseImapMessage(client, message(), '123');
+	assert.equal(parsed.id, 'gmail:1789000000000000');
 	assert.equal(parsed.body, 'plain body');
 	assert.equal(parsed.fromEmail, 'alice+tag@example.com');
-	assert.equal(parsed.senderKey, 'alice+tag@example.com');
+	assert.deepEqual(requested, [{ uid: 42, part: '1' }]);
 });
 
-test('converts HTML to text without retaining remote images or scripts', () => {
-	const parsed = parseMessage(message({
-		mimeType: 'text/html',
-		headers: [{ name: 'From', value: 'sender@example.com' }],
-		body: { data: encoded('<p>Visible</p><img src="https://tracker.invalid/pixel"><script>alert(1)</script>') },
-	}));
+test('converts HTML to text without retaining remote images or scripts', async () => {
+	const client = {
+		download: async () => ({
+			content: Readable.from(['<p>Visible</p><img src="https://tracker.invalid/pixel"><script>alert(1)</script>']),
+		}),
+	};
+	const parsed = await parseImapMessage(client, message({ bodyStructure: textNode('1', 'text/html') }), '123');
 	assert.match(parsed.body, /Visible/);
 	assert.doesNotMatch(parsed.body, /tracker|alert/);
 });
 
-test('decodes non-UTF-8 Chinese text and keeps attachment metadata only', () => {
-	const parsed = parseMessage(message({
-		mimeType: 'multipart/mixed',
-		headers: [{ name: 'From', value: '测试 <test@example.com>' }],
-		parts: [
+test('collects attachment metadata but never requests attachment body parts', async () => {
+	const structure = {
+		type: 'multipart/mixed',
+		childNodes: [
+			textNode('1'),
 			{
-				mimeType: 'text/plain',
-				headers: [{ name: 'Content-Type', value: 'text/plain; charset=gb18030' }],
-				body: { data: encoded('中文正文', 'gb18030'), size: 8 },
-			},
-			{
-				mimeType: 'application/pdf',
-				filename: '说明.pdf',
-				headers: [{ name: 'Content-Disposition', value: 'attachment' }],
-				body: { attachmentId: 'must-not-be-downloaded', size: 4096 },
+				part: '2',
+				type: 'application/pdf',
+				size: 4096,
+				disposition: 'attachment',
+				dispositionParameters: { filename: '说明.pdf' },
 			},
 		],
-	}));
-	assert.equal(parsed.body, '中文正文');
+	};
+	const requested = [];
+	const client = {
+		download: async (uid, part) => {
+			requested.push(part);
+			return { content: Readable.from(['中文正文']) };
+		},
+	};
+	const parsed = await parseImapMessage(client, message({ bodyStructure: structure }), '123');
+	assert.deepEqual(requested, ['1']);
 	assert.deepEqual(parsed.attachments, [{ filename: '说明.pdf', mimeType: 'application/pdf', size: 4096 }]);
+});
+
+test('falls back to UIDVALIDITY and UID when Gmail emailId is unavailable', () => {
+	assert.equal(stableMessageId({ uid: 77 }, '987'), 'imap:987:77');
+});
+
+test('prefers plain parts while retaining HTML as a fallback', () => {
+	const parts = inspectBodyStructure({
+		type: 'multipart/alternative',
+		childNodes: [textNode('1', 'text/plain'), textNode('2', 'text/html')],
+	});
+	assert.deepEqual(parts.plain.map(node => node.part), ['1']);
+	assert.deepEqual(parts.html.map(node => node.part), ['2']);
 });
