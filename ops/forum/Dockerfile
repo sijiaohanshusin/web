@@ -27,7 +27,11 @@ RUN npm config set registry https://registry.npmmirror.com \
 # 自研插件单独成层，日常更新只安装它及其少量依赖。
 COPY plugins/nodebb-plugin-heuesta-mailbox /tmp/nodebb-plugin-heuesta-mailbox
 RUN npm config set registry https://registry.npmmirror.com \
-    && npm install --omit=dev /tmp/nodebb-plugin-heuesta-mailbox \
+    && cd /tmp/nodebb-plugin-heuesta-mailbox \
+    && npm pack --pack-destination /tmp \
+    && cd /usr/src/app \
+    && npm install --omit=dev /tmp/nodebb-plugin-heuesta-mailbox-*.tgz \
+    && rm -f /tmp/nodebb-plugin-heuesta-mailbox-*.tgz \
     && rm -rf /tmp/nodebb-plugin-heuesta-mailbox \
     && npm cache clean --force \
     && chown -R node:node /usr/src/app
