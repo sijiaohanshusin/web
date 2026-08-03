@@ -47,7 +47,7 @@ class MailboxSynchronizer {
 		}
 		this.initialTimer = setTimeout(() => {
 			this.syncNow().catch(error => this.logger.error(`[heuesta-mailbox] initial sync failed: ${safeError(error)}`));
-		}, 2000);
+		}, 20000);
 		this.initialTimer.unref();
 		this.timer = setInterval(() => {
 			this.syncNow().catch(error => this.logger.error(`[heuesta-mailbox] poll failed: ${safeError(error)}`));

@@ -14,6 +14,8 @@ class GmailImap {
 		this.appPassword = normalizeAppPassword(options.appPassword);
 		this.host = 'imap.gmail.com';
 		this.port = 993;
+		this.connectAttempts = Math.max(1, Number(options.connectAttempts) || 3);
+		this.retryDelayMs = options.retryDelayMs === undefined ? 2000 : Math.max(0, Number(options.retryDelayMs) || 0);
 	}
 
 	isConfigured() {
@@ -41,11 +43,30 @@ class GmailImap {
 		return client;
 	}
 
+	async connectClient() {
+		let lastError;
+		for (let attempt = 1; attempt <= this.connectAttempts; attempt += 1) {
+			const client = this.createClient();
+			try {
+				await client.connect();
+				return client;
+			} catch (error) {
+				client.close();
+				lastError = error;
+				const code = String(error && (error.code || error.responseCode) || '').toUpperCase();
+				if (code.includes('AUTH') || attempt === this.connectAttempts) {
+					throw error;
+				}
+				await new Promise(resolve => setTimeout(resolve, this.retryDelayMs * attempt));
+			}
+		}
+		throw lastError;
+	}
+
 	async withInbox(callback) {
-		const client = this.createClient();
+		const client = await this.connectClient();
 		let lock;
 		try {
-			await client.connect();
 			lock = await client.getMailboxLock('INBOX', {
 				readOnly: true,
 				description: 'heuesta-mailbox synchronization',

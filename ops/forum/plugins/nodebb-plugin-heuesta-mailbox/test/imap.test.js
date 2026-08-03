@@ -10,3 +10,29 @@ test('normalizes grouped app passwords without accepting the regular Gmail passw
 	assert.equal(new GmailImap({ user: 'heuesta@gmail.com', appPassword: 'regular-password' }).isConfigured(), false);
 	assert.equal(new GmailImap({ user: 'other@gmail.com', appPassword: 'abcdefghijklmnop' }).isConfigured(), false);
 });
+
+test('retries transient connection failures without rerunning mailbox callbacks', async () => {
+	let created = 0;
+	const imap = new GmailImap({
+		user: 'heuesta@gmail.com',
+		appPassword: 'abcdefghijklmnop',
+		connectAttempts: 3,
+		retryDelayMs: 0,
+	});
+	imap.createClient = () => {
+		created += 1;
+		return {
+			connect: async () => {
+				if (created < 3) {
+					const error = new Error('temporary timeout');
+					error.code = 'CONNECT_TIMEOUT';
+					throw error;
+				}
+			},
+			close: () => {},
+		};
+	};
+	const client = await imap.connectClient();
+	assert.ok(client);
+	assert.equal(created, 3);
+});
