@@ -2,7 +2,7 @@
 
 const PREVIEW_MARKER = /<p>\s*\[heuesta-mailbox-preview:([a-f0-9]{64})\]\s*<\/p>/gi;
 const TEXT_BLOCK = /<p>\s*\[heuesta-mailbox-text-start\]\s*<\/p>([\s\S]*?)<p>\s*\[heuesta-mailbox-text-end\]\s*<\/p>/gi;
-const ARCHIVE_MARKER = /<p>\s*(?:&lt;|<)!--\s*heuesta-mailbox(?:-sender)?:[\s\S]*?--(?:&gt;|>)\s*<\/p>/gi;
+const ARCHIVE_MARKER = /(?:&lt;|<)!--\s*heuesta-mailbox(?:-sender)?:.*?--(?:&gt;|>)/gi;
 
 function previewFrame(token) {
 	return [
@@ -25,7 +25,8 @@ function enhancePostContent(value) {
 			`<div style="margin-top:12px">${content}</div>`,
 			'</details>',
 		].join(''))
-		.replace(ARCHIVE_MARKER, '');
+		.replace(ARCHIVE_MARKER, '')
+		.replace(/<p>\s*<\/p>/gi, '');
 }
 
 function enhancePosts(data) {

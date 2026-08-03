@@ -12,7 +12,7 @@ test('replaces preview and text markers with a sandboxed email preview', () => {
 		'<p>[heuesta-mailbox-text-start]</p>',
 		'<p>Plain fallback</p>',
 		'<p>[heuesta-mailbox-text-end]</p>',
-		'<p>&lt;!-- heuesta-mailbox:gmail:123:0 --&gt;</p>',
+		'<p>&lt;!-- heuesta-mailbox:gmail:123:0 --&gt;<br>&lt;!-- heuesta-mailbox-sender:abc --&gt;</p>',
 	].join(''));
 	assert.match(rendered, new RegExp(`/api/heuesta-mailbox/preview/${TOKEN}`));
 	assert.match(rendered, /<iframe/);
@@ -20,6 +20,7 @@ test('replaces preview and text markers with a sandboxed email preview', () => {
 	assert.match(rendered, /<details/);
 	assert.match(rendered, /Plain fallback/);
 	assert.doesNotMatch(rendered, /heuesta-mailbox:gmail/);
+	assert.doesNotMatch(rendered, /heuesta-mailbox-sender/);
 });
 
 test('enhances every post returned by NodeBB', () => {
