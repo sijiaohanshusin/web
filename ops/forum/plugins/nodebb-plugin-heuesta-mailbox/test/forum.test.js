@@ -59,3 +59,23 @@ test('provisions a distinct private bot group and read-only member ACLs', async 
 	assert.equal(archive.botUid, 7);
 	assert.equal(archive.categoryCid, 9);
 });
+
+test('searches the topic main post as well as replies for archive markers', async () => {
+	const archive = new ForumArchive({
+		db: {
+			getSortedSetRange: async key => key === 'tid:16:posts' ? [19] : [],
+		},
+		topics: {
+			getTopicFields: async () => ({ mainPid: 18 }),
+		},
+		posts: {
+			getPostsFields: async pids => pids.map(pid => ({
+				pid,
+				content: pid === 18 ? '<!-- heuesta-mailbox:gmail:123:0 -->' : 'reply',
+			})),
+		},
+	});
+
+	const post = await archive.findMarker(16, 'heuesta-mailbox:gmail:123:0');
+	assert.equal(post.pid, 18);
+});

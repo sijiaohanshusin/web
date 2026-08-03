@@ -131,17 +131,27 @@ class ForumArchive {
 			if (!await this.activeTopic(tid)) {
 				continue;
 			}
-			const pids = await this.db.getSortedSetRange(`tid:${tid}:posts`, 0, 0);
-			const post = pids.length ? await this.posts.getPostFields(pids[0], ['content']) : null;
-			if (post && String(post.content || '').includes(`heuesta-mailbox-sender:${senderHash}`)) {
+			const post = await this.findMarker(tid, `heuesta-mailbox-sender:${senderHash}`);
+			if (post) {
 				return Number(tid);
 			}
 		}
 		return 0;
 	}
 
+	async topicPostPids(tid) {
+		const [topic, replyPids] = await Promise.all([
+			this.topics.getTopicFields(tid, ['mainPid']),
+			this.db.getSortedSetRange(`tid:${tid}:posts`, 0, -1),
+		]);
+		return [...new Set([
+			Number(topic.mainPid),
+			...replyPids.map(Number),
+		].filter(Boolean))];
+	}
+
 	async findMarker(tid, marker) {
-		const pids = await this.db.getSortedSetRange(`tid:${tid}:posts`, 0, -1);
+		const pids = await this.topicPostPids(tid);
 		const postData = await this.posts.getPostsFields(pids, ['pid', 'content']);
 		return postData.find(post => String(post.content || '').includes(marker));
 	}
