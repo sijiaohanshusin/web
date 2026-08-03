@@ -90,12 +90,13 @@ function stableMessageId(message, uidValidity) {
 async function parseImapMessage(client, message, uidValidity) {
 	const id = stableMessageId(message, uidValidity);
 	const parts = inspectBodyStructure(message.bodyStructure);
+	const html = parts.html.length ? await downloadTextParts(client, message.uid, parts.html) : '';
 	let body = await downloadTextParts(client, message.uid, parts.plain);
-	if (!body && parts.html.length) {
-		const html = await downloadTextParts(client, message.uid, parts.html);
+	if (!body && html) {
 		body = htmlToText(html, {
 			wordwrap: false,
 			selectors: [
+				{ selector: 'a', options: { ignoreHref: true } },
 				{ selector: 'img', format: 'skip' },
 				{ selector: 'script', format: 'skip' },
 				{ selector: 'style', format: 'skip' },
@@ -118,6 +119,7 @@ async function parseImapMessage(client, message, uidValidity) {
 		fromEmail: from.email,
 		senderKey: from.email.toLowerCase(),
 		body,
+		html,
 		attachments: parts.attachments,
 	};
 }

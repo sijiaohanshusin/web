@@ -74,7 +74,7 @@ function topicTitle(mail) {
 	return `${name ? `${name} · ` : ''}${email}`.slice(0, 250);
 }
 
-function formatPosts(mail, senderHash) {
+function formatPosts(mail, senderHash, previewToken = '') {
 	const chunks = splitParagraphs(mail.body);
 	const attachmentLines = mail.attachments.length ? mail.attachments.map((attachment) => (
 		`- ${escapeMarkdown(attachment.filename)} | ${escapeMarkdown(attachment.mimeType)} | ${formatBytes(attachment.size)}`
@@ -84,13 +84,20 @@ function formatPosts(mail, senderHash) {
 		const part = chunks.length > 1 ? `（第 ${index + 1}/${chunks.length} 段）` : '';
 		const senderMarker = index === 0 ? `\n<!-- heuesta-mailbox-sender:${senderHash} -->` : '';
 		const attachments = index === 0 ? `\n\n**附件（仅元数据，未下载）**\n${attachmentLines.join('\n')}` : '';
+		const preview = index === 0 && previewToken ? `\n\n[heuesta-mailbox-preview:${previewToken}]` : '';
+		const body = previewToken ? [
+			'[heuesta-mailbox-text-start]',
+			escapeMarkdown(chunk),
+			'[heuesta-mailbox-text-end]',
+		].join('\n\n') : escapeMarkdown(chunk);
 		return [
 			`### ${escapeMarkdown(mail.subject)} ${part}`.trim(),
 			'',
 			`**发件人：** ${escapeMarkdown(mail.fromName || '(无显示名称)')} &lt;${escapeMarkdown(mail.fromEmail)}&gt;  `,
 			`**接收时间：** ${formatBeijingTime(mail.internalDate)}（北京时间）`,
 			'',
-			escapeMarkdown(chunk),
+			preview,
+			body,
 			attachments,
 			'',
 			`<!-- heuesta-mailbox:${mail.id}:${index} -->${senderMarker}`,

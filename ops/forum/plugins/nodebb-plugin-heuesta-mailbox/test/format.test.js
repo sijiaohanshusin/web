@@ -34,3 +34,19 @@ test('topic titles retain plus tags and dots in the full sender address', () => 
 	assert.equal(topicTitle({ fromName: 'Alice', fromEmail: 'first.last+tag@example.com' }), 'Alice · first.last+tag@example.com');
 	assert.equal(topicTitle({ fromName: '<script>\nAlice', fromEmail: 'alice@example.com' }), 'script Alice · alice@example.com');
 });
+
+test('adds an original-layout preview marker and collapsible text markers', () => {
+	const token = 'c'.repeat(64);
+	const posts = formatPosts({
+		id: 'gmail:123',
+		internalDate: Date.UTC(2026, 7, 3, 4, 0, 0),
+		subject: 'HTML mail',
+		fromName: 'Sender',
+		fromEmail: 'sender@example.com',
+		body: 'Plain fallback',
+		attachments: [],
+	}, 'sender-hash', token);
+	assert.match(posts[0], new RegExp(`heuesta-mailbox-preview:${token}`));
+	assert.match(posts[0], /heuesta-mailbox-text-start/);
+	assert.match(posts[0], /heuesta-mailbox-text-end/);
+});

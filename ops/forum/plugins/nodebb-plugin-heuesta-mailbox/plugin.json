@@ -7,6 +7,7 @@
   "hooks": [
     { "hook": "static:app.load", "method": "init" },
     { "hook": "filter:admin.header.build", "method": "addAdminNavigation" },
+    { "hook": "filter:post.getPosts", "method": "enhancePosts" },
     { "hook": "filter:topic.post", "method": "guardTopicPost" },
     { "hook": "filter:topic.reply", "method": "guardTopicReply" }
   ],

@@ -26,6 +26,14 @@ class MailboxStore {
 		await this.db.setObject(`heuesta-mailbox:message:${messageId}`, fields);
 	}
 
+	async savePreview(token, html) {
+		await this.db.setObject(`heuesta-mailbox:preview:${token}`, { html, updatedAt: Date.now() });
+	}
+
+	async getPreview(token) {
+		return (await this.db.getObject(`heuesta-mailbox:preview:${token}`)) || null;
+	}
+
 	async getSenderTopic(senderHash) {
 		return await this.db.getObjectField(SENDERS_KEY, senderHash);
 	}

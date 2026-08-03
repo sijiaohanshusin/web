@@ -45,12 +45,13 @@ test('uses Gmail emailId for permanent deduplication and preserves the full send
 test('converts HTML to text without retaining remote images or scripts', async () => {
 	const client = {
 		download: async () => ({
-			content: Readable.from(['<p>Visible</p><img src="https://tracker.invalid/pixel"><script>alert(1)</script>']),
+			content: Readable.from(['<p><a href="https://tracker.invalid/action">Visible</a></p><img src="https://tracker.invalid/pixel"><script>alert(1)</script>']),
 		}),
 	};
 	const parsed = await parseImapMessage(client, message({ bodyStructure: textNode('1', 'text/html') }), '123');
 	assert.match(parsed.body, /Visible/);
 	assert.doesNotMatch(parsed.body, /tracker|alert/);
+	assert.match(parsed.html, /tracker\.invalid/);
 });
 
 test('downloads a single-part root HTML message through logical part 1', async () => {

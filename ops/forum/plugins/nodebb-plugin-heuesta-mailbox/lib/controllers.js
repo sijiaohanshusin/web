@@ -1,5 +1,7 @@
 'use strict';
 
+const { buildPreviewDocument } = require('./safe-html');
+
 function formatDate(value) {
 	if (!value) {
 		return '尚无';
@@ -17,6 +19,30 @@ function cleanNotice(value) {
 
 module.exports = function createControllers(services) {
 	return {
+		async renderPreview(req, res) {
+			const token = String(req.params.token || '').toLowerCase();
+			const canRead = /^[a-f0-9]{64}$/.test(token) && await services.archive.privileges.categories.can(
+				'topics:read',
+				services.archive.categoryCid,
+				req.uid
+			);
+			if (!canRead) {
+				return res.status(404).type('text/plain').send('Not found');
+			}
+			const preview = await services.store.getPreview(token);
+			if (!preview || !preview.html) {
+				return res.status(404).type('text/plain').send('Not found');
+			}
+			res.set({
+				'Cache-Control': 'private, no-store',
+				'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
+				'Referrer-Policy': 'no-referrer',
+				'X-Content-Type-Options': 'nosniff',
+				'X-Frame-Options': 'SAMEORIGIN',
+			});
+			return res.status(200).type('html').send(buildPreviewDocument(preview.html));
+		},
+
 		async renderAdminPage(req, res) {
 			const state = await services.store.getState();
 			const retries = await services.store.listRetries();

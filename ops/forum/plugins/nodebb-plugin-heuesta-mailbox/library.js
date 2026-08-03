@@ -16,6 +16,7 @@ const { GmailImap } = require('./lib/imap');
 const { ForumArchive } = require('./lib/forum');
 const { MailboxSynchronizer } = require('./lib/sync');
 const createControllers = require('./lib/controllers');
+const { enhancePosts } = require('./lib/render');
 
 const plugin = {};
 let services;
@@ -39,6 +40,7 @@ plugin.init = async ({ router }) => {
 	const controllers = createControllers(services);
 
 	routeHelpers.setupAdminPageRoute(router, '/admin/plugins/heuesta-mailbox', controllers.renderAdminPage);
+	routeHelpers.setupApiRoute(router, 'get', '/api/heuesta-mailbox/preview/:token', controllers.renderPreview);
 	router.post('/admin/plugins/heuesta-mailbox/sync', controllers.syncNow);
 	synchronizer.start();
 
@@ -71,5 +73,7 @@ plugin.guardTopicReply = async (data) => {
 	}
 	return data;
 };
+
+plugin.enhancePosts = enhancePosts;
 
 module.exports = plugin;

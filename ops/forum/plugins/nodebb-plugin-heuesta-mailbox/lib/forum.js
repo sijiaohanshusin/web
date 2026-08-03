@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 const { formatPosts, topicTitle } = require('./format');
+const { previewTokenFor, sanitizeEmailHtml } = require('./safe-html');
 
 const BOT_USERNAME = '公共邮箱机器人';
 const BOT_GROUP = 'heuesta-mailbox-bot';
@@ -177,7 +178,15 @@ class ForumArchive {
 			tid = await this.findTopicBySenderMarker(senderHash);
 		}
 		const title = topicTitle(mail);
-		const contents = formatPosts(mail, senderHash);
+		let previewToken = '';
+		if (mail.html) {
+			const safeHtml = sanitizeEmailHtml(mail.html);
+			if (safeHtml) {
+				previewToken = previewTokenFor(mail.id);
+				await this.store.savePreview(previewToken, safeHtml);
+			}
+		}
+		const contents = formatPosts(mail, senderHash, previewToken);
 		const pids = [];
 
 		if (!tid) {
@@ -232,6 +241,7 @@ class ForumArchive {
 			tid,
 			pids: JSON.stringify(pids),
 			internalDate: mail.internalDate,
+			previewToken,
 			completedAt: Date.now(),
 		});
 		return { duplicate: false, tid, pids };
