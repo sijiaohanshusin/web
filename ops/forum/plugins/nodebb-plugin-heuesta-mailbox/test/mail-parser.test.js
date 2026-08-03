@@ -53,6 +53,37 @@ test('converts HTML to text without retaining remote images or scripts', async (
 	assert.doesNotMatch(parsed.body, /tracker|alert/);
 });
 
+test('downloads a single-part root HTML message through logical part 1', async () => {
+	const requested = [];
+	const client = {
+		download: async (uid, part) => {
+			requested.push({ uid, part });
+			return { content: Readable.from(['<main><h1>Login code</h1><p>Visible body</p></main>']) };
+		},
+	};
+	const parsed = await parseImapMessage(client, message({
+		bodyStructure: { type: 'text/html', size: 100, parameters: { charset: 'utf-8' } },
+	}), '123');
+	assert.deepEqual(requested, [{ uid: 42, part: '1' }]);
+	assert.match(parsed.body, /Login code/i);
+	assert.match(parsed.body, /Visible body/);
+});
+
+test('downloads a single-part root plain text message through logical part 1', async () => {
+	const requested = [];
+	const client = {
+		download: async (uid, part) => {
+			requested.push({ uid, part });
+			return { content: Readable.from(['plain root body']) };
+		},
+	};
+	const parsed = await parseImapMessage(client, message({
+		bodyStructure: { type: 'text/plain', size: 20, parameters: { charset: 'utf-8' } },
+	}), '123');
+	assert.deepEqual(requested, [{ uid: 42, part: '1' }]);
+	assert.equal(parsed.body, 'plain root body');
+});
+
 test('collects attachment metadata but never requests attachment body parts', async () => {
 	const structure = {
 		type: 'multipart/mixed',

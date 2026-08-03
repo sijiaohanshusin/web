@@ -21,7 +21,7 @@ function isAttachment(node) {
 		Boolean(type && topType !== 'text' && topType !== 'multipart' && !node.childNodes);
 }
 
-function inspectBodyStructure(node, result = { plain: [], html: [], attachments: [] }) {
+function inspectBodyStructure(node, result = { plain: [], html: [], attachments: [] }, isRoot = true) {
 	if (!node) {
 		return result;
 	}
@@ -35,13 +35,16 @@ function inspectBodyStructure(node, result = { plain: [], html: [], attachments:
 	}
 
 	const type = String(node.type || '').toLowerCase();
-	if (type === 'text/plain' && node.part) {
-		result.plain.push(node);
-	} else if (type === 'text/html' && node.part) {
-		result.html.push(node);
+	// IMAP body structures omit the part number for a single-part root message.
+	// ImapFlow maps logical part "1" to BODY[TEXT] for that message shape.
+	const textNode = !node.part && isRoot ? { ...node, part: '1' } : node;
+	if (type === 'text/plain' && textNode.part) {
+		result.plain.push(textNode);
+	} else if (type === 'text/html' && textNode.part) {
+		result.html.push(textNode);
 	}
 	for (const child of node.childNodes || []) {
-		inspectBodyStructure(child, result);
+		inspectBodyStructure(child, result, false);
 	}
 	return result;
 }
