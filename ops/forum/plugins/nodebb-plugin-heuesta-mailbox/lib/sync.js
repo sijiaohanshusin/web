@@ -20,7 +20,7 @@ function safeError(error) {
 	if (isCredentialError(error)) {
 		return 'Gmail IMAP 登录失败，请检查账号、两步验证和应用专用密码';
 	}
-	if (['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'EAI_AGAIN', 'ENETUNREACH'].includes(code)) {
+	if (['CONNECT_TIMEOUT', 'GREETING_TIMEOUT', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'EAI_AGAIN', 'ENETUNREACH'].includes(code)) {
 		return `Gmail IMAP 暂时无法连接（${code}），稍后自动重试`;
 	}
 	if (code === 'MESSAGE_MISSING') {

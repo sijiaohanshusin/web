@@ -30,6 +30,7 @@ test('sanitizes credential and connection failures', () => {
 	assert.match(safeError({ code: 'AUTHENTICATIONFAILED', message: 'secret response' }), /应用专用密码/);
 	assert.doesNotMatch(safeError({ code: 'AUTHENTICATIONFAILED', message: 'secret response' }), /secret/);
 	assert.match(safeError({ code: 'ETIMEDOUT' }), /稍后自动重试/);
+	assert.match(safeError({ code: 'CONNECT_TIMEOUT' }), /稍后自动重试/);
 });
 
 test('first successful connection records a baseline without importing history', async () => {

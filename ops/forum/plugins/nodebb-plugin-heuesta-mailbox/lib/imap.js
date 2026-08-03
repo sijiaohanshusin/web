@@ -31,9 +31,9 @@ class GmailImap {
 			servername: this.host,
 			auth: { user: this.user, pass: this.appPassword },
 			logger: false,
-			connectionTimeout: 15000,
-			greetingTimeout: 15000,
-			socketTimeout: 45000,
+			connectionTimeout: 45000,
+			greetingTimeout: 30000,
+			socketTimeout: 60000,
 			disableAutoIdle: true,
 			tls: { minVersion: 'TLSv1.2' },
 		});
