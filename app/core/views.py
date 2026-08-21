@@ -71,7 +71,11 @@ def recruit(request):
     return render(request, "core/recruit.html")
 
 
-# ---------------------------------------------------------------- 内测反馈
+def privacy(request):
+    return render(request, "core/privacy.html")
+
+
+# ---------------------------------------------------------------- 网站问题反馈
 
 def _client_ip(request) -> str:
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
@@ -125,7 +129,7 @@ def feedback(request):
 
 
 def _can_view_feedback(user, fb) -> bool:
-    """提交人本人或干事及以上可以查看/参与对话。"""
+    """提交人本人或站务管理可以查看并参与对话。"""
     if is_officer(user):
         return True
     return user.is_authenticated and fb.user_id == user.pk

@@ -20,7 +20,7 @@ class SiteConfig(models.Model):
         default="BV1AhnGzVEsD",
         help_text="B 站视频的 BV 号，例如 BV1AhnGzVEsD。换招新视频时改这里即可。",
     )
-    recruit_qq_group = models.CharField("招新 QQ 群号", max_length=20, default="1015304209")
+    recruit_qq_group = models.CharField("招新 QQ 群号", max_length=20, default="1081376858")
     bilibili_mid = models.CharField("B 站账号 UID", max_length=20, default="70859324")
     featured_video_bvids = models.TextField(
         "首页精选视频 BV 号",
@@ -31,12 +31,12 @@ class SiteConfig(models.Model):
     )
 
     beta_mode = models.BooleanField(
-        "内测模式", default=True,
-        help_text="开启后：全站显示内测反馈入口；新注册用户自动提升为干事以便测试全部功能。",
+        "内测模式（已停用）", default=False, editable=False,
+        help_text="正式招新版本不再使用此开关。",
     )
     auto_approve = models.BooleanField(
-        "注册自动审核", default=True,
-        help_text="开启后：注册通过邮箱验证即自动激活，无需管理员手动审核。",
+        "旧版自动审核（已停用）", default=False, editable=False,
+        help_text="正式版本改用新会员自动激活、老会员单独审核。",
     )
 
     class Meta:
@@ -71,7 +71,7 @@ class SiteConfig(models.Model):
 
 
 class Feedback(models.Model):
-    """内测反馈：全站浮动按钮/独立页面提交，驾驶舱统一审阅处理。"""
+    """网站问题反馈：独立页面提交，驾驶舱统一审阅处理。"""
 
     class Status(models.TextChoices):
         PENDING = "pending", "待处理"
@@ -94,8 +94,8 @@ class Feedback(models.Model):
     created_at = models.DateTimeField("提交时间", auto_now_add=True)
 
     class Meta:
-        verbose_name = "内测反馈"
-        verbose_name_plural = "内测反馈"
+        verbose_name = "网站问题反馈"
+        verbose_name_plural = "网站问题反馈"
         ordering = ["-created_at"]
 
     def __str__(self):

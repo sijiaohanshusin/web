@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}隐私说明 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}哈尔滨工程大学电子科技协会网站会员注册信息使用说明。{% endblock %}
+
+{% block content %}
+<div class="container page-section legal-page">
+    <div class="page-head">
+        <p class="nf-eyebrow">// PRIVACY</p>
+        <h1>隐私说明</h1>
+        <p>更新日期：2026 年 8 月 21 日</p>
+    </div>
+    <div class="panel md-body">
+        <h2>我们收集哪些信息</h2>
+        <p>注册时会收集姓名、学号、学院、届别、邮箱、手机号、QQ 号和擅长方向；老会员通道还会收集原协会身份。</p>
+        <h2>信息如何使用</h2>
+        <p>这些信息仅用于协会身份核验、招新联系、面试安排、账号安全和必要的站务管理，不用于商业营销或向无关第三方出售。</p>
+        <h2>谁可以查看</h2>
+        <p>联系方式、学号等信息只对本人和获得授权的协会管理人员开放。公开页面不会展示手机号、邮箱或完整学号。</p>
+        <h2>保存与删除</h2>
+        <p>账号资料随会员系统保存。需要更正、停用或删除账号时，请通过招新 QQ 群 {{ site_config.recruit_qq_group }} 联系管理组。</p>
+        <h2>账号安全</h2>
+        <p>请妥善保管密码和邮箱验证码。网站不会要求你在论坛帖子或 QQ 群公开发送密码。</p>
+    </div>
+</div>
+{% endblock %}

@@ -15,7 +15,7 @@ class FeedbackTests(TestCase):
     def test_page_renders(self):
         resp = self.client.get(reverse("core:feedback"))
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "内测反馈")
+        self.assertContains(resp, "网站问题反馈")
 
     def test_ajax_submit_creates_record(self):
         resp = self.client.post(reverse("core:feedback"), {

@@ -168,3 +168,10 @@
 .fb-card-actions { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 .fb-resolve-form { display: flex; gap: 8px; flex: 1; min-width: 260px; }
 .fb-resolve-form .input { flex: 1; }
+
+/* 老会员身份审核 */
+.table-sub { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+.returning-table td { vertical-align: top; min-width: 170px; }
+.returning-table td:last-child { min-width: 280px; }
+.review-form { display: grid; gap: 8px; }
+.review-form .input { width: 100%; }

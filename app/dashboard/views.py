@@ -2,6 +2,7 @@ import datetime
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
@@ -14,7 +15,7 @@ from django.utils import timezone
 import uuid
 
 from accounts import roles
-from accounts.models import Medal, Position, UserMedal
+from accounts.models import Medal, Position, ReturningMembershipRequest, UserMedal
 from core import bilibili
 from core.models import CarouselImage, Feedback, SiteConfig
 from events.forms import EventForm
@@ -62,10 +63,14 @@ def _month_labels(n=12):
 def overview(request):
     config = SiteConfig.load()
 
-    total_members = User.objects.filter(is_active=True).count()
-    pending_count = User.objects.filter(member_level=roles.LEVEL_PENDING, is_superuser=False).count()
+    total_members = User.objects.filter(is_active=True, member_level__gte=roles.LEVEL_PREPARATORY).count()
+    pending_count = ReturningMembershipRequest.objects.filter(
+        status=ReturningMembershipRequest.Status.PENDING,
+    ).count()
     officer_count = User.objects.filter(
-        Q(member_level__gte=roles.LEVEL_OFFICER) | Q(is_staff=True), is_active=True
+        Q(member_level__gte=roles.LEVEL_OFFICER) | Q(is_staff=True)
+        | Q(position__grants_management=True),
+        is_active=True,
     ).distinct().count()
     resource_count = Resource.objects.count()
     download_total = Resource.objects.aggregate(total=Sum("download_count"))["total"] or 0
@@ -151,12 +156,18 @@ def overview(request):
 @officer_required
 def members(request):
     tab = request.GET.get("tab", "")
-    if tab not in ("pending", "all"):
-        tab = "pending" if User.objects.filter(member_level=roles.LEVEL_PENDING, is_superuser=False).exists() else "all"
+    if tab not in ("returning", "recruits", "all"):
+        tab = "returning" if ReturningMembershipRequest.objects.filter(
+            status=ReturningMembershipRequest.Status.PENDING,
+        ).exists() else "recruits"
 
-    users = User.objects.select_related("position").annotate(medal_count=Count("medals")).order_by("-date_joined")
-    if tab == "pending":
-        users = users.filter(member_level=roles.LEVEL_PENDING, is_superuser=False)
+    users = User.objects.select_related("position", "returning_request").annotate(
+        medal_count=Count("medals"),
+    ).order_by("-date_joined")
+    if tab == "returning":
+        users = users.filter(returning_request__isnull=False, is_superuser=False)
+    elif tab == "recruits":
+        users = users.filter(member_level=roles.LEVEL_APPLICANT, is_active=True, is_superuser=False)
 
     query = request.GET.get("q", "").strip()
     if query:
@@ -190,7 +201,10 @@ def members(request):
         "level": level,
         "grades": grades,
         "level_choices": roles.LEVEL_CHOICES,
-        "pending_count": User.objects.filter(member_level=roles.LEVEL_PENDING, is_superuser=False).count(),
+        "pending_count": ReturningMembershipRequest.objects.filter(
+            status=ReturningMembershipRequest.Status.PENDING,
+        ).count(),
+        "returning_role_choices": ReturningMembershipRequest.RequestedRole.choices,
         "is_admin": _is_admin(request.user),
     }
     return render(request, "dashboard/members.html", context)
@@ -198,12 +212,11 @@ def members(request):
 
 # 动作 -> (目标等级, 需要管理员, 中文名)
 _LEVEL_ACTIONS = {
-    "approve": (roles.LEVEL_APPLICANT, False, "通过审核（报名会员）"),
     "promote_prep": (roles.LEVEL_PREPARATORY, False, "晋升预备会员"),
-    "promote_formal": (roles.LEVEL_FORMAL, False, "晋升正式会员"),
-    "make_officer": (roles.LEVEL_OFFICER, True, "设为干事"),
-    "make_admin": (roles.LEVEL_ADMIN, True, "设为管理员"),
-    "demote_formal": (roles.LEVEL_FORMAL, True, "降为正式会员"),
+    "promote_formal": (roles.LEVEL_FORMAL, False, "晋升科协会员"),
+    "make_officer": (roles.LEVEL_OFFICER, True, "设为站务管理"),
+    "make_admin": (roles.LEVEL_ADMIN, True, "设为系统管理员"),
+    "demote_formal": (roles.LEVEL_FORMAL, True, "调整为科协会员"),
 }
 
 
@@ -218,15 +231,6 @@ def member_action(request):
         return redirect(nxt)
 
     targets = User.objects.filter(pk__in=ids, is_superuser=False).exclude(pk=request.user.pk)
-
-    if action == "reject_delete":
-        if not _is_admin(request.user):
-            messages.error(request, "该操作需要管理员权限。")
-            return redirect(nxt)
-        count = targets.filter(member_level=roles.LEVEL_PENDING).count()
-        targets.filter(member_level=roles.LEVEL_PENDING).delete()
-        messages.success(request, f"已拒绝并删除 {count} 个待审核账号。")
-        return redirect(nxt)
 
     if action == "points_adjust":
         try:
@@ -264,7 +268,72 @@ def member_action(request):
     return redirect(nxt)
 
 
-# ---------------------------------------------------------------- 内测反馈
+_RETURNING_POSITIONS = {
+    ReturningMembershipRequest.RequestedRole.CHAIR: ("主席", "#b8860b", True, 10),
+    ReturningMembershipRequest.RequestedRole.HARDWARE_CHAIR: ("硬件主席", "#c98a3d", True, 20),
+    ReturningMembershipRequest.RequestedRole.SOFTWARE_CHAIR: ("软件主席", "#0da9cd", True, 30),
+    ReturningMembershipRequest.RequestedRole.HARDWARE_VICE_CHAIR: ("硬件副主席", "#d97706", False, 40),
+    ReturningMembershipRequest.RequestedRole.SOFTWARE_VICE_CHAIR: ("软件副主席", "#0284c7", False, 50),
+}
+
+
+@officer_required
+@require_POST
+def returning_review(request, pk: int):
+    item = get_object_or_404(ReturningMembershipRequest.objects.select_related("user"), pk=pk)
+    decision = request.POST.get("decision")
+    note = (request.POST.get("note") or "").strip()[:200]
+
+    if decision == "reject":
+        item.user.is_active = False
+        item.user.position = None
+        item.user.save(update_fields=["is_active", "position"])
+        item.mark_reviewed(ReturningMembershipRequest.Status.REJECTED, request.user, note)
+        messages.success(request, f"已拒绝 {item.user.display_name} 的身份恢复申请，记录已保留。")
+        return redirect("dashboard:members")
+
+    role = request.POST.get("role")
+    if role not in ReturningMembershipRequest.RequestedRole.values:
+        messages.error(request, "请选择有效的协会身份。")
+        return redirect("dashboard:members")
+
+    item.requested_role = role
+    position = None
+    if role in _RETURNING_POSITIONS:
+        name, color, grants_management, sort_order = _RETURNING_POSITIONS[role]
+        position, _ = Position.objects.update_or_create(
+            name=name,
+            defaults={
+                "color": color,
+                "grants_management": grants_management,
+                "sort_order": sort_order,
+            },
+        )
+
+    user = item.user
+    user.position = position
+    user.member_level = roles.LEVEL_FORMAL
+    user.is_active = True
+    user.save(update_fields=["position", "member_level", "is_active"])
+    roles.sync_user_groups(user)
+    item.mark_reviewed(ReturningMembershipRequest.Status.APPROVED, request.user, note)
+    item.save(update_fields=["requested_role"])
+
+    try:
+        send_mail(
+            "HEU ESTA 老会员身份审核通过",
+            f"{user.display_name}，你的老会员身份已审核通过，现可登录协会网站。",
+            None,
+            [user.email],
+            fail_silently=False,
+        )
+    except Exception:
+        messages.warning(request, "身份已通过，但审核结果邮件发送失败，请通过 QQ 联系对方。")
+    messages.success(request, f"已恢复 {user.display_name} 的{item.get_requested_role_display()}身份。")
+    return redirect("dashboard:members")
+
+
+# ---------------------------------------------------------------- 网站问题反馈
 
 @officer_required
 def feedbacks(request):
@@ -299,7 +368,9 @@ def feedbacks(request):
     tab = request.GET.get("tab", "pending")
     if tab not in ("pending", "all"):
         tab = "pending"
-    items = Feedback.objects.select_related("user", "resolved_by").annotate(reply_count=Count("replies"))
+    items = Feedback.objects.select_related("user", "resolved_by").annotate(
+        reply_count=Count("replies"),
+    ).order_by("-created_at")
     if tab == "pending":
         items = items.filter(status=Feedback.Status.PENDING)
 
@@ -366,17 +437,11 @@ def medals(request):
 def positions(request):
     if request.method == "POST":
         form = request.POST.get("form")
-        if form == "create_position":
-            name = request.POST.get("name", "").strip()
-            if name:
-                Position.objects.get_or_create(name=name, defaults={
-                    "color": request.POST.get("color", "#b8860b").strip() or "#b8860b",
-                    "sort_order": int(request.POST.get("sort_order") or 100),
-                })
-                messages.success(request, f"职位「{name}」已创建。")
-            return redirect("dashboard:positions")
         if form == "assign":
-            pos = get_object_or_404(Position, pk=request.POST.get("position_id"))
+            fixed_names = {item[0] for item in _RETURNING_POSITIONS.values()}
+            pos = get_object_or_404(
+                Position, pk=request.POST.get("position_id"), name__in=fixed_names,
+            )
             user = get_object_or_404(User, pk=request.POST.get("user_id"))
             user.position = pos
             user.save(update_fields=["position"])
@@ -388,16 +453,12 @@ def positions(request):
             user.save(update_fields=["position"])
             messages.success(request, f"已解除 {user.display_name} 的职位。")
             return redirect("dashboard:positions")
-        if form == "delete_position":
-            pos = get_object_or_404(Position, pk=request.POST.get("position_id"))
-            name = pos.name
-            pos.delete()
-            messages.success(request, f"职位「{name}」已删除。")
-            return redirect("dashboard:positions")
+
+    fixed_names = [item[0] for item in _RETURNING_POSITIONS.values()]
 
     context = {
         "active_nav": "positions",
-        "positions": Position.objects.annotate(count=Count("holders")).all(),
+        "positions": Position.objects.filter(name__in=fixed_names).annotate(count=Count("holders")),
         "holders": User.objects.filter(position__isnull=False).select_related("position"),
     }
     return render(request, "dashboard/positions.html", context)
@@ -699,7 +760,7 @@ def event_checkin_qr(request, pk: int):
 # 面试结果动作 -> (报名状态, 目标等级或 None, 中文说明)
 _RECRUIT_RESULTS = {
     "first_pass": (Application.Status.FIRST_PASS, roles.LEVEL_PREPARATORY, "一面通过 · 晋升预备会员"),
-    "second_pass": (Application.Status.SECOND_PASS, roles.LEVEL_FORMAL, "二面通过 · 晋升正式会员"),
+    "second_pass": (Application.Status.SECOND_PASS, roles.LEVEL_FORMAL, "二面通过 · 晋升科协会员"),
     "reject": (Application.Status.REJECTED, None, "本次未录取"),
     "reset": (Application.Status.SUBMITTED, None, "重置为已报名"),
 }

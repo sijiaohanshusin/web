@@ -1,8 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from accounts import roles
+from accounts.models import Position, ReturningMembershipRequest
 
 User = get_user_model()
 
@@ -40,7 +41,16 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(self.client.get(reverse("dashboard:positions")).status_code, 200)
         self.assertEqual(self.client.get(reverse("dashboard:site_settings")).status_code, 200)
 
+    def test_chair_position_grants_dashboard_without_staff_level(self):
+        chair = User.objects.create_user(username="chair", password="x")
+        chair.set_level(roles.LEVEL_FORMAL)
+        chair.position = Position.objects.get(name="主席")
+        chair.save(update_fields=["position"])
+        self.client.login(username="chair", password="x")
+        self.assertEqual(self.client.get(reverse("dashboard:overview")).status_code, 200)
 
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class MemberActionTests(TestCase):
     def setUp(self):
         self.officer = User.objects.create_user(username="officer", password="x")
@@ -49,11 +59,11 @@ class MemberActionTests(TestCase):
         self.admin.set_level(roles.LEVEL_ADMIN)
         self.pending = User.objects.create_user(username="newbie", password="x", is_active=False)
 
-    def test_officer_can_approve(self):
+    def test_officer_can_promote_recruit_to_preparatory(self):
         self.client.login(username="officer", password="x")
-        self.client.post(reverse("dashboard:member_action"), {"action": "approve", "ids": [self.pending.pk]})
+        self.client.post(reverse("dashboard:member_action"), {"action": "promote_prep", "ids": [self.pending.pk]})
         self.pending.refresh_from_db()
-        self.assertEqual(self.pending.member_level, roles.LEVEL_APPLICANT)
+        self.assertEqual(self.pending.member_level, roles.LEVEL_PREPARATORY)
         self.assertTrue(self.pending.is_active)
 
     def test_officer_can_promote_formal(self):
@@ -74,7 +84,34 @@ class MemberActionTests(TestCase):
         self.pending.refresh_from_db()
         self.assertEqual(self.pending.member_level, roles.LEVEL_OFFICER)
 
-    def test_admin_reject_delete(self):
+    def test_returning_rejection_preserves_record(self):
+        request = ReturningMembershipRequest.objects.create(
+            user=self.pending,
+            requested_role=ReturningMembershipRequest.RequestedRole.MEMBER,
+        )
         self.client.login(username="admin1", password="x")
-        self.client.post(reverse("dashboard:member_action"), {"action": "reject_delete", "ids": [self.pending.pk]})
-        self.assertFalse(User.objects.filter(pk=self.pending.pk).exists())
+        self.client.post(reverse("dashboard:returning_review", args=[request.pk]), {
+            "decision": "reject", "note": "资料待核实",
+        })
+        self.assertTrue(User.objects.filter(pk=self.pending.pk).exists())
+        request.refresh_from_db()
+        self.assertEqual(request.status, ReturningMembershipRequest.Status.REJECTED)
+        self.assertEqual(request.review_note, "资料待核实")
+
+    def test_returning_chair_approval_activates_and_assigns_position(self):
+        request = ReturningMembershipRequest.objects.create(
+            user=self.pending,
+            requested_role=ReturningMembershipRequest.RequestedRole.MEMBER,
+        )
+        self.client.login(username="admin1", password="x")
+        self.client.post(reverse("dashboard:returning_review", args=[request.pk]), {
+            "decision": "approve",
+            "role": ReturningMembershipRequest.RequestedRole.HARDWARE_CHAIR,
+        })
+        self.pending.refresh_from_db()
+        request.refresh_from_db()
+        self.assertTrue(self.pending.is_active)
+        self.assertEqual(self.pending.member_level, roles.LEVEL_FORMAL)
+        self.assertEqual(self.pending.position.name, "硬件主席")
+        self.assertTrue(self.pending.position.grants_management)
+        self.assertEqual(request.status, ReturningMembershipRequest.Status.APPROVED)

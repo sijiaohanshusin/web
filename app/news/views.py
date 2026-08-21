@@ -5,7 +5,7 @@ from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
-from accounts.roles import effective_level, is_officer
+from accounts.roles import content_level, is_officer
 
 from .models import Post
 
@@ -31,7 +31,7 @@ def post_list(request):
 def post_detail(request, pk: int):
     post = get_object_or_404(Post.objects.select_related("author"), pk=pk)
 
-    # 未发布/定时未到的只有干事及以上能预览
+    # 未发布或尚未到发布时间的公告，仅站务管理可预览。
     live = post.is_published and post.published_at <= timezone.now()
     if not live and not is_officer(request.user):
         return HttpResponseForbidden("该公告尚未发布。")
@@ -39,7 +39,7 @@ def post_detail(request, pk: int):
     if post.min_level > 0:
         if not request.user.is_authenticated:
             return redirect_to_login(request.get_full_path())
-        if effective_level(request.user) < post.min_level:
+        if content_level(request.user) < post.min_level:
             return HttpResponseForbidden(f"该公告需要「{post.get_min_level_display()}」才能查看。")
 
     Post.objects.filter(pk=pk).update(view_count=F("view_count") + 1)

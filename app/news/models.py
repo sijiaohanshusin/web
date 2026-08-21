@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import strip_tags
 
-from accounts.roles import effective_level
+from accounts.roles import content_level
 
 from .markdown import render_markdown
 
@@ -14,7 +14,7 @@ class PostQuerySet(models.QuerySet):
         return self.filter(is_published=True, published_at__lte=timezone.now())
 
     def visible_to(self, user):
-        return self.filter(min_level__lte=effective_level(user))
+        return self.filter(min_level__lte=content_level(user))
 
 
 class Post(models.Model):
@@ -27,10 +27,9 @@ class Post(models.Model):
 
     class MinLevel(models.IntegerChoices):
         PUBLIC = 0, "公开（所有人）"
-        APPLICANT = 1, "报名会员及以上"
         PREPARATORY = 2, "预备会员及以上"
-        FORMAL = 3, "正式会员及以上"
-        OFFICER = 4, "干事及以上"
+        FORMAL = 3, "科协会员及以上"
+        OFFICER = 4, "站务管理及以上"
 
     title = models.CharField("标题", max_length=120)
     category = models.CharField("栏目", max_length=12, choices=Category.choices, default=Category.NOTICE)

@@ -45,6 +45,7 @@ class CampaignModelTests(TestCase):
 
 class ApplyFlowTests(TestCase):
     def setUp(self):
+        Campaign.objects.update(is_active=False)
         self.campaign = make_campaign()
         self.user = make_user()
         self.client.login(username="stu", password="Str0ngPass!2025")
@@ -52,6 +53,7 @@ class ApplyFlowTests(TestCase):
     def test_index_shows_form_for_applicant(self):
         resp = self.client.get(reverse("recruitment:index"))
         self.assertContains(resp, "报名表")
+        self.assertIn("no-cache", resp.headers["Cache-Control"])
 
     def test_apply_creates_application(self):
         resp = self.client.post(reverse("recruitment:apply"), {
@@ -92,14 +94,15 @@ class ApplyFlowTests(TestCase):
         formal = make_user("formal", roles.LEVEL_FORMAL)
         self.client.login(username="formal", password="Str0ngPass!2025")
         resp = self.client.post(reverse("recruitment:apply"), {
-            "department": "hardware", "skills": "", "self_intro": "我已经是正式会员了还来报名。",
+            "department": "hardware", "skills": "", "self_intro": "我已经是科协会员了还来报名。",
         }, follow=True)
         self.assertFalse(Application.objects.filter(user=formal).exists())
-        self.assertContains(resp, "已经是正式会员")
+        self.assertContains(resp, "已经是科协会员")
 
 
 class RecruitDashboardTests(TestCase):
     def setUp(self):
+        Campaign.objects.update(is_active=False)
         self.campaign = make_campaign()
         self.officer = make_user("off", roles.LEVEL_OFFICER)
         self.applicant = make_user("newbie", roles.LEVEL_APPLICANT)

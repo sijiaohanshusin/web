@@ -4,11 +4,9 @@
 {% block page_title %}会员管理{% endblock %}
 
 {% block content %}
-
 <div class="dash-tabs">
-    <a href="?tab=pending" class="{% if tab == 'pending' %}active{% endif %}">
-        待审核 {% if pending_count %}<em>{{ pending_count }}</em>{% endif %}
-    </a>
+    <a href="?tab=returning" class="{% if tab == 'returning' %}active{% endif %}">老会员审核 {% if pending_count %}<em>{{ pending_count }}</em>{% endif %}</a>
+    <a href="?tab=recruits" class="{% if tab == 'recruits' %}active{% endif %}">招新成员</a>
     <a href="?tab=all" class="{% if tab == 'all' %}active{% endif %}">全部成员</a>
 </div>
 
@@ -16,107 +14,83 @@
     <input type="hidden" name="tab" value="{{ tab }}">
     <input class="input" type="search" name="q" value="{{ query }}" placeholder="姓名 / 学号 / QQ / 手机 / 学院…">
     <select class="input" name="grade">
-        <option value="">全部年级</option>
-        {% for g in grades %}
-            <option value="{{ g }}" {% if grade == g %}selected{% endif %}>{{ g }} 级</option>
-        {% endfor %}
+        <option value="">全部届别</option>
+        {% for g in grades %}<option value="{{ g }}" {% if grade == g %}selected{% endif %}>{{ g }} 级</option>{% endfor %}
     </select>
     {% if tab == 'all' %}
     <select class="input" name="level">
         <option value="">全部等级</option>
-        {% for value, label in level_choices %}
-            <option value="{{ value }}" {% if level == value|stringformat:'s' %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
+        {% for value, label in level_choices %}<option value="{{ value }}" {% if level == value|stringformat:'s' %}selected{% endif %}>{{ label }}</option>{% endfor %}
     </select>
     {% endif %}
     <button type="submit" class="btn btn-outline btn-sm">筛选</button>
 </form>
 
+{% if tab == 'returning' %}
+<div class="dash-table-wrap">
+    <table class="table returning-table">
+        <thead><tr><th>申请人</th><th>届别 / 学院</th><th>申报信息</th><th>审核</th></tr></thead>
+        <tbody>
+        {% for u in page.object_list %}
+        <tr>
+            <td><strong>{{ u.real_name|default:u.username }}</strong><small class="table-sub">@{{ u.username }} · {{ u.student_id }}</small><small class="table-sub">{{ u.email }} · {{ u.phone }}</small></td>
+            <td>{{ u.grade }} 级<small class="table-sub">{{ u.college }}</small></td>
+            <td>
+                <span class="badge badge-blue">{{ u.returning_request.get_requested_role_display }}</span>
+                <span class="badge badge-gray">{{ u.specialty_label }}</span>
+                <small class="table-sub">状态：{{ u.returning_request.get_status_display }} · {{ u.date_joined|date:"Y-m-d H:i" }}</small>
+                {% if u.returning_request.review_note %}<small class="table-sub">上次备注：{{ u.returning_request.review_note }}</small>{% endif %}
+            </td>
+            <td>
+                <form method="post" action="{% url 'dashboard:returning_review' u.returning_request.pk %}" class="review-form">
+                    {% csrf_token %}
+                    <select class="input" name="role" required>
+                        {% for value, label in returning_role_choices %}<option value="{{ value }}" {% if u.returning_request.requested_role == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                    </select>
+                    <input class="input" name="note" maxlength="200" placeholder="审核备注（选填）">
+                    <div><button class="btn btn-primary btn-sm" name="decision" value="approve">通过并激活</button> <button class="btn btn-danger btn-sm" name="decision" value="reject" onclick="return confirm('拒绝后账号保持停用，但记录不会删除。确认继续？')">拒绝</button></div>
+                </form>
+            </td>
+        </tr>
+        {% empty %}<tr><td colspan="4"><div class="dash-empty">没有老会员身份恢复申请</div></td></tr>{% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
 <form method="post" action="{% url 'dashboard:member_action' %}">
-    {% csrf_token %}
-    <input type="hidden" name="next" value="{{ request.get_full_path }}">
-
+    {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
     <div class="dash-table-wrap">
         <table class="table">
-            <thead>
-            <tr>
-                <th style="width:36px;"><input type="checkbox" id="check-all" title="全选"></th>
-                <th>姓名 / 用户名</th>
-                <th>届别</th>
-                <th>学号</th>
-                <th>学院</th>
-                <th>等级 / 职位</th>
-                <th>勋章</th>
-                <th>注册时间</th>
-            </tr>
-            </thead>
+            <thead><tr><th style="width:36px;"><input type="checkbox" id="check-all" title="全选"></th><th>姓名 / 用户名</th><th>届别</th><th>学院 / 方向</th><th>等级 / 职位</th><th>注册时间</th></tr></thead>
             <tbody>
             {% for u in page.object_list %}
             <tr>
                 <td><input type="checkbox" name="ids" value="{{ u.pk }}" {% if u.is_superuser or u == user %}disabled{% endif %}></td>
-                <td>
-                    <strong>{{ u.real_name|default:u.username }}</strong>
-                    <small style="color:var(--muted);"> @{{ u.username }}</small>
-                </td>
-                <td>{{ u.cohort_label|default:"—" }}</td>
-                <td>{{ u.student_id|default:"—" }}</td>
-                <td>{{ u.college|default:"—" }}</td>
-                <td>
-                    <span class="badge" style="color:#fff;background:{{ u.level_color }};border-color:{{ u.level_color }};">{{ u.level_label }}</span>
-                    {% if u.position %}<span class="badge" style="color:#fff;background:{{ u.position.color }};border-color:{{ u.position.color }};">{{ u.position.name }}</span>{% endif %}
-                </td>
-                <td>{% if u.medal_count %}{% include "includes/icon.html" with name="medal" cls="icon-sm" %} {{ u.medal_count }}{% else %}—{% endif %}</td>
+                <td><strong>{{ u.real_name|default:u.username }}</strong><small class="table-sub">@{{ u.username }} · {{ u.student_id|default:"—" }}</small></td>
+                <td>{{ u.grade|default:"—" }}{% if u.grade %} 级{% endif %}</td>
+                <td>{{ u.college|default:"—" }}<small class="table-sub">{{ u.specialty_label }}</small></td>
+                <td><span class="badge" style="color:#fff;background:{{ u.level_color }};border-color:{{ u.level_color }};">{{ u.level_label }}</span>{% if u.position %} <span class="badge" style="color:#fff;background:{{ u.position.color }};border-color:{{ u.position.color }};">{{ u.position.name }}</span>{% endif %}</td>
                 <td>{{ u.date_joined|date:"Y-m-d H:i" }}</td>
             </tr>
-            {% empty %}
-            <tr><td colspan="8"><div class="dash-empty">{% if tab == 'pending' %}没有待审核的成员，清爽！{% else %}没有匹配的成员{% endif %}</div></td></tr>
-            {% endfor %}
+            {% empty %}<tr><td colspan="6"><div class="dash-empty">没有匹配的成员</div></td></tr>{% endfor %}
             </tbody>
         </table>
     </div>
-
     {% if page.object_list %}
     <div class="dash-actions-bar">
         <span class="hint">勾选成员后执行：</span>
-        <button type="submit" name="action" value="approve" class="btn btn-primary btn-sm">✓ 通过审核</button>
-        <button type="submit" name="action" value="promote_prep" class="btn btn-ghost btn-sm">↑ 晋升预备</button>
-        <button type="submit" name="action" value="promote_formal" class="btn btn-ghost btn-sm">↑ 晋升正式</button>
-        {% if is_admin %}
-            <button type="submit" name="action" value="make_officer" class="btn btn-ghost btn-sm">设为干事</button>
-            <button type="submit" name="action" value="make_admin" class="btn btn-ghost btn-sm">设为管理员</button>
-            <button type="submit" name="action" value="reject_delete" class="btn btn-danger btn-sm"
-                    onclick="return confirm('确定拒绝并删除选中的待审核账号？此操作不可恢复。')">✕ 拒绝并删除</button>
-        {% endif %}
+        <button type="submit" name="action" value="promote_prep" class="btn btn-ghost btn-sm">晋升预备会员</button>
+        <button type="submit" name="action" value="promote_formal" class="btn btn-ghost btn-sm">晋升科协会员</button>
+        {% if is_admin %}<button type="submit" name="action" value="make_officer" class="btn btn-ghost btn-sm">设为站务管理</button> <button type="submit" name="action" value="make_admin" class="btn btn-ghost btn-sm">设为系统管理员</button>{% endif %}
     </div>
     <div class="dash-actions-bar">
-        <span class="hint">批量积分（竞赛获奖、值班等线下贡献）：</span>
-        <input class="input" type="number" name="points_delta" min="-999" max="999" placeholder="±分值" style="width:100px;">
-        <input class="input" name="points_note" maxlength="100" placeholder="说明（成员在积分明细可见）" style="width:260px;">
-        <button type="submit" name="action" value="points_adjust" class="btn btn-outline btn-sm">发放 / 扣除</button>
+        <span class="hint">批量积分：</span><input class="input" type="number" name="points_delta" min="-999" max="999" placeholder="±分值" style="width:100px;"><input class="input" name="points_note" maxlength="100" placeholder="说明" style="width:260px;"><button type="submit" name="action" value="points_adjust" class="btn btn-outline btn-sm">发放 / 扣除</button>
     </div>
     {% endif %}
 </form>
-
-{% if page.paginator.num_pages > 1 %}
-<div class="pagination">
-    {% if page.has_previous %}
-        <a href="?tab={{ tab }}&page={{ page.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if grade %}&grade={{ grade }}{% endif %}{% if level %}&level={{ level }}{% endif %}">‹</a>
-    {% endif %}
-    <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
-    {% if page.has_next %}
-        <a href="?tab={{ tab }}&page={{ page.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if grade %}&grade={{ grade }}{% endif %}{% if level %}&level={{ level }}{% endif %}">›</a>
-    {% endif %}
-</div>
 {% endif %}
 
+{% if page.paginator.num_pages > 1 %}<div class="pagination">{% if page.has_previous %}<a href="?tab={{ tab }}&page={{ page.previous_page_number }}&q={{ query|urlencode }}&grade={{ grade }}&level={{ level }}">‹</a>{% endif %}<span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a href="?tab={{ tab }}&page={{ page.next_page_number }}&q={{ query|urlencode }}&grade={{ grade }}&level={{ level }}">›</a>{% endif %}</div>{% endif %}
 {% endblock %}
 
-{% block extra_js %}
-<script>
-document.getElementById("check-all").addEventListener("change", function () {
-    document.querySelectorAll('input[name="ids"]:not(:disabled)').forEach(function (cb) {
-        cb.checked = this.checked;
-    }, this);
-});
-</script>
-{% endblock %}
+{% block extra_js %}{% if tab != 'returning' %}<script>document.getElementById("check-all").addEventListener("change", function () { document.querySelectorAll('input[name="ids"]:not(:disabled)').forEach(function (cb) { cb.checked = this.checked; }, this); });</script>{% endif %}{% endblock %}

@@ -1,5 +1,5 @@
 'use strict';
-/* 内部事务版块：建在「站务中心」下，仅正式会员/干事/管理员可见可发（幂等）
+/* 内部事务版块：建在「站务中心」下，仅科协会员及以上可见可发（幂等）
    docker exec -w /usr/src/app heuesta-forum-forum-1 node /opt/config/internal-board.js
 */
 const APP = '/usr/src/app';
@@ -12,10 +12,14 @@ nconf.defaults({
     upload_path: 'public/uploads',
 });
 
-const ALLOWED = ['正式会员', '干事', '管理员'];
+const ALLOWED = [
+    '科协会员', '站务管理', '系统管理员',
+    '主席', '硬件主席', '软件主席', '硬件副主席', '软件副主席',
+    '正式会员', '干事', '管理员',
+];
 // 面向普通用户/游客需要撤销的读权限
 const READ_PRIVS = ['groups:find', 'groups:read', 'groups:topics:read', 'groups:topics:create', 'groups:topics:reply'];
-const PUBLIC_GROUPS = ['guests', 'registered-users', 'spiders', '报名会员', '预备会员'];
+const PUBLIC_GROUPS = ['guests', 'registered-users', 'spiders', '招新成员', '报名会员', '预备会员'];
 
 (async () => {
     const db = require(APP + '/src/database');
@@ -36,7 +40,7 @@ const PUBLIC_GROUPS = ['guests', 'registered-users', 'spiders', '报名会员', 
         const parent = byName['站务中心'];
         board = await Categories.create({
             name: '内部事务',
-            description: '正式会员及以上可见：内部讨论、干事事务',
+            description: '科协会员及以上可见：协会内部讨论与站务协作',
             icon: 'fa-lock',
             bgColor: '#334155',
             color: '#ffffff',
@@ -47,6 +51,9 @@ const PUBLIC_GROUPS = ['guests', 'registered-users', 'spiders', '报名会员', 
         console.log('[internal] 版块已存在 cid=' + board.cid);
     }
     const cid = board.cid;
+    await Categories.update({
+        [cid]: { description: '科协会员及以上可见：协会内部讨论与站务协作' },
+    });
 
     // 撤销普通/游客/低等级组的读权限
     for (const group of PUBLIC_GROUPS) {

@@ -101,6 +101,12 @@ class EventSignupTests(TestCase):
         resp = self.client.post(reverse("events:signup", args=[self.event.pk]), follow=True)
         self.assertFalse(EventSignup.objects.filter(event=self.event, user=self.user).exists())
 
+    def test_recruit_member_cannot_signup_for_public_event(self):
+        recruit = make_user("recruit", roles.LEVEL_APPLICANT)
+        self.client.login(username="recruit", password="Str0ngPass!2025")
+        self.client.post(reverse("events:signup", args=[self.event.pk]))
+        self.assertFalse(EventSignup.objects.filter(event=self.event, user=recruit).exists())
+
 
 class EventCheckinTests(TestCase):
     def setUp(self):

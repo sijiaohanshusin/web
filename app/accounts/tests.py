@@ -3,10 +3,8 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from core.models import SiteConfig
-
 from . import roles, verification
-from .models import Medal, Position, UserMedal, VerificationCode
+from .models import Medal, Position, ReturningMembershipRequest, UserMedal, VerificationCode
 
 User = get_user_model()
 
@@ -15,21 +13,19 @@ SSO_SECRET = "dev-sso-secret-not-for-production"
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class RegistrationTests(TestCase):
-    def _set_config(self, **kw):
-        c = SiteConfig.load()
-        for k, v in kw.items():
-            setattr(c, k, v)
-        c.save()
-
     def _register_payload(self, **over):
         data = {
             "username": "xiaoming",
             "real_name": "小明",
             "student_id": "2025010101",
-            "college": "信通学院",
+            "college": "信息与通信工程学院",
             "grade": "2025",
             "email": "xm@example.com",
             "phone": "13800000001",
+            "qq": "1081376858",
+            "specialty": User.Specialty.HARDWARE,
+            "specialty_custom": "",
+            "privacy_consent": "on",
             "password1": "Str0ngPass!2025",
             "password2": "Str0ngPass!2025",
         }
@@ -41,40 +37,60 @@ class RegistrationTests(TestCase):
         return VerificationCode.objects.filter(email=email, purpose=purpose, used=False).latest("created_at").code
 
     def test_register_requires_code(self):
-        self._set_config(beta_mode=False, auto_approve=True)
-        resp = self.client.post(reverse("accounts:register"), self._register_payload(code="000000"))
+        resp = self.client.post(reverse("accounts:register_new"), self._register_payload(code="000000"))
         self.assertContains(resp, "验证码")
         self.assertFalse(User.objects.filter(username="xiaoming").exists())
 
-    def test_register_auto_approve(self):
-        self._set_config(beta_mode=False, auto_approve=True)
+    def test_register_entry_is_channel_choice(self):
+        resp = self.client.get(reverse("accounts:register"))
+        self.assertContains(resp, "新会员通道")
+        self.assertContains(resp, "老会员通道")
+        self.assertIn("no-cache", resp.headers["Cache-Control"])
+
+    def test_new_member_registers_active_at_recruit_level(self):
         code = self._get_code("xm@example.com", "register")
-        resp = self.client.post(reverse("accounts:register"), self._register_payload(code=code))
+        resp = self.client.post(reverse("accounts:register_new"), self._register_payload(code=code))
         self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, reverse("recruitment:index"))
         u = User.objects.get(username="xiaoming")
         self.assertTrue(u.is_active)
         self.assertEqual(u.member_level, roles.LEVEL_APPLICANT)
+        self.assertEqual(u.registration_channel, User.RegistrationChannel.NEW)
+        self.assertIn("_auth_user_id", self.client.session)
 
-    def test_register_beta_mode_gives_officer(self):
-        self._set_config(beta_mode=True, auto_approve=True)
+    def test_returning_member_waits_for_review(self):
         code = self._get_code("xm@example.com", "register")
-        self.client.post(reverse("accounts:register"), self._register_payload(code=code))
-        u = User.objects.get(username="xiaoming")
-        self.assertEqual(u.member_level, roles.LEVEL_OFFICER)
-        self.assertTrue(u.is_officer)
-
-    def test_register_manual_review(self):
-        self._set_config(beta_mode=False, auto_approve=False)
-        code = self._get_code("xm@example.com", "register")
-        self.client.post(reverse("accounts:register"), self._register_payload(code=code))
+        resp = self.client.post(reverse("accounts:register_returning"), self._register_payload(
+            code=code,
+            requested_role=ReturningMembershipRequest.RequestedRole.HARDWARE_VICE_CHAIR,
+        ))
+        self.assertEqual(resp.status_code, 200)
         u = User.objects.get(username="xiaoming")
         self.assertFalse(u.is_active)
         self.assertEqual(u.member_level, roles.LEVEL_PENDING)
+        self.assertEqual(u.registration_channel, User.RegistrationChannel.RETURNING)
+        self.assertEqual(
+            u.returning_request.requested_role,
+            ReturningMembershipRequest.RequestedRole.HARDWARE_VICE_CHAIR,
+        )
+
+    def test_custom_specialty_requires_description(self):
+        resp = self.client.post(reverse("accounts:register_new"), self._register_payload(
+            specialty=User.Specialty.CUSTOM,
+            specialty_custom="",
+            code="000000",
+        ))
+        self.assertContains(resp, "请填写具体方向")
+
+    def test_grade_and_college_are_fixed_choices(self):
+        resp = self.client.post(reverse("accounts:register_new"), self._register_payload(
+            grade="2023级", college="信通学院", code="000000",
+        ))
+        self.assertContains(resp, "选择一个有效的选项", count=2)
 
     def test_duplicate_email_rejected(self):
         User.objects.create_user(username="a", password="x", email="dup@example.com")
-        self._set_config(beta_mode=False, auto_approve=True)
-        resp = self.client.post(reverse("accounts:register"), self._register_payload(email="dup@example.com", code="123456"))
+        resp = self.client.post(reverse("accounts:register_new"), self._register_payload(email="dup@example.com", code="123456"))
         self.assertContains(resp, "该邮箱已注册")
 
 
@@ -115,17 +131,17 @@ class LevelTests(TestCase):
         u = User.objects.create_user(username="c", password="x")
         u.set_level(roles.LEVEL_OFFICER, note="test")
         self.assertTrue(u.is_active)
-        self.assertTrue(u.groups.filter(name="干事").exists())
+        self.assertTrue(u.groups.filter(name="站务管理").exists())
         self.assertTrue(u.is_officer)
         self.assertEqual(u.level_logs.count(), 1)
 
     def test_promote_removes_old_group(self):
         u = User.objects.create_user(username="d", password="x")
         u.set_level(roles.LEVEL_APPLICANT)
-        self.assertTrue(u.groups.filter(name="报名会员").exists())
+        self.assertTrue(u.groups.filter(name="招新成员").exists())
         u.set_level(roles.LEVEL_FORMAL)
-        self.assertFalse(u.groups.filter(name="报名会员").exists())
-        self.assertTrue(u.groups.filter(name="正式会员").exists())
+        self.assertFalse(u.groups.filter(name="招新成员").exists())
+        self.assertTrue(u.groups.filter(name="科协会员").exists())
 
     def test_cohort_label(self):
         u = User.objects.create_user(username="e", password="x", grade="2025")
@@ -143,7 +159,7 @@ class SsoTests(TestCase):
     def test_sso_cookie_carries_level_and_position(self):
         import jwt
 
-        pos = Position.objects.create(name="硬件主席", color="#c98a3d")
+        pos = Position.objects.get(name="硬件主席")
         User.objects.create_user(username="ssou", password="Str0ngPass!2025", email="s@x.cn")
         user = User.objects.get(username="ssou")
         user.member_level = roles.LEVEL_FORMAL
@@ -156,8 +172,15 @@ class SsoTests(TestCase):
         cookie = resp.cookies.get("heuesta_sso")
         self.assertIsNotNone(cookie)
         payload = jwt.decode(cookie.value, SSO_SECRET, algorithms=["HS256"])
-        self.assertIn("正式会员", payload["groups"])
+        self.assertIn("科协会员", payload["groups"])
         self.assertIn("硬件主席", payload["groups"])
+
+    def test_recruit_member_gets_no_forum_cookie(self):
+        user = User.objects.create_user(username="recruit", password="Str0ngPass!2025")
+        user.set_level(roles.LEVEL_APPLICANT)
+        self.client.login(username="recruit", password="Str0ngPass!2025")
+        resp = self.client.get(reverse("core:home"))
+        self.assertIsNone(resp.cookies.get("heuesta_sso"))
 
 
 class MedalTests(TestCase):

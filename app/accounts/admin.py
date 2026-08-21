@@ -2,24 +2,32 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
 from . import roles
-from .models import LevelLog, Medal, Position, User, UserMedal, VerificationCode
+from .models import (
+    LevelLog,
+    Medal,
+    Position,
+    ReturningMembershipRequest,
+    User,
+    UserMedal,
+    VerificationCode,
+)
 
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
     list_display = [
         "username", "real_name", "student_id", "college", "grade",
-        "member_level", "position", "is_active", "date_joined",
+        "member_level", "position", "registration_channel", "is_active", "date_joined",
     ]
-    list_filter = ["member_level", "is_active", "position", "grade", "college"]
+    list_filter = ["member_level", "registration_channel", "specialty", "is_active", "position", "grade", "college"]
     search_fields = ["username", "real_name", "student_id", "qq", "phone", "email"]
     ordering = ["-date_joined"]
-    actions = ["approve_as_applicant", "promote_formal"]
+    actions = ["promote_preparatory", "promote_formal"]
 
     fieldsets = DjangoUserAdmin.fieldsets + (
         ("协会信息", {"fields": (
             "real_name", "student_id", "college", "grade", "qq", "phone", "avatar",
-            "member_level", "position",
+            "member_level", "position", "registration_channel", "specialty", "specialty_custom",
         )}),
     )
     add_fieldsets = DjangoUserAdmin.add_fieldsets + (
@@ -30,27 +38,41 @@ class UserAdmin(DjangoUserAdmin):
         super().save_model(request, obj, form, change)
         roles.sync_user_groups(obj)  # 后台改等级后同步 Django 组与 is_staff
 
-    @admin.action(description="通过审核（设为报名会员）")
-    def approve_as_applicant(self, request, queryset):
+    @admin.action(description="晋升为预备会员")
+    def promote_preparatory(self, request, queryset):
         count = 0
         for user in queryset:
-            user.set_level(roles.LEVEL_APPLICANT, actor=request.user, note="Admin 批量审核")
+            user.set_level(roles.LEVEL_PREPARATORY, actor=request.user, note="Admin 批量晋升")
             count += 1
-        self.message_user(request, f"已通过 {count} 名成员的审核。")
+        self.message_user(request, f"已将 {count} 名成员晋升为预备会员。")
 
-    @admin.action(description="晋升为正式会员")
+    @admin.action(description="晋升为科协会员")
     def promote_formal(self, request, queryset):
         count = 0
         for user in queryset:
             user.set_level(roles.LEVEL_FORMAL, actor=request.user, note="Admin 批量晋升")
             count += 1
-        self.message_user(request, f"已将 {count} 名成员晋升为正式会员。")
+        self.message_user(request, f"已将 {count} 名成员晋升为科协会员。")
 
 
 @admin.register(Position)
 class PositionAdmin(admin.ModelAdmin):
-    list_display = ["name", "color", "sort_order"]
-    list_editable = ["sort_order"]
+    list_display = ["name", "color", "grants_management", "sort_order"]
+    list_editable = ["grants_management", "sort_order"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ReturningMembershipRequest)
+class ReturningMembershipRequestAdmin(admin.ModelAdmin):
+    list_display = ["user", "requested_role", "status", "reviewed_by", "created_at"]
+    list_filter = ["status", "requested_role"]
+    search_fields = ["user__username", "user__real_name", "user__student_id"]
+    readonly_fields = ["created_at", "reviewed_at"]
 
 
 @admin.register(Medal)

@@ -7,14 +7,14 @@ from accounts.roles import is_officer
 
 
 def officer_required(view_func):
-    """干事及以上可访问；未登录跳登录页，已登录无权限则 403。"""
+    """站务管理或获授权主席可访问；未登录跳登录页。"""
 
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect_to_login(request.get_full_path())
         if not is_officer(request.user):
-            raise PermissionDenied("需要干事及以上权限")
+            raise PermissionDenied("需要站务管理权限")
         return view_func(request, *args, **kwargs)
 
     return wrapper

@@ -16,10 +16,9 @@ class Resource(models.Model):
     # 可见等级门槛：用户 member_level >= min_level 才能看到/下载
     class MinLevel(models.IntegerChoices):
         PUBLIC = 0, "公开（所有人）"
-        APPLICANT = 1, "报名会员及以上"
         PREPARATORY = 2, "预备会员及以上"
-        FORMAL = 3, "正式会员及以上"
-        OFFICER = 4, "干事及以上"
+        FORMAL = 3, "科协会员及以上"
+        OFFICER = 4, "站务管理及以上"
 
     title = models.CharField("标题", max_length=200)
     description = models.TextField("说明", blank=True)

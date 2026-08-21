@@ -11,7 +11,7 @@ from django.http import FileResponse, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from accounts.roles import effective_level, is_officer
+from accounts.roles import content_level, is_officer
 
 from .forms import ResourceUploadForm
 from .models import Resource
@@ -21,7 +21,7 @@ def resource_list(request):
     resources = Resource.objects.select_related("uploader")
 
     # 按用户有效等级过滤：只显示门槛不高于自己等级的资料
-    level = effective_level(request.user)
+    level = content_level(request.user)
     resources = resources.filter(min_level__lte=level)
 
     query = request.GET.get("q", "").strip()
@@ -73,7 +73,7 @@ def resource_download(request, pk: int):
     if resource.min_level > 0:
         if not request.user.is_authenticated:
             return redirect_to_login(request.get_full_path())
-        if effective_level(request.user) < resource.min_level:
+        if content_level(request.user) < resource.min_level:
             return HttpResponseForbidden(
                 f"该资料需要「{resource.get_min_level_display()}」才能下载。"
             )

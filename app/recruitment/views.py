@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.views.decorators.cache import never_cache
 
 from accounts.roles import LEVEL_APPLICANT, LEVEL_FORMAL, effective_level
 
@@ -17,6 +18,7 @@ def _current_campaign():
     return active.order_by("-opens_at").first()
 
 
+@never_cache
 def index(request):
     campaign = _current_campaign()
     my_app = None
@@ -25,7 +27,7 @@ def index(request):
 
     if campaign and request.user.is_authenticated:
         my_app = Application.objects.filter(campaign=campaign, user=request.user).first()
-        # 已是正式会员及以上，无需再报名
+        # 已是科协会员及以上，无需再报名
         already_member = effective_level(request.user) >= LEVEL_FORMAL
         can_apply = campaign.is_open and my_app is None and not already_member
 
@@ -40,6 +42,7 @@ def index(request):
 
 
 @login_required
+@never_cache
 def apply(request):
     campaign = _current_campaign()
     if campaign is None or not campaign.is_open:
@@ -47,7 +50,7 @@ def apply(request):
         return redirect("recruitment:index")
 
     if effective_level(request.user) >= LEVEL_FORMAL:
-        messages.info(request, "你已经是正式会员，无需报名招新。")
+        messages.info(request, "你已经是科协会员，无需报名招新。")
         return redirect("recruitment:index")
 
     if Application.objects.filter(campaign=campaign, user=request.user).exists():
@@ -70,7 +73,7 @@ def apply(request):
     application.user = request.user
     application.save()
 
-    # 报名即挂到「报名会员」（若当前更低）
+    # 兼容旧待审核账号；新会员注册时已经是招新成员。
     if effective_level(request.user) < LEVEL_APPLICANT:
         request.user.set_level(LEVEL_APPLICANT, note=f"招新报名：{campaign.name}")
 

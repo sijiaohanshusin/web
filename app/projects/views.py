@@ -177,7 +177,7 @@ def project_file_download(request, pk: int, file_pk: int):
 def manage_members(request, pk: int):
     project = get_object_or_404(Project, pk=pk)
     if not permissions.can_manage(request.user, project):
-        return HttpResponseForbidden("只有项目负责人或干事可以管理成员。")
+        return HttpResponseForbidden("只有项目负责人或站务管理可以管理成员。")
 
     action = request.POST.get("action", "")
     if action == "add":

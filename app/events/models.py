@@ -5,7 +5,7 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
-from accounts.roles import effective_level
+from accounts.roles import content_level
 from news.markdown import render_markdown
 
 # 签到口令字符集：去掉易混淆的 0/O/1/I
@@ -21,7 +21,7 @@ class EventQuerySet(models.QuerySet):
         return self.filter(is_published=True)
 
     def visible_to(self, user):
-        return self.filter(min_level__lte=effective_level(user))
+        return self.filter(min_level__lte=content_level(user))
 
 
 class Event(models.Model):
@@ -36,10 +36,9 @@ class Event(models.Model):
 
     class MinLevel(models.IntegerChoices):
         PUBLIC = 0, "公开（所有人）"
-        APPLICANT = 1, "报名会员及以上"
         PREPARATORY = 2, "预备会员及以上"
-        FORMAL = 3, "正式会员及以上"
-        OFFICER = 4, "干事及以上"
+        FORMAL = 3, "科协会员及以上"
+        OFFICER = 4, "站务管理及以上"
 
     title = models.CharField("活动名称", max_length=120)
     kind = models.CharField("类型", max_length=12, choices=Kind.choices, default=Kind.TRAINING)

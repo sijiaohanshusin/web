@@ -8,16 +8,16 @@
 
 {% if pending_count %}
 <div class="dash-banner">
-    <strong>⚠ 有 {{ pending_count }} 名成员等待审核</strong>
-    <span style="color:var(--muted);font-size:13.5px;">新同学在等你点通过，别让 Ta 等太久</span>
-    <a class="btn btn-primary btn-sm" href="{% url 'dashboard:members' %}?tab=pending">去审核</a>
+    <strong>有 {{ pending_count }} 份老会员身份申请等待审核</strong>
+    <span style="color:var(--muted);font-size:13.5px;">请核对申报信息后批准或拒绝</span>
+    <a class="btn btn-primary btn-sm" href="{% url 'dashboard:members' %}?tab=returning">去审核</a>
 </div>
 {% endif %}
 
 <div class="dash-cards">
     <div class="dash-card">
         <div class="dash-card-value">{{ total_members }}</div>
-        <div class="dash-card-label">会员总数</div>
+        <div class="dash-card-label">预备会员及以上</div>
     </div>
     <div class="dash-card {% if pending_count %}warn{% endif %}">
         <div class="dash-card-value">{{ pending_count }}</div>
@@ -25,7 +25,7 @@
     </div>
     <div class="dash-card">
         <div class="dash-card-value">{{ officer_count }}</div>
-        <div class="dash-card-label">干事及以上</div>
+        <div class="dash-card-label">站务管理权限</div>
     </div>
     <div class="dash-card">
         <div class="dash-card-value">{{ resource_count }}<em>份</em></div>

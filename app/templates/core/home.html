@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load static humanize %}
 
+{% block title %}2026 招新已开放 | 哈尔滨工程大学电子科技协会{% endblock %}
+{% block description %}哈尔滨工程大学电子科技协会 2026 秋季招新现已开放，欢迎对硬件、软件和电子设计感兴趣的同学报名。{% endblock %}
 {% block body_class %}page-home{% endblock %}
 
 {% block content %}
@@ -309,11 +311,13 @@
     <div class="container nf-center">
         <p class="nf-eyebrow reveal">// JOIN US</p>
         <h2 class="nf-display reveal">准备好点亮<br>你的<span class="accent">第一颗 LED</span> 了吗？</h2>
-        <p class="nf-join-sub reveal">加入招新 QQ 群，开始你的第一个任务</p>
-        <div class="nf-join-qq reveal">
-            <span class="nf-join-number">{{ site_config.recruit_qq_group }}</span>
+        <p class="nf-join-sub reveal">2026 秋季招新现已开放，注册后即可提交报名</p>
+        <div class="nf-join-qq reveal qq-join-layout">
+            <img class="home-qq-qr" src="{% static 'img/recruit-qq-1081376858.01b7379e65be.png' %}" alt="2026 电子科技协会招新 QQ 群二维码" loading="lazy">
             <div class="nf-join-actions">
+                <span class="nf-join-number">{{ site_config.recruit_qq_group }}</span>
                 <button class="btn btn-primary btn-lg btn-magnet" id="copy-qq" data-qq="{{ site_config.recruit_qq_group }}">复制群号</button>
+                <a class="btn btn-outline btn-lg" href="{% url 'accounts:register' %}">立即参加招新</a>
                 <a class="nf-link-more" href="{% url 'core:recruit' %}">先看《新生指南》<span>→</span></a>
             </div>
         </div>

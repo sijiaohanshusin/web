@@ -229,23 +229,6 @@ ul.category-children a i { margin-right: 4px; }
 /* ---------- 页脚 ---------- */
 #footer, [component="footer"] { color: #9db7dc; }
 
-/* ---------- 内测反馈浮动按钮 ---------- */
-.esta-beta-fab {
-  position: fixed; right: 22px; bottom: 76px; z-index: 1000;
-  display: inline-flex; align-items: center; gap: 9px;
-  padding: 15px 24px; border-radius: 999px;
-  background: linear-gradient(135deg, #f97316, #e05450);
-  color: #fff !important; font-weight: 800; font-size: 16px;
-  box-shadow: 0 12px 34px rgba(239,68,68,.5); text-decoration: none;
-}
-.esta-beta-fab::before {
-  content: ""; position: absolute; inset: -5px; border-radius: 999px;
-  border: 2px solid rgba(249,115,22,.55);
-  animation: esta-fab-pulse 2s ease-out infinite; pointer-events: none;
-}
-@keyframes esta-fab-pulse { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.3); opacity: 0; } }
-.esta-beta-fab:hover { transform: translateY(-2px); color: #fff !important; }
-.esta-beta-fab span { font-size: 21px; }
 `;
 
 /* ============================ 帖子页装饰 JS（注入每页 head） ============================ */
@@ -255,8 +238,16 @@ const CUSTOM_HTML = `
 (function () {
   'use strict';
   var FLOORS = { 0: '楼主', 1: '沙发', 2: '板凳', 3: '地板' };
-  var GROUP_COLORS = { '管理员': '#e05450', '干事': '#c98a3d', '会员': '#0da9cd', 'administrators': '#e05450' };
-  var GROUP_LABELS = { '管理员': '管理组', '干事': '干事', '会员': '正式会员', 'administrators': '管理组' };
+  var GROUP_COLORS = {
+    '系统管理员': '#e05450', '站务管理': '#c98a3d', '科协会员': '#2568c8', '预备会员': '#0da9cd',
+    '主席': '#b8860b', '硬件主席': '#c98a3d', '软件主席': '#0da9cd',
+    '硬件副主席': '#d97706', '软件副主席': '#0284c7', 'administrators': '#e05450'
+  };
+  var GROUP_LABELS = {
+    '系统管理员': '系统管理员', '站务管理': '站务管理', '科协会员': '科协会员', '预备会员': '预备会员',
+    '主席': '主席', '硬件主席': '硬件主席', '软件主席': '软件主席',
+    '硬件副主席': '硬件副主席', '软件副主席': '软件副主席', 'administrators': '系统管理员'
+  };
 
   function userMap() {
     var map = {};
@@ -350,8 +341,8 @@ const CUSTOM_HTML = `
     if (tpl === 'categories' && !container.querySelector('.esta-qq-bar')) {
       var bar = document.createElement('div');
       bar.className = 'esta-qq-bar';
-      bar.innerHTML = '📢 欢迎加入科协招新 QQ 群：<span class="esta-qq-num">1015304209</span>' +
-        '<span style="opacity:.75">丨官网 <a href="https://heuesta.cn">heuesta.cn</a> 丨内网资料库 <a href="http://192.168.1.112:8080">192.168.1.112:8080</a>（仅实验室内网）</span>';
+      bar.innerHTML = '2026 秋季招新现已开放 · QQ 群：<span class="esta-qq-num">1081376858</span>' +
+        '<span style="opacity:.75">丨官网 <a href="https://heuesta.cn/recruitment/">heuesta.cn/recruitment/</a></span>';
       var ref = container.querySelector('.esta-banner');
       if (ref && ref.nextSibling) { container.insertBefore(bar, ref.nextSibling); } else { container.insertBefore(bar, container.firstChild); }
     }
@@ -364,19 +355,7 @@ const CUSTOM_HTML = `
     }
   }
 
-  function betaFab() {
-    if (document.querySelector('.esta-beta-fab')) { return; }
-    var a = document.createElement('a');
-    a.className = 'esta-beta-fab';
-    a.href = 'https://heuesta.cn/feedback/';
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.title = '内测反馈：提 Bug / 提建议（提交后进系统，统一处理）';
-    a.innerHTML = '<span>🐛</span> 内测反馈';
-    document.body.appendChild(a);
-  }
-
-  function run() { try { decoratePosts(); decorateHome(); betaFab(); } catch (e) { console.warn('esta-theme', e); } }
+  function run() { try { decoratePosts(); decorateHome(); } catch (e) { console.warn('esta-theme', e); } }
 
   if (window.jQuery) {
     jQuery(window).on('action:ajaxify.end action:posts.loaded action:topic.loaded', run);

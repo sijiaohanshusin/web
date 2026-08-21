@@ -94,7 +94,7 @@ class NotifyIntegrationTests(TestCase):
         u.set_level(roles.LEVEL_FORMAL, note="二面通过")
         n = u.notifications.get()
         self.assertEqual(n.kind, Notification.Kind.LEVEL)
-        self.assertIn("正式会员", n.title)
+        self.assertIn("科协会员", n.title)
         self.assertIn("二面通过", n.body)
 
     def test_medal_grant_notifies(self):

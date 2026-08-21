@@ -40,7 +40,7 @@
             <a href="/learn/electronics/">学习中心</a>
             <a href="{% url 'files:list' %}">资料站</a>
             {% if user.is_authenticated and user.is_member %}<a href="{% url 'projects:list' %}">项目</a>{% endif %}
-            <a href="{{ forum_url }}" target="_blank" rel="noopener">论坛</a>
+            {% if not user.is_authenticated or user.is_member %}<a href="{{ forum_url }}" target="_blank" rel="noopener">论坛</a>{% endif %}
             <a href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">B 站频道 ↗</a>
         </nav>
         <div class="nav-auth">
@@ -73,7 +73,7 @@
                 </form>
             {% else %}
                 <a class="btn btn-ghost btn-sm" href="{% url 'accounts:login' %}">登录</a>
-                <a class="btn btn-primary btn-sm" href="{% url 'accounts:register' %}">注册</a>
+                <a class="btn btn-primary btn-sm" href="{% url 'accounts:register' %}">参加招新</a>
             {% endif %}
         </div>
         <button class="nav-burger" id="nav-burger" aria-label="菜单" aria-expanded="false">
@@ -117,19 +117,22 @@
             <a href="{% url 'core:recruit' %}">新生指南</a>
             <a href="/learn/electronics/">电子学学习中心</a>
             <a href="{% url 'files:list' %}">资料站</a>
-            <a href="{{ forum_url }}" target="_blank" rel="noopener">会员论坛</a>
-            <a href="{% url 'accounts:register' %}">注册会员</a>
+            {% if not user.is_authenticated or user.is_member %}<a href="{{ forum_url }}" target="_blank" rel="noopener">会员论坛</a>{% endif %}
+            <a href="{% url 'accounts:register' %}">2026 招新注册</a>
         </div>
         <div class="footer-col">
             <h4>联系我们</h4>
             <a href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">B 站：HEU-电子科技协会</a>
             <span>招新 QQ 群：{{ site_config.recruit_qq_group }}</span>
+            <a href="{% url 'core:feedback' %}">网站问题反馈</a>
+            <a href="{% url 'core:privacy' %}">隐私说明</a>
             <span>哈尔滨工程大学 信息与通信工程学院</span>
         </div>
     </div>
     <div class="footer-bar">
         <div class="container footer-bar-inner">
             <span>&copy; {{ site_config.founding_year }}-{{ current_year }} {{ site_config.site_name_en }}. All rights reserved.</span>
+            <span class="release-footer">2026 招新预发布</span>
             <span class="footer-beian">
                 <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">皖ICP备2026006667号</a>
                 <a href="https://beian.mps.gov.cn/#/query/webSearch?code=34020302000338" target="_blank" rel="noopener">皖公网安备 34020302000338号</a>
@@ -137,36 +140,6 @@
         </div>
     </div>
 </footer>
-
-{% if site_config.beta_mode %}
-<button class="beta-fab" id="beta-fab" type="button" title="内测反馈：提 Bug / 提建议">
-    <span class="beta-fab-icon">{% include "includes/icon.html" with name="bug" %}</span>
-    <span class="beta-fab-text">内测反馈</span>
-</button>
-<div class="fb-mask" id="fb-mask" hidden>
-    <div class="fb-modal" role="dialog" aria-label="内测反馈">
-        <div class="fb-head">
-            <strong>{% include "includes/icon.html" with name="bug" %} 内测反馈</strong>
-            <button type="button" class="fb-close" id="fb-close" aria-label="关闭">×</button>
-        </div>
-        <p class="fb-tip">遇到 Bug、体验别扭、想要新功能，都写这儿。反馈会进入系统，我们统一审阅、逐条处理。</p>
-        <form id="fb-form">
-            {% csrf_token %}
-            <textarea class="input" id="fb-content" name="content" rows="5" maxlength="2000" required
-                      placeholder="尽量写清楚：在哪个页面 / 做了什么 / 遇到什么问题（或想要什么）"></textarea>
-            {% if not user.is_authenticated %}
-            <input class="input fb-contact" id="fb-contact" name="contact" maxlength="100" placeholder="选填：QQ 或邮箱，方便回访">
-            {% endif %}
-            <div class="fb-foot">
-                <a href="{{ forum_url }}/topic/5" target="_blank" rel="noopener">去论坛讨论 ↗</a>
-                <button type="submit" class="btn btn-primary" id="fb-submit">提交反馈</button>
-            </div>
-        </form>
-        <div class="fb-msg" id="fb-msg" hidden></div>
-    </div>
-</div>
-<script src="{% static 'js/feedback.js' %}" defer></script>
-{% endif %}
 
 <script src="{% static 'js/site.js' %}" defer></script>
 {% if user.is_authenticated %}<script src="{% static 'js/notify.js' %}" defer></script>{% endif %}

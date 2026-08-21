@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from accounts.roles import effective_level, is_officer
+from accounts.roles import content_level, is_member, is_officer
 from notify.models import Notification
 from notify.services import notify_user
 from points.models import PointLog
@@ -61,7 +61,7 @@ def event_detail(request, pk: int):
     if event.min_level > 0:
         if not request.user.is_authenticated:
             return redirect_to_login(request.get_full_path())
-        if effective_level(request.user) < event.min_level and not officer:
+        if content_level(request.user) < event.min_level and not officer:
             return HttpResponseForbidden(f"该活动需要「{event.get_min_level_display()}」才能查看和报名。")
 
     my_signup = None
@@ -74,6 +74,7 @@ def event_detail(request, pk: int):
 
     can_signup = (
         request.user.is_authenticated
+        and is_member(request.user)
         and my_signup is None
         and not event.signup_closed
         and not event.is_finished
@@ -99,7 +100,10 @@ def event_detail(request, pk: int):
 def event_signup(request, pk: int):
     event = get_object_or_404(Event, pk=pk, is_published=True)
 
-    if effective_level(request.user) < event.min_level:
+    if not is_member(request.user):
+        messages.error(request, "活动报名将在通过一轮面试后开放。")
+        return redirect(event.get_absolute_url())
+    if content_level(request.user) < event.min_level:
         messages.error(request, f"报名需要「{event.get_min_level_display()}」。")
         return redirect(event.get_absolute_url())
     if event.signup_closed or event.is_finished:
@@ -157,7 +161,7 @@ def event_checkin(request, pk: int):
     if not code or code != event.checkin_code:
         messages.error(request, "签到口令不对，再核对一下现场公布的口令。")
         return redirect(event.get_absolute_url())
-    if effective_level(request.user) < event.min_level:
+    if not is_member(request.user) or content_level(request.user) < event.min_level:
         messages.error(request, f"参加该活动需要「{event.get_min_level_display()}」。")
         return redirect(event.get_absolute_url())
 

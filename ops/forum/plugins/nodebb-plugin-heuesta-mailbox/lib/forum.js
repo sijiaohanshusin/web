@@ -7,10 +7,14 @@ const { previewTokenFor, sanitizeEmailHtml } = require('./safe-html');
 const BOT_USERNAME = '公共邮箱机器人';
 const BOT_GROUP = 'heuesta-mailbox-bot';
 const CATEGORY_NAME = '公共邮箱';
-const READ_GROUPS = ['正式会员', '干事', '管理员'];
+const READ_GROUPS = [
+	'科协会员', '站务管理', '系统管理员',
+	'主席', '硬件主席', '软件主席', '硬件副主席', '软件副主席',
+	'正式会员', '干事', '管理员',
+];
 const DENIED_GROUPS = [
 	'guests', 'registered-users', 'spiders', 'fediverse', 'unverified-users', 'verified-users',
-	'报名会员', '预备会员',
+	'招新成员', '报名会员', '预备会员',
 ];
 const VIEW_PRIVILEGES = ['groups:find', 'groups:read', 'groups:topics:read'];
 
@@ -85,7 +89,7 @@ class ForumArchive {
 		await this.privileges.categories.give(
 			['groups:posts:delete', 'groups:topics:delete', 'groups:posts:view_deleted', 'groups:purge', 'groups:moderate'],
 			this.categoryCid,
-			'管理员'
+			'administrators'
 		);
 
 		await this.store.updateState({ botUid: this.botUid, categoryCid: this.categoryCid });
@@ -105,7 +109,7 @@ class ForumArchive {
 			title: '公共邮箱阅读须知（含敏感邮件）',
 			fromQueue: true,
 			content: [
-				'此版块自动归档 **heuesta@gmail.com** 在系统上线后收到的新邮件，仅供正式会员、干事和管理员查阅。',
+				'此版块自动归档 **heuesta@gmail.com** 在系统上线后收到的新邮件，仅供科协会员及以上成员查阅。',
 				'',
 				'- 邮件可能包含验证码、密码重置链接、账号安全提醒及其他敏感信息。',
 				'- 请勿截图、转发或在协会工作之外使用这里的内容。',

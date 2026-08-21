@@ -27,6 +27,8 @@ class PointServiceTests(TestCase):
 class PointViewTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="p1", password="Str0ngPass!2025", is_active=True)
+        self.user.set_level(roles.LEVEL_PREPARATORY)
+        self.user.notifications.all().delete()
 
     def test_mine_requires_login(self):
         resp = self.client.get(reverse("points:mine"))

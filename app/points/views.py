@@ -2,7 +2,10 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Sum
+from django.http import HttpResponseForbidden
 from django.shortcuts import render
+
+from accounts.roles import is_member
 
 from . import services
 
@@ -11,6 +14,8 @@ User = get_user_model()
 
 @login_required
 def mine(request):
+    if not is_member(request.user):
+        return HttpResponseForbidden("积分功能将在通过一轮面试后开放。")
     logs = request.user.point_logs.select_related("operator")
     paginator = Paginator(logs, 20)
     page = paginator.get_page(request.GET.get("page"))

@@ -10,7 +10,7 @@ def project_file_path(instance, filename):
 
 
 class Project(models.Model):
-    """项目档案：一个课题/作品的资料归档空间，成员可读写、干事可见全部。"""
+    """项目档案：一个课题或作品的资料归档空间，成员可读写，站务管理可见全部。"""
 
     class Department(models.TextChoices):
         HARDWARE = "hardware", "硬件部"

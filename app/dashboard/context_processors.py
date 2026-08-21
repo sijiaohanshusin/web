@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 
 from accounts.roles import is_officer
+from accounts.models import ReturningMembershipRequest
 from core.models import Feedback
 
 
@@ -12,6 +13,8 @@ def pending_members(request):
         return {}
     User = get_user_model()
     return {
-        "pending_count": User.objects.filter(is_active=False, is_superuser=False).count(),
+        "pending_count": ReturningMembershipRequest.objects.filter(
+            status=ReturningMembershipRequest.Status.PENDING,
+        ).count(),
         "feedback_pending": Feedback.objects.filter(status=Feedback.Status.PENDING).count(),
     }

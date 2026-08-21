@@ -27,7 +27,12 @@ class SsoCookieMiddleware:
         cookie_domain = settings.SSO_COOKIE_DOMAIN
         user = getattr(request, "user", None)
 
-        if user is not None and user.is_authenticated and user.is_active:
+        if (
+            user is not None
+            and user.is_authenticated
+            and user.is_active
+            and self._forum_eligible(user)
+        ):
             if not self._token_valid(request.COOKIES.get(cookie_name), user, secret):
                 now = int(time.time())
                 payload = {
@@ -70,6 +75,12 @@ class SsoCookieMiddleware:
         return names
 
     @staticmethod
+    def _forum_eligible(user) -> bool:
+        from . import roles
+
+        return roles.effective_level(user) >= roles.LEVEL_PREPARATORY
+
+    @staticmethod
     def _token_valid(token: str | None, user, secret: str) -> bool:
         """现有 Cookie 仍然有效且属于当前用户时不重复签发。"""
         if not token:
@@ -78,4 +89,6 @@ class SsoCookieMiddleware:
             data = jwt.decode(token, secret, algorithms=["HS256"])
         except jwt.InvalidTokenError:
             return False
-        return data.get("id") == user.pk
+        return data.get("id") == user.pk and sorted(data.get("groups", [])) == sorted(
+            SsoCookieMiddleware._forum_groups(user)
+        )

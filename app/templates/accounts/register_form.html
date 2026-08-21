@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if channel == 'new' %}新会员注册{% else %}老会员身份恢复{% endif %} | {{ site_config.site_name_en }}{% endblock %}
+
+{% block content %}
+<div class="container page-section register-shell">
+    <div class="register-stepbar" aria-label="注册步骤">
+        <span class="done">选择通道</span><i></i><span class="active">填写信息</span><i></i><span>{% if channel == 'new' %}完成并报名{% else %}等待审核{% endif %}</span>
+    </div>
+    <div class="register-form-card">
+        <div class="register-form-head">
+            <div>
+                <p class="nf-eyebrow">// {% if channel == 'new' %}NEW MEMBER{% else %}RETURNING MEMBER{% endif %}</p>
+                <h1>{% if channel == 'new' %}新会员注册{% else %}老会员身份恢复{% endif %}</h1>
+                <p>{% if channel == 'new' %}注册成功后立即登录，并进入 2026 秋季招新报名。{% else %}请如实填写原协会身份，管理组核验通过后会邮件通知。{% endif %}</p>
+            </div>
+            <a class="btn btn-ghost btn-sm" href="{% url 'accounts:register' %}">重新选择</a>
+        </div>
+        <form method="post" class="formal-register-form" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="form-grid">
+            {% for field in form %}
+                {% if field.name == 'website' %}
+                    {{ field }}
+                {% elif field.name == 'privacy_consent' %}
+                    <div class="form-group form-span-2 consent-row {% if field.errors %}has-error{% endif %}">
+                        <label>{{ field }} <span>我已阅读并同意<a href="{% url 'core:privacy' %}" target="_blank">《隐私说明》</a></span></label>
+                        {% for error in field.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
+                    </div>
+                {% elif field.name == 'code' %}
+                    <div class="form-group {% if field.errors %}has-error{% endif %}">
+                        <label for="{{ field.id_for_label }}">{{ field.label }} <span class="req">*</span></label>
+                        <div class="input-action-row">{{ field }}<button type="button" class="btn btn-outline" data-send-code="register" data-email="#id_email">获取验证码</button></div>
+                        {% for error in field.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
+                    </div>
+                {% else %}
+                    {% include "includes/field.html" %}
+                {% endif %}
+            {% endfor %}
+            </div>
+            <div class="register-submit-row">
+                <p>{% if channel == 'new' %}注册不会自动开放会员资料、活动报名或论坛权限。{% else %}审核前账号不可登录，拒绝记录会保留以便重新核验。{% endif %}</p>
+                <button type="submit" class="btn btn-primary btn-lg">{% if channel == 'new' %}完成注册并继续报名{% else %}提交身份恢复申请{% endif %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/auth-code.js' %}" defer></script>{% endblock %}
