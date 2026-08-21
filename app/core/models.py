@@ -5,7 +5,7 @@ from django.core.cache import cache
 from django.db import models
 
 # 加字段后 bump 版本号，避免部署后读到缺新字段的旧 pickle
-SITE_CONFIG_CACHE_KEY = "core:site_config:v2"
+SITE_CONFIG_CACHE_KEY = "core:site_config:v3"
 
 
 class SiteConfig(models.Model):

@@ -1,14 +1,44 @@
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 
 from accounts import roles
 
-from .models import Feedback, FeedbackReply
+from .models import Feedback, FeedbackReply, SITE_CONFIG_CACHE_KEY, SiteConfig
 
 User = get_user_model()
 
 AJAX = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
+
+
+class SiteConfigCacheTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def test_formal_release_does_not_reuse_legacy_cached_config(self):
+        SiteConfig.objects.update_or_create(
+            pk=1,
+            defaults={
+                "recruit_qq_group": "1081376858",
+                "beta_mode": False,
+                "auto_approve": False,
+            },
+        )
+        stale = SiteConfig(
+            pk=1,
+            recruit_qq_group="1015304209",
+            beta_mode=True,
+            auto_approve=True,
+        )
+        cache.set("core:site_config:v2", stale, 3600)
+
+        config = SiteConfig.load()
+
+        self.assertEqual(SITE_CONFIG_CACHE_KEY, "core:site_config:v3")
+        self.assertEqual(config.recruit_qq_group, "1081376858")
+        self.assertFalse(config.beta_mode)
+        self.assertFalse(config.auto_approve)
 
 
 class FeedbackTests(TestCase):
