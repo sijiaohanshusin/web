@@ -35,7 +35,12 @@
 .nf-hero-title .accent { color: var(--accent); }
 .nf-hero-title em { font-style: normal; animation: caret-blink 1.2s step-end infinite; font-weight: 700; }
 @keyframes caret-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-.nf-hero-sub { color: var(--muted); font-size: var(--fs-lead); max-width: 480px; margin-bottom: 44px; }
+/* 首屏那句也是导语，用宋体（第二声音）—— 全站导语一个口径，见 tokens.css。
+   它带 .line-reveal，字体变了会改动画元素的度量，所以改完跑 check_hero.py。 */
+.nf-hero-sub {
+    color: var(--muted); font-size: var(--fs-lead); max-width: 480px; margin-bottom: 44px;
+    font-family: var(--font-serif); font-weight: 600;
+}
 .nf-hero-cta { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; color: var(--text); }
 
 .nf-hero-foot {
