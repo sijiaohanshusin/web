@@ -1386,6 +1386,37 @@ class AccessibilityContractTests(TestCase):
 
         return (Path(settings.BASE_DIR) / "static" / "css" / name).read_text(encoding="utf-8")
 
+    def test_no_template_has_a_multiline_hash_comment(self):
+        """**Django 的 `{# #}` 只支持单行。**
+
+        跨行写的话它不是注释，而是**会被原样渲染出来的正文** —— 而且模板照常编译、
+        测试照常通过、控制台干净。真踩过：`base.html` 里一段解释页脚标题层级的
+        跨行 `{# #}`，把「页脚各栏用 h2：……」整段印在了线上每一页的页脚上方。
+        跨行注释一律用 `{% comment %}`。
+        """
+        import re
+
+        from pathlib import Path
+
+        from django.conf import settings
+
+        root = Path(settings.BASE_DIR) / "templates"
+        offenders = []
+        for path in root.rglob("*.html"):
+            text = path.read_text(encoding="utf-8")
+            for m in re.finditer(r"\{#", text):
+                tail = text[m.start():]
+                end = tail.find("#}")
+                body = tail if end == -1 else tail[:end]
+                if "\n" in body:
+                    rel = str(path.relative_to(root)).replace("\\", "/")
+                    line = text[:m.start()].count("\n") + 1
+                    why = "没有闭合" if end == -1 else "跨行"
+                    offenders.append(f"{rel}:{line}（{why}）")
+        self.assertFalse(
+            offenders,
+            "这些 {# #} 会被当正文渲染出来，改用 {% comment %}：" + "; ".join(offenders))
+
     def test_skip_link_is_the_first_focusable_thing(self):
         """跳转链接必须是 <body> 里第一个可聚焦元素，否则它没有意义。
 
