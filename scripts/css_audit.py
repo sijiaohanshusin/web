@@ -197,6 +197,56 @@ def parse_many(paths: list) -> tuple["OrderedDict", list[str]]:
     return merged, all_warnings
 
 
+VAR_REF = re.compile(r"var\(\s*(--[\w-]+)\s*(?:,\s*([^()]*(?:\([^()]*\)[^()]*)*))?\)")
+
+
+def resolve_vars(decls: "OrderedDict") -> tuple["OrderedDict", list[str]]:
+    """把 `var(--x)` 展开成 `:root` 里的实际取值，再比较。
+
+    为什么需要：把 315 处 `font-size: 13.5px` 收敛成 `var(--fs-sm)` 时，字面比较
+    会报出 300 多条「取值变化」，等于没有报告 —— 而这次改动的全部风险恰好在
+    「哪几处的**实际像素值**动了」。展开之后，报告里剩下的就只有真正移动过的那些，
+    一条一条能看完。
+
+    只认 `:root` / `html` 上的定义（本仓库的令牌都在那儿）。同名令牌在
+    @media 里被重定义时点名警告，不猜。
+    """
+    table: dict[str, str] = {}
+    warnings: list[str] = []
+    for (ctx, sel, prop), val in decls.items():
+        if not prop.startswith("--"):
+            continue
+        if sel not in (":root", "html", ":root, :host"):
+            continue
+        if ctx:
+            warnings.append(f"令牌 {prop} 在 [{ctx}] 里被重定义，展开时按根上下文的值算")
+            continue
+        table[prop] = val
+
+    def expand(value: str, seen: frozenset) -> str:
+        def sub(m):
+            name, fallback = m.group(1), m.group(2)
+            if name in seen:
+                return m.group(0)
+            if name in table:
+                return expand(table[name], seen | {name})
+            if fallback is not None:
+                return expand(fallback, seen | {name})
+            return m.group(0)
+        out = value
+        for _ in range(10):
+            new = VAR_REF.sub(sub, out)
+            if new == out:
+                break
+            out = new
+        return norm_value(out)
+
+    resolved: "OrderedDict" = OrderedDict()
+    for key, val in decls.items():
+        resolved[key] = expand(val, frozenset()) if "var(" in val else val
+    return resolved, warnings
+
+
 def fmt(key: tuple) -> str:
     context, sel, prop = key
     prefix = f"[{context}] " if context else ""
@@ -210,11 +260,16 @@ def main() -> int:
 
     ap = argparse.ArgumentParser(description="CSS 声明级差异审计")
     ap.add_argument("--dump", help="打印单个文件的解析统计")
-    ap.add_argument("--before",
-                    help="重构前的样式表。可以是路径，也可以是 "
-                         "`git:HEAD:app/static/css/core.css` 这样直接从 git 取")
+    ap.add_argument("--before", nargs="+",
+                    help="重构前的样式表（按层叠顺序，可多个）。可以是路径，"
+                         "也可以是 `git:HEAD:app/static/css/core.css` 这样直接从 git 取。"
+                         "用 --resolve-vars 时把 tokens.css 一起给进来，否则令牌查不到值")
     ap.add_argument("--after", nargs="+", help="重构后的样式表（按层叠顺序）")
     ap.add_argument("--ignore-prop", action="append", default=[], help="忽略某个属性的差异，可重复")
+    ap.add_argument("--resolve-vars", action="store_true",
+                    help="比较前先把 var(--x) 展开成 :root 里的实际取值。"
+                         "把字面值收敛成令牌时用它 —— 否则报告里几百条"
+                         "「13.5px -> var(--fs-sm)」把真正动了的那几处淹掉")
     args = ap.parse_args()
 
     if args.dump:
@@ -230,8 +285,13 @@ def main() -> int:
         ap.print_help()
         return 2
 
-    before, w_before = parse_file(args.before)
+    before, w_before = parse_many(args.before)
     after, w_after = parse_many(args.after)
+    if args.resolve_vars:
+        before, w1 = resolve_vars(before)
+        after, w2 = resolve_vars(after)
+        w_before += w1
+        w_after += w2
     ignored = {p.lower() for p in args.ignore_prop}
 
     missing = [k for k in before if k not in after and k[2] not in ignored]
@@ -242,7 +302,7 @@ def main() -> int:
         if k in after and before[k] != after[k] and k[2] not in ignored
     ]
 
-    print(f"重构前：{len(before)} 条声明（{args.before}）")
+    print(f"重构前：{len(before)} 条声明（{', '.join(str(p) for p in args.before)}）")
     print(f"重构后：{len(after)} 条声明（{', '.join(str(p) for p in args.after)}）")
     for w in w_before + w_after:
         print(f"  ! {w}")
@@ -259,6 +319,16 @@ def main() -> int:
         print(f"\n新增 {len(added)} 条：")
         for k in added:
             print(f"  + {fmt(k)} = {after[k]}")
+
+    # 大批量收敛（几百条声明换成令牌）时，逐条列出来是读不完的，而真正要看的是
+    # 「哪些取值搬到了哪里、各多少处」。按 (前值 -> 后值) 归组，一眼扫完。
+    if len(changed) > 20:
+        groups: dict[tuple[str, str, str], int] = {}
+        for k, old, new in changed:
+            groups[(k[2], old, new)] = groups.get((k[2], old, new), 0) + 1
+        print(f"\n按取值分组（{len(groups)} 组）：")
+        for (prop, old, new), count in sorted(groups.items(), key=lambda x: (x[0][0], -x[1])):
+            print(f"  {prop:<12} {old:<26} -> {new:<26} × {count}")
 
     if not (missing or changed or added):
         print("\n无差异：所有声明逐条一致。")

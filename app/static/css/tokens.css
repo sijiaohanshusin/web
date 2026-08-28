@@ -165,7 +165,7 @@ body {
         "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
     background: var(--black);
     color: var(--text);
-    line-height: 1.75;
+    line-height: var(--lh-relaxed);
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
 }
@@ -276,6 +276,89 @@ img.img-fade.img-loaded { opacity: 1; }
     --scope-line-strong: rgba(65, 216, 232, .1);
     --scope-cell: 50px;
     --scope-cell-fine: 10px;
+
+    /* ---------- 字号阶梯 ----------
+       为什么要有它：改版上线后数出来 **272 处 font-size 声明用了 51 种取值**，
+       其中 13 / 13.5 / 14 / 14.5 / 15 / 15.5px 是六个取值在干同一件事 ——
+       肉眼分不出，却让版面失去了「这两块地位不同」的能力。这不是「哪个数更好」
+       的问题，是**没做决定**：每写一个组件就凭手感填一个数，一年下来就 51 种。
+
+       所以每一档必须能说出职责。说不出来的就是噪音，不许新增。
+       `scripts/type_audit.py` 挡着这件事：字面值一律不许再出现。
+
+         --fs-3xs  11px   角标、徽章、极小标记
+         --fs-2xs  12px   元数据：日期、计数、mono 小标签
+         --fs-xs   13px   第三档说明：表单帮助、表格小字、eyebrow
+         --fs-sm   14px   界面文字：药丸、导航、小按钮、卡片摘要
+         --fs-md   15px   正文与表单控件（本站默认阅读尺寸）
+         --fs-lg   16px   强调正文、卡片标题起点、长文正文
+         --fs-xl   18px   小节标题
+         --fs-2xl  20px   面板标题
+         --fs-3xl  22px   段落标题
+         --fs-4xl  26px   章节标题
+         --fs-5xl  30px   大数字、章节序号
+         --fs-6xl  36px   头像首字母、超大统计数字
+         --fs-7xl  50px   固定尺寸的巨号数字（媒体查询里的分档）
+         --fs-8xl  64px   丝印大号编号（压在卡片角上的那种，只当图形用）
+
+       17–32px 这一段原来几乎是空的（12 种取值只占 47 处声明），于是每页都读成
+       「一个巨标题 + 一片 13px 灰字」，中间没有台阶 —— xl/2xl/3xl 三档就是补它的。
+
+       小号那一段刻意是 1px 一档（11→16）：这个尺寸下 1px 已经是 6~9%，
+       是能看出来的一档；再细分就回到 51 种的老路。 */
+    --fs-3xs: 11px;
+    --fs-2xs: 12px;
+    --fs-xs: 13px;
+    --fs-sm: 14px;
+    --fs-md: 15px;
+    --fs-lg: 16px;
+    --fs-xl: 18px;
+    --fs-2xl: 20px;
+    --fs-3xl: 22px;
+    --fs-4xl: 26px;
+    --fs-5xl: 30px;
+    --fs-6xl: 36px;
+    --fs-7xl: 50px;
+    --fs-8xl: 64px;
+
+    /* 展示尺寸（流体）。标题的字号本来就随视口变，所以这一段不是「几档 px」
+       而是「几条 clamp 斜坡」—— 原来 21 条斜坡里每一条的 min/vw/max 都不一样
+       （clamp(30,4vw,46) / clamp(30,5vw,54) / clamp(28,4.6vw,50) / clamp(30,4.4vw,48)
+       这四条各服务一个页头，肉眼完全分不出），收成 6 条 + 一条导语尺寸。
+
+         --fs-lead   导语、Hero 副标题
+         --fs-dsp-1  面板标题、大数字的单位
+         --fs-dsp-2  详情页 h1、统计数字
+         --fs-dsp-3  列表页页头 h1
+         --fs-dsp-4  分镜大标题（.nf-display）
+         --fs-dsp-5  段落序号
+         --fs-dsp-6  首屏巨字
+         --fs-mega   占半屏的数字（404 码、SINCE 大数） */
+    --fs-lead: clamp(15px, 1.6vw, 18px);
+    --fs-dsp-1: clamp(22px, 3vw, 32px);
+    --fs-dsp-2: clamp(26px, 3.8vw, 40px);
+    --fs-dsp-3: clamp(30px, 4.6vw, 50px);
+    --fs-dsp-4: clamp(32px, 5.4vw, 62px);
+    --fs-dsp-5: clamp(40px, 7vw, 84px);
+    --fs-dsp-6: clamp(46px, 7.2vw, 96px);
+    --fs-mega: clamp(112px, 23vw, 270px);
+
+    /* ---------- 行高阶梯 ----------
+       原来 67 处声明用了 20 种取值（1.5 / 1.6 / 1.65 / 1.7 / 1.75 / 1.8 各有一批）。
+       同样收成六档，每档差 10% 上下 —— 差 3% 的两个行高不是层次，是没决定。
+
+         --lh-flat     1     单行的数字与图标，不留行距
+         --lh-tight    1.15  巨字与多行大标题
+         --lh-snug     1.4   卡片标题、短标题
+         --lh-normal   1.55  界面文字、列表项
+         --lh-relaxed  1.7   正文（body 默认）
+         --lh-prose    1.85  长文与导语，行宽大时才撑得住 */
+    --lh-flat: 1;
+    --lh-tight: 1.15;
+    --lh-snug: 1.4;
+    --lh-normal: 1.55;
+    --lh-relaxed: 1.7;
+    --lh-prose: 1.85;
 
     /* 节拍：全站动效只允许用这三条曲线，避免每个组件各自发明缓动。
        - rise 上升沿：快起慢收，用于入场、位移、揭示
