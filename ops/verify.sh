@@ -92,7 +92,7 @@ fi
 html=$(curl -sS $R "$BASE/")
 
 echo
-echo "自托管字体（五个：mono / 标题得意黑 / 正文 Regular + Bold / 导语宋体）"
+echo "自托管字体（六个：mono / 标题得意黑 / 正文 Regular + Bold / 导语宋体 / 科协数字）"
 # **必须查「首页实际引用的那个哈希」，不能在目录里按名字挑一个。**
 # /srv/heuesta/static 是持久卷，而 ManifestStaticFilesStorage 从不删旧哈希文件 ——
 # 目录里同时躺着几个月前的同名字体。第一版这里写的是 `ls | grep | head -1`，
@@ -103,7 +103,7 @@ if [ -z "$fonts" ]; then
     bad "首页没有引用任何自托管字体"
 else
     n=$(wc -l <<<"$fonts")
-    if [ "$n" = "5" ]; then ok "首页引用了 5 个字体"; else bad "首页引用了 $n 个字体，应为 5"; fi
+    if [ "$n" = "6" ]; then ok "首页引用了 6 个字体"; else bad "首页引用了 $n 个字体，应为 6"; fi
     for f in $fonts; do
         base=$(basename "$f")
         c=$(curl -sS $R -o /dev/null -w '%{http_code}' "$BASE/static/$f")

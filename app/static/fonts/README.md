@@ -9,6 +9,7 @@
 | `SourceHanSansCN-Regular-subset.woff2` | 同上，Regular（GB2312 一级字全集） | SIL OFL 1.1 | **正文**（`--font-body`） |
 | `SourceHanSansCN-Bold-subset.woff2` | 同上，Bold（同一份字表） | SIL OFL 1.1 | 正文加粗，`<strong>` 与 600/700/800 |
 | `SourceHanSerifCN-SemiBold-subset.woff2` | [思源宋体 Source Han Serif CN SemiBold](https://github.com/adobe-fonts/source-han-serif)（按模板用字子集） | SIL OFL 1.1 | **第二声音**：各页导语（`--font-serif`） |
+| `ESTADigits.woff2` | **协会自制**，由 `scripts/build_lettering.py` 生成 | 自有 | 展示用大数字（`--font-num`） |
 
 ## 标题字为什么是得意黑，不是思源黑体 Heavy
 
@@ -94,3 +95,29 @@ python scripts/build_fonts.py <JetBrainsMono[wght].ttf> <SourceHanSansCN-Heavy.o
 所有回访用户白下 2.5MB。
 
 **只在真的要改字表时重建**，并且把这次没必要变的那几个 `git checkout HEAD --` 回去。
+
+## 科协专属数字（ESTADigits）
+
+**这一套是自己设计的**，不是子集化来的：每一笔是一段走线，笔画在空处收尾的地方是
+一个焊盘环，转角只走 45°，线宽与焊盘比例跟会标同源。几何数据和生成器都在
+`scripts/build_lettering.py`，改完重跑：
+
+```
+python scripts/build_lettering.py --preview .shots/digits   # 先出 SVG 预览页看形
+python scripts/build_lettering.py --font                     # 再打包 woff2
+```
+
+17 个字形（0-9 与 `.` `:` `+` `-` `/` `%` 和空格），**2 KB**。
+
+三条不能破的规矩（`check_fonts.py` 钉住前两条）：
+
+- **0-9 必须等宽。** 计数器（分镜 02 的「31」从 0 计上去）和倒计时每跳一位都会重排，
+  字宽不一致就会左右抖。
+- **0-9 与记号一个都不能缺。** 缺一个的后果是那一位悄悄退回 mono —— 一个大数字里
+  混进一个别的字体的数字（比如 2026 里只有 0 变了样），显眼但极难归因。
+- **只用在 26px 以上的展示数字上。** 焊盘环外径是 0.168em，13px 上只剩 2px，
+  缩成一个看不清的脏点。小字号继续用 mono，这个分界写在 `tokens.css` 的
+  `--font-num` 注释里。
+
+为什么做成字体而不是 SVG 图：站上的大数字大多是活的（JS 计数、每秒重写的倒计时、
+数据库里的统计数字），SVG 图参与不了这些。

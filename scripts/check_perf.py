@@ -163,12 +163,13 @@ def report_gzip():
         STATIC / "fonts" / "SourceHanSansCN-Regular-subset.woff2",
         STATIC / "fonts" / "SourceHanSansCN-Bold-subset.woff2",
         STATIC / "fonts" / "SourceHanSerifCN-SemiBold-subset.woff2",
+        STATIC / "fonts" / "ESTADigits.woff2",
     ]
     missing = [p.name for p in always if not p.exists()]
     total = sum(gz(p) for p in always if p.exists())
     check(not missing, "首页那套固定资源都在", ", ".join(missing))
     print(f"  → 首页首访的代码 + 字体合计 gzip 约 {total / 1024:.0f} KB"
-          f"（其中字体 {sum(gz(p) for p in always[-5:]) / 1024:.0f} KB）")
+          f"（其中字体 {sum(gz(p) for p in always[-6:]) / 1024:.0f} KB）")
     # 预算从 900KB 提到 3000KB：正文两档自托管中文字体占了约 2MB。
     # 这是明确的用体积换效果（用户口径：展示效果优先于加载时间，重复访问有一年
     # immutable 缓存 + 前面挂 EdgeOne）。**woff2 本身已经是 brotli 压缩过的**，
@@ -214,14 +215,14 @@ def main() -> int:
         check(not b["bodyBlocking"], "body 里的脚本全都 defer 了", str(b["bodyBlocking"]))
         check(len(b["css"]) <= 4, "阻塞渲染的样式表不超过 4 张", str(b["css"]))
         fonts_pre = sorted(x["file"] for x in b["preloads"] if x["as"] == "font")
-        check(len(fonts_pre) == 5,
-              "**五个自托管字体都 preload 了**（少一个，那一档文字就会先用系统黑体画一遍再跳）",
+        check(len(fonts_pre) == 6,
+              "**六个自托管字体都 preload 了**（少一个，那一档文字就会先用别的字体画一遍再跳）",
               str(fonts_pre))
 
         # ---------------- 字体真的早早开始下 ----------------
         r = page.evaluate(RESOURCES)
         font_items = [i for i in r["items"] if i["kind"] == "font"]
-        check(len(font_items) == 5, "五个字体都真的被下载了", str([i["name"] for i in font_items]))
+        check(len(font_items) == 6, "六个字体都真的被下载了", str([i["name"] for i in font_items]))
         for i in font_items:
             check(i["init"] == "link",
                   f"{i['name'].split('/')[-1]} 是 preload 拉的（不是等 CSS 解析才发现）",
@@ -269,7 +270,7 @@ def main() -> int:
             # 字体是每页都要下的大件，顺手确认这一页真的把四个都下了 ——
             # 不然「font 在预算内」在缓存命中时会以 1KB 轻松通过、等于没测
             nfont = len([i for i in r["items"] if i["kind"] == "font"])
-            check(nfont == 5, f"{url} 这一页真的下了五个字体（不是缓存命中）",
+            check(nfont == 6, f"{url} 这一页真的下了六个字体（不是缓存命中）",
                   f"{nfont} 个")
             pctx.close()
 

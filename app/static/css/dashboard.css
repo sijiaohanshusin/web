@@ -64,7 +64,7 @@
     background: rgba(255, 255, 255, .025); position: relative; overflow: hidden;
 }
 .dash-card::before { content: ""; position: absolute; top: 0; left: 18px; right: 60%; height: 2px; background: linear-gradient(90deg, var(--accent), transparent); }
-.dash-card-value { font-family: var(--font-mono); font-size: var(--fs-5xl); font-weight: 800; color: #fff; line-height: var(--lh-tight); }
+.dash-card-value { font-family: var(--font-num); font-size: var(--fs-5xl); font-weight: 800; color: #fff; line-height: var(--lh-tight); }
 .dash-card-value em { font-style: normal; font-size: var(--fs-sm); color: var(--accent-2); margin-left: 3px; }
 .dash-card-label { color: var(--muted); font-size: var(--fs-xs); letter-spacing: 1px; margin-top: 4px; }
 .dash-card.warn .dash-card-value { color: var(--warn); }
@@ -100,7 +100,7 @@
 .event-signup-head { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 16px; }
 .event-stat-panel { flex: 1 1 420px; display: flex; gap: 18px 34px; align-items: center; flex-wrap: wrap; min-width: 280px; }
 .event-stat { display: flex; flex-direction: column; gap: 4px; }
-.event-stat strong { font-family: var(--font-mono); font-size: var(--fs-4xl); color: #fff; line-height: var(--lh-tight); }
+.event-stat strong { font-family: var(--font-num); font-size: var(--fs-4xl); color: #fff; line-height: var(--lh-tight); }
 .event-stat .event-code { letter-spacing: 3px; color: var(--accent-2); }
 .event-stat span { color: var(--muted); font-size: var(--fs-xs); }
 .event-stat-actions { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }

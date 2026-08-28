@@ -175,7 +175,7 @@
 /* 丝印编号：压在角上的大号数字，和首页分镜编号同一语言 */
 .reg-channel-no {
     position: absolute; right: 22px; top: 14px;
-    font: 900 var(--fs-8xl)/var(--lh-flat) var(--font-display); color: rgba(255, 255, 255, .05);
+    font: 900 var(--fs-8xl)/var(--lh-flat) var(--font-num); color: rgba(255, 255, 255, .05);
 }
 .reg-channel-kicker {
     font: 700 var(--fs-3xs)/var(--lh-flat) var(--font-mono); letter-spacing: 2px; color: var(--accent-2);
@@ -702,8 +702,11 @@ html.esta-pre-lock .line-reveal { animation-play-state: paused; }
     display: inline-flex; align-items: baseline; gap: 3px;
     font-family: var(--font-mono); color: var(--accent-2);
 }
+.nf-countdown-clock b, .nf-countdown-clock i { font-family: var(--font-num); }
 .nf-countdown-clock b {
     font-size: var(--fs-4xl); font-weight: 800; line-height: var(--lh-flat);
+    /* 倒计时用自己那套走线数字（--font-num，见 tokens.css）。它本身就是等宽的，
+       下面那条 tabular-nums 仍然留着 —— 字体请求失败时会退到 mono，那时要靠它。 */
     /* 等宽数字：不加这条，秒位每次跳动都会把后面的字推一下 */
     font-variant-numeric: tabular-nums;
 }
@@ -918,7 +921,7 @@ html.esta-pre-lock .line-reveal { animation-play-state: paused; }
 .page-stats { display: flex; align-items: baseline; flex-wrap: wrap; gap: 14px; margin-top: 22px; }
 .page-stat { color: var(--muted); font-size: var(--fs-xs); letter-spacing: 1px; }
 .page-stat strong {
-    font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-4xl);
+    font-family: var(--font-num); font-weight: 700; font-size: var(--fs-4xl);
     color: #fff; margin-right: 7px; letter-spacing: 0;
     font-variant-numeric: tabular-nums;
 }
@@ -1194,8 +1197,8 @@ a.fb-mine-text:hover { color: var(--brand-2); }
         var(--black);
 }
 .error-code {
-    font-family: var(--font-mono); font-weight: 800; line-height: var(--lh-flat);
-    font-size: var(--fs-mega); letter-spacing: 8px;
+    font-family: var(--font-num); font-weight: 800; line-height: var(--lh-flat);
+    font-size: var(--fs-mega); letter-spacing: 2px;
     color: transparent;
     -webkit-text-stroke: 2px rgba(233, 237, 244, .35);
     text-stroke: 2px rgba(233, 237, 244, .35);
@@ -1555,7 +1558,7 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
     flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center;
     width: 74px; border-right: 1px dashed var(--line-d); padding-right: 20px;
 }
-.event-card-date strong { font-family: var(--font-mono); font-size: var(--fs-5xl); color: var(--accent-2); line-height: var(--lh-tight); }
+.event-card-date strong { font-family: var(--font-num); font-size: var(--fs-5xl); color: var(--accent-2); line-height: var(--lh-tight); }
 .event-card-date small { color: var(--muted); font-size: var(--fs-xs); margin-top: 2px; }
 .event-card-main { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 .event-card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -1652,11 +1655,11 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 .rec-stats { display: flex; align-items: flex-end; gap: 34px; flex-wrap: wrap; margin-top: 8px; }
 .rec-stat { display: flex; flex-direction: column; gap: 2px; }
 .rec-stat strong {
-    font-family: var(--font-mono); font-weight: 700; line-height: var(--lh-flat);
+    font-family: var(--font-num); font-weight: 700; line-height: var(--lh-flat);
     font-size: var(--fs-4xl); color: var(--text); font-variant-numeric: tabular-nums;
 }
 .rec-stat span { color: var(--muted); font-size: var(--fs-xs); letter-spacing: 1px; }
-.rec-stat-lead strong { font-size: var(--fs-7xl); color: var(--accent-2); }
+.rec-stat-lead strong { font-size: var(--fs-7xl); color: var(--accent-2); font-family: var(--font-num); }
 .rec-stats-empty { color: var(--muted); font-size: var(--fs-md); }
 
 .rec-body {
@@ -2114,7 +2117,7 @@ div.proj-card { display: flex; }
     border: 1px solid var(--line-d); background: rgba(255, 255, 255, .022);
 }
 .hn-stat strong {
-    font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-5xl); line-height: var(--lh-flat);
+    font-family: var(--font-num); font-weight: 700; font-size: var(--fs-5xl); line-height: var(--lh-flat);
     font-variant-numeric: tabular-nums;
 }
 .hn-stat span { color: var(--muted); font-size: var(--fs-xs); letter-spacing: 1px; }
@@ -2163,7 +2166,7 @@ div.proj-card { display: flex; }
 .hn-year { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 20px; align-items: start; }
 /* 年份用丝印体大号数字，和首页分镜编号同一种语气 */
 .hn-year-no {
-    font: 900 var(--fs-5xl)/var(--lh-flat) var(--font-mono); color: rgba(255, 255, 255, .14);
+    font: 900 var(--fs-5xl)/var(--lh-flat) var(--font-num); color: rgba(255, 255, 255, .14);
     letter-spacing: 1px; position: sticky; top: 100px;
 }
 .hn-year-list { display: flex; flex-direction: column; gap: 8px; min-width: 0; }

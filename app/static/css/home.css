@@ -158,8 +158,11 @@ html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
     .nf-bignum.is-visible::after { animation: none; opacity: 0; }
 }
 .nf-bignum-value {
-    font-family: var(--font-mono); font-weight: 800; line-height: var(--lh-flat);
-    font-size: var(--fs-mega); letter-spacing: -6px;
+    /* 全站最大的一个数字 —— 用自己设计的那套走线数字（见 tokens.css 的
+       --font-num）。字距从 -6px 收回到 -2px：那 -6px 是给 mono 的等宽字腔留的，
+       走线数字本身就窄，再挤会让两个数字的焊盘环碰上。 */
+    font-family: var(--font-num); font-weight: 800; line-height: var(--lh-flat);
+    font-size: var(--fs-mega); letter-spacing: -2px;
     background: linear-gradient(115deg, #fff 30%, var(--accent-2) 75%, var(--accent));
     -webkit-background-clip: text; background-clip: text; color: transparent;
     filter: drop-shadow(0 10px 50px rgba(13, 169, 205, .25));
@@ -170,7 +173,7 @@ html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
 .nf-substats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-top: 1px solid var(--line-d); }
 .nf-substat { padding: 30px 24px 6px; border-left: 1px solid var(--line-d); }
 .nf-substat:first-child { border-left: none; padding-left: 0; }
-.nf-substat strong { display: block; font-family: var(--font-mono); font-size: var(--fs-dsp-2); font-weight: 700; color: #fff; }
+.nf-substat strong { display: block; font-family: var(--font-num); font-size: var(--fs-dsp-2); font-weight: 700; color: #fff; }
 .nf-substat > span { color: var(--muted); font-size: var(--fs-sm); letter-spacing: 2px; }
 
 /* ============================================================
@@ -460,8 +463,8 @@ html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
 .nf-join-qq { position: relative; display: flex; flex-direction: column; align-items: center; gap: 26px; }
 /* 次级重音：白色 mono + 品牌色底线。全页唯一的渐变发光留给「31」大数字 */
 .nf-join-number {
-    font-family: var(--font-mono); font-weight: 800;
-    font-size: var(--fs-dsp-5); letter-spacing: 6px; line-height: var(--lh-flat);
+    font-family: var(--font-num); font-weight: 800;
+    font-size: var(--fs-dsp-5); letter-spacing: 2px; line-height: var(--lh-flat);
     color: #fff;
     padding-bottom: 18px;
     border-bottom: 3px solid var(--accent);

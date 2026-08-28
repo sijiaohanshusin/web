@@ -39,6 +39,7 @@ BODY = {
     700: FONT_DIR / "SourceHanSansCN-Bold-subset.woff2",
 }
 SERIF = FONT_DIR / "SourceHanSerifCN-SemiBold-subset.woff2"
+DIGITS = FONT_DIR / "ESTADigits.woff2"
 
 # mono 是全站数字与编号的主角，这些码位缺一个就会在版面上留一个豆腐块或跳字。
 # 拉丁可见区间 + 常用排版符号 + 箭头（文案里到处是「→」）。
@@ -177,6 +178,32 @@ def main() -> int:
     miss_punct_serif = [c for c in CJK_PUNCT if ord(c) not in serif_cov]
     check(not miss_punct_serif, "宋体的中文标点全覆盖",
           "缺 " + " ".join(miss_punct_serif) if miss_punct_serif else f"{len(CJK_PUNCT)} 个")
+
+    # ---------------- 科协专属数字 ----------------
+    # 这一套是自己画的（scripts/build_lettering.py），所以判据和别的字体不同：
+    # 不是「跟得上模板」，而是「该有的字形一个都不少」。少一个数字的后果是
+    # 那一位悄悄退回 mono —— 一个大数字里混进一个别的字体的数字，很显眼但很难
+    # 归因（比如 2026 里只有 0 变了样）。
+    print("\n科协专属数字：0-9 与记号一个都不能缺")
+    check(DIGITS.exists(), "数字字体存在", DIGITS.name)
+    if not DIGITS.exists():
+        return 1
+    dig_cov = coverage(DIGITS)
+    need_dig = "0123456789.:+-/%"
+    miss_dig = [c for c in need_dig if ord(c) not in dig_cov]
+    check(not miss_dig, "**0-9 与 . : + - / % 全部有字形**",
+          "缺 " + " ".join(miss_dig) if miss_dig else f"{len(need_dig)} 个")
+    dg_kb = DIGITS.stat().st_size / 1024
+    check(dg_kb <= 8, "数字字体体积在预算内（≤8KB，纯几何应该极小）", f"{dg_kb:.1f} KB")
+    # 等宽：计数器每跳一位都会重排，字宽不一致就会左右抖
+    from fontTools.ttLib import TTFont
+
+    _f = TTFont(str(DIGITS))
+    widths = {c: _f["hmtx"][_f.getBestCmap()[ord(c)]][0] for c in "0123456789"}
+    _f.close()
+    check(len(set(widths.values())) == 1,
+          "**0-9 等宽**（否则计数器与倒计时每跳一位就抖一下）",
+          f"{sorted(set(widths.values()))}")
 
     if missing and "--list" in sys.argv:
         print("\n缺的字（重跑 build_fonts.py 就会补上）：")

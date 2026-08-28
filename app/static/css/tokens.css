@@ -62,6 +62,24 @@
     font-display: swap;
 }
 
+/* ---------- 科协专属数字 ----------
+   自己设计的一套数字：每一笔是一段走线，笔画在空处收尾的地方是一个焊盘环，
+   转角只走 45°。几何与线宽跟会标同源（见 scripts/build_lettering.py）。
+
+   为什么做成字体而不是 SVG 图：站上的大数字大多是活的 —— 分镜 02 那个「31」由 JS
+   从 0 计上去、倒计时每秒重写、统计数字来自数据库。SVG 图参与不了这些。
+   整套只有 17 个字形，**2KB**。
+
+   **只用在 26px 以上的展示数字上。** 焊盘环外径是 0.168em，13px 的小字上只剩 2px，
+   缩成一个看不清的脏点；那些位置继续用 mono。 */
+@font-face {
+    font-family: "ESTA Digits";
+    src: url("../fonts/ESTADigits.woff2") format("woff2");
+    font-weight: 100 900;   /* 只有一个字形，声明成范围以免浏览器合成假粗 */
+    font-style: normal;
+    font-display: swap;
+}
+
 /* 第二声音：思源宋体 SemiBold。全站原来只有「几何无衬线 + 等宽」两种声音，
    温度是平的 —— 加一个**种类**上的对比，比再加一档字号有效得多。
 
@@ -133,6 +151,10 @@
        @font-face 注释。用它的地方一律显式写 font-weight: 600 —— 这个家族
        只有一档，写 400 或 700 会被浏览器映射到 600，看着对、实则在说谎。 */
     --font-serif: "ESTA Serif", Georgia, "Songti SC", "SimSun", serif;
+    /* 科协专属数字（走线 + 焊盘，自己设计的）。只覆盖 0-9 与 . : + - / %，
+       其余字符自动落到 mono 上 —— 所以这个栈可以直接用在混排的元素上。
+       **只用在 26px 以上的展示数字**，理由见下面的 @font-face 注释。 */
+    --font-num: "ESTA Digits", var(--font-mono);
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
     /* 兼容内页组件的旧变量名 */
