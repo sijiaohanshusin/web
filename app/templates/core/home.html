@@ -42,7 +42,12 @@
 </section>
 
 <!-- ============ 分镜 01：会标是一块真的电路板（滚动驱动逐层制造） ============ -->
-<section class="nf-forge nf-dark" data-nav="dark" id="nf-forge">
+{% comment %}
+`surf-weave grain`：这一段讲的就是「从一块空基板开始逐层做出来」，所以底纹用
+裸基板的玻纤布纹 —— 观众看到的板子还没覆铜，背景先把材质说出来。
+表面只能有一层（见 tokens.css 的说明），所以这里不能再叠 .nf-scope。
+{% endcomment %}
+<section class="nf-forge nf-dark surf-weave grain" data-nav="dark" id="nf-forge">
     <div class="nf-forge-pin">
         <div class="container nf-forge-grid">
             {% comment %}
@@ -300,7 +305,8 @@
 </section>
 
 <!-- ============ 白色区：一年之路 ============ -->
-<section class="nf-section nf-light" data-nav="light" id="nf-roadmap">
+{# 一年之路用过孔阵列：一整年的节点像一排钻孔，和上面白区的坐标纸区分开 #}
+<section class="nf-section nf-light surf-via" data-nav="light" id="nf-roadmap">
     <div class="container">
         <p class="nf-eyebrow reveal">// ROADMAP</p>
         <h2 class="nf-display reveal">从萌新到大佬<span class="accent">的一年</span></h2>
@@ -366,7 +372,8 @@
 includes/honor_row.html，和荣誉墙是同一份。
 {% endcomment %}
 {% if featured_honors %}
-<section class="nf-section nf-light" data-nav="light" id="nf-honors">
+{# 荣誉用覆铜网格：铜是这一段的语义色，也把白区和上一段的坐标纸区分开 #}
+<section class="nf-section nf-light surf-hatch" data-nav="light" id="nf-honors">
     <div class="container">
         <div class="nf-works-head reveal">
             <div>

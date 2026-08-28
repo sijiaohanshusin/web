@@ -294,17 +294,162 @@ img.img-fade.img-loaded { opacity: 1; }
     --z-preloader: 300;
 }
 
-/* 暗场示波器网格：给需要"仪器屏幕"质感的黑区区块加 .scope-grid
-   两层网格（细格 10px + 粗格 50px），与白区坐标纸同度量。 */
-.scope-grid {
+/* ============================================================
+   表面（surface）：一块区域的「材质」
+   ------------------------------------------------------------
+   为什么要一整套：改版上线后全站**只有一种底纹**（示波器网格 `.nf-scope`），
+   于是每个区块的静止状态看起来都一样 —— 丰富度全压在动效和颜色上，页面不动
+   的那一刻就显得薄。这一套把同一条「电路板」叙事拆成几层真实存在的工艺层，
+   不同区块用不同层，静止时才有「这一段和上一段不是一回事」的分别。
+
+   一层 = 一道工序，命名照工艺走：
+     .surf-weave    裸基板     FR4 玻纤布纹，最弱，用于大面积铺底
+     .surf-hatch    覆铜区     45° 网格填充，EDA 里覆铜就是这么画的
+     .surf-via      过孔阵列   钻孔环点阵，比网格更「有东西」
+     .surf-silk     丝印刻度   边缘的虚线标尺，用于分界与页边
+   示波器网格仍然是 `.nf-scope`（在 core.css，带上下渐隐与 z-index 提升），
+   它是「仪器屏幕」而不是板材，所以不并进这一套。
+
+   **底纹画在 `::before` 上，不画在元素自己的 background 上。** 这不是风格选择，
+   是被现有代码逼出来的唯一干净解法，三个原因：
+   1. `.nf-dark` 用的是 `background:` **简写**，而 `.nf-light` 自己已经占用了
+      `background-image`（白区坐标纸）。给元素直接加 background-image 的话，
+      要么被简写擦掉、要么和坐标纸抢同一个属性 —— 全站已经因此踩过四次
+      （`.rec-hero` / `.recruit-hero` / `.auth-stage` / `.page-hero` 的注释都还在）。
+      画在伪元素上，这一整类冲突不存在。
+   2. 伪元素**不在**「逐层向上找不透明背景」那条链上，所以
+      `check_a11y.py` 的对比度计算照常能算到平底色。反过来，如果给元素本身加
+      background-image，那一节会因为「祖先有图」而**跳过**它 —— 那是把检查悄悄
+      关掉，不是通过。
+   3. 边缘渐隐直接用 `mask-image` 做在同一个伪元素上，不必再多叠一层。
+
+   代价与规矩：`::before` 被底纹占了，`::after` 被颗粒占了。所以
+   **一个区块只能有一层表面**（`.nf-scope` 也算一层，它同样用 `::before`）
+   —— 别把 `.nf-scope` 和 `.surf-*` 叠在同一个元素上，后者会被吃掉。
+   两层材质加颗粒本来也已经是噪音而不是层次了。
+
+   原来这里还有一个 `.scope-grid`，和 core.css 的 `.nf-scope` 是同一件事的第二份
+   实现，模板里一次都没用过，而且两份已经漂移（这份方形平铺、那份整行整列）。
+   已删除 —— 正是「不要复制第二份」那条的反面教材。
+   ============================================================ */
+:root {
+    /* 表面线条色。都压到「几乎看不见」——它们是材质不是内容。
+       暗底用微亮，白区用微暗，各给一套。 */
+    --surf-weave-line: rgba(233, 237, 244, .022);
+    --surf-hatch-line: rgba(201, 138, 61, .05);
+    --surf-via-ring: rgba(65, 216, 232, .075);
+    --surf-silk-line: rgba(233, 237, 244, .14);
+
+    /* 度量。全部落在示波器网格的 10 / 50px 之上，保持同一套刻度感 */
+    --surf-weave-cell: 20px;
+    --surf-hatch-cell: 7px;
+    --surf-via-cell: 40px;
+    --surf-via-dot: 1.6px;
+}
+
+/* 四种表面共用的那一层：铺满、不挡事件、上下边缘渐隐。
+   渐隐用 mask 而不是再叠一层渐变 —— 那样才不占第二个伪元素，
+   而且底色是什么都不用管（叠一层渐变就得知道底色，`.nf-scope::before` 当年
+   正是为此把 `var(--black)` 写死，于是换个底色就露出一条生硬的边）。 */
+.surf-weave, .surf-hatch, .surf-via { position: relative; }
+.surf-weave::before, .surf-hatch::before, .surf-via::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0,
+        #000 10%, #000 90%, transparent 100%);
+    mask-image: linear-gradient(180deg, transparent 0,
+        #000 10%, #000 90%, transparent 100%);
+}
+.surf-weave > *, .surf-hatch > *, .surf-via > * { position: relative; z-index: 1; }
+
+/* 裸基板：FR4 的玻纤布是两个方向交织的，所以用两道相互垂直的斜纹 */
+.surf-weave::before {
     background-image:
-        linear-gradient(var(--scope-line-strong) 1px, transparent 1px),
-        linear-gradient(90deg, var(--scope-line-strong) 1px, transparent 1px),
-        linear-gradient(var(--scope-line) 1px, transparent 1px),
-        linear-gradient(90deg, var(--scope-line) 1px, transparent 1px);
-    background-size:
-        var(--scope-cell) var(--scope-cell),
-        var(--scope-cell) var(--scope-cell),
-        var(--scope-cell-fine) var(--scope-cell-fine),
-        var(--scope-cell-fine) var(--scope-cell-fine);
+        repeating-linear-gradient(45deg,
+            var(--surf-weave-line) 0 1px, transparent 1px var(--surf-weave-cell)),
+        repeating-linear-gradient(-45deg,
+            var(--surf-weave-line) 0 1px, transparent 1px var(--surf-weave-cell));
+}
+
+/* 覆铜区：EDA 里大面积覆铜用网格填充画（省铜、也减少翘曲），
+   单向 45° 细线就够读出「这块是铜」，双向会太满 */
+.surf-hatch::before {
+    background-image:
+        repeating-linear-gradient(45deg,
+            var(--surf-hatch-line) 0 1px, transparent 1px var(--surf-hatch-cell));
+}
+
+/* 过孔阵列：钻孔的金属环。中心要留空 —— 填实了就变成一片装饰圆点，
+   而过孔的识别特征恰恰是那个孔 */
+.surf-via::before {
+    background-image:
+        radial-gradient(circle at center,
+            transparent 0 calc(var(--surf-via-dot) - .7px),
+            var(--surf-via-ring) calc(var(--surf-via-dot) - .7px) var(--surf-via-dot),
+            transparent var(--surf-via-dot));
+    background-size: var(--surf-via-cell) var(--surf-via-cell);
+}
+
+/* 丝印刻度：贴着顶边的一道虚线标尺，用于区块分界 —— 比一条实线有工艺感。
+   这一条**不占 ::before**（只有 1px 高、不需要渐隐），所以可以和别的表面叠。 */
+.surf-silk {
+    background-image:
+        repeating-linear-gradient(90deg,
+            var(--surf-silk-line) 0 6px, transparent 6px 14px);
+    background-size: 100% 1px;
+    background-repeat: no-repeat;
+    background-position: 0 0;
+}
+
+/* 白区（`.nf-light`）上要换成深色，否则浅底上等于没有 */
+.nf-light {
+    --surf-weave-line: rgba(14, 17, 22, .04);
+    --surf-hatch-line: rgba(201, 138, 61, .1);
+    --surf-via-ring: rgba(13, 169, 205, .16);
+    --surf-silk-line: rgba(14, 17, 22, .18);
+}
+
+/* ---------- 颗粒（grain） ----------
+   纯平的黑是「薄」的一大来源：屏幕上一块完全均匀的 #050506 没有任何材质信息。
+   一层极淡的噪声就能让它读起来像「涂了阻焊的板子」而不是「一块色块」。
+
+   用 SVG 的 feTurbulence 内联成 data URI，而不是贴一张 PNG：
+     - 任意 DPR 都清晰，不像位图会在 2x 屏上发虚
+     - 一个请求都不多，且改强度只要改一个数
+     - 确定性的，不会每次构建都变
+   挂法是 `::after` 覆盖层而不是 background —— 这样它能叠在任何已有底纹之上，
+   而且**不会给元素本身添 background-image**，于是 check_a11y.py 那套「逐层
+   向上找不透明背景」的对比度计算不受影响（伪元素不在那条链上）。 */
+/* 噪声图本身做成令牌，而不是写死在 `.grain` 里：core.css 的组件
+   （`.page-hero` 等）要在自己的 `::after` 上复用同一份噪声，
+   而 tokens.css 不该知道那些组件的名字（CSS 三层的分工）。
+   一份图、两处用，改强度或密度只动这里。 */
+:root {
+    --grain-strength: .05;
+    --grain-cell: 160px;
+    --grain-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.grain { position: relative; }
+.grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: var(--grain-strength);
+    background-size: var(--grain-cell) var(--grain-cell);
+    background-image: var(--grain-img);
+}
+/* 颗粒在最底层，内容要浮在它上面 */
+.grain > * { position: relative; z-index: 1; }
+
+/* 高对比偏好下把材质全部摘掉：这些层的存在意义是「质感」，
+   而对高对比用户来说它们只是干扰前景的噪声 */
+@media (prefers-contrast: more) {
+    .surf-weave, .surf-hatch, .surf-via, .surf-silk { background-image: none; }
+    .grain::after { display: none; }
 }

@@ -29,6 +29,7 @@ CSS 声明级差异审计：拆分 / 重构样式表时证明"一条规则都没
 """
 import argparse
 import re
+import subprocess
 import sys
 from collections import OrderedDict
 from pathlib import Path
@@ -160,22 +161,39 @@ def walk(chunks: list[str], context: str, out: "OrderedDict", warnings: list[str
             out[(context, sel, prop)] = val
 
 
-def parse_file(path: Path) -> tuple["OrderedDict", list[str]]:
-    css = strip_comments(path.read_text(encoding="utf-8"))
+def read_css(spec: str) -> str:
+    """读一份样式表。`spec` 可以是路径，也可以是 `git:<ref>:<路径>`。
+
+    支持 git 是因为「改之前那一版」几乎总是上一个提交，而在 Windows 上
+    `git show HEAD:x.css > before.css` 会被 PowerShell 写成 **UTF-16**，
+    这个脚本读它时直接 UnicodeDecodeError。绕开一次不如把取版本这件事收进来。
+    """
+    if spec.startswith("git:"):
+        ref = spec[4:]
+        out = subprocess.run(["git", "show", ref], capture_output=True,
+                             cwd=Path(__file__).resolve().parent.parent)
+        if out.returncode != 0:
+            raise SystemExit(f"git show {ref} 失败：{out.stderr.decode(errors='replace')}")
+        return out.stdout.decode("utf-8")
+    return Path(spec).read_text(encoding="utf-8")
+
+
+def parse_file(spec) -> tuple["OrderedDict", list[str]]:
+    css = strip_comments(read_css(str(spec)))
     out: "OrderedDict" = OrderedDict()
     warnings: list[str] = []
     walk(split_top_level(css), "", out, warnings, {})
     return out, warnings
 
 
-def parse_many(paths: list[Path]) -> tuple["OrderedDict", list[str]]:
+def parse_many(paths: list) -> tuple["OrderedDict", list[str]]:
     merged: "OrderedDict" = OrderedDict()
     all_warnings: list[str] = []
     for p in paths:
         decls, warnings = parse_file(p)
         for key, val in decls.items():
             merged[key] = val  # 后面的文件覆盖前面的，与 <link> 顺序一致
-        all_warnings.extend(f"{p.name}: {w}" for w in warnings)
+        all_warnings.extend(f"{p}: {w}" for w in warnings)
     return merged, all_warnings
 
 
@@ -191,9 +209,11 @@ def main() -> int:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     ap = argparse.ArgumentParser(description="CSS 声明级差异审计")
-    ap.add_argument("--dump", type=Path, help="打印单个文件的解析统计")
-    ap.add_argument("--before", type=Path, help="重构前的样式表")
-    ap.add_argument("--after", type=Path, nargs="+", help="重构后的样式表（按层叠顺序）")
+    ap.add_argument("--dump", help="打印单个文件的解析统计")
+    ap.add_argument("--before",
+                    help="重构前的样式表。可以是路径，也可以是 "
+                         "`git:HEAD:app/static/css/core.css` 这样直接从 git 取")
+    ap.add_argument("--after", nargs="+", help="重构后的样式表（按层叠顺序）")
     ap.add_argument("--ignore-prop", action="append", default=[], help="忽略某个属性的差异，可重复")
     args = ap.parse_args()
 
@@ -222,8 +242,8 @@ def main() -> int:
         if k in after and before[k] != after[k] and k[2] not in ignored
     ]
 
-    print(f"重构前：{len(before)} 条声明（{args.before.name}）")
-    print(f"重构后：{len(after)} 条声明（{', '.join(p.name for p in args.after)}）")
+    print(f"重构前：{len(before)} 条声明（{args.before}）")
+    print(f"重构后：{len(after)} 条声明（{', '.join(str(p) for p in args.after)}）")
     for w in w_before + w_after:
         print(f"  ! {w}")
 
