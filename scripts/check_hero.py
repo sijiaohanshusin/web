@@ -14,6 +14,10 @@
   - 分镜 10：倒计时是渐进增强的（静态日期永远在，滴答的时钟是 JS 加的），
     要证明「脚本在时时钟真的在走」和「脚本不在时不会露出一排 --」。
 
+顺带钉住区块之间的过渡件（`includes/edge.html` 那排邮票孔）：它的方向参数
+`from` 指的是**上一个**区块的明暗，写反的话孔和自己这块同色、整条看不见，
+而且不报错、截图上和「本来就没加」长得一样。
+
 跑法：python scripts/check_hero.py
 """
 import os
@@ -140,6 +144,60 @@ ROADMAP_STATE = """
 }
 """
 
+# 区块过渡件（邮票孔）。这条断言存在的唯一理由：**方向写反是静默的。**
+# 孔的颜色取自上一个区块的底色，写反了就和自己这块同色 —— 整条看不见，
+# 而 HTML 照常渲染、控制台干净、截图上也只是「这里没有过渡件」，
+# 而「本来就没有」和「写反了」在图上长得一模一样。
+#
+# 所以判据是关系而不是字面值：孔色 == 上一个 section 的底色，且 != 自己的底色。
+# 底色要**逐层向上找不透明背景**（section 自己可能是透明的），拿 rgb() 比。
+EDGE_STATE = """
+() => {
+    const norm = (c) => (c || '').replace(/\\s+/g, '');
+    const opaqueBg = (el) => {
+        let n = el;
+        while (n) {
+            const m = getComputedStyle(n).backgroundColor
+                .match(/rgba?\\(([^)]+)\\)/);
+            if (m) {
+                const v = m[1].split(/[,\\s/]+/).filter(Boolean).map(Number);
+                const a = v.length > 3 ? v[3] : 1;
+                if (a > 0.99) return `rgb(${v[0]}, ${v[1]}, ${v[2]})`;
+            }
+            n = n.parentElement;
+        }
+        return null;
+    };
+    const name = (el) => el && (el.id || (el.className || '').split(' ')
+        .filter(c => c.startsWith('nf-') && c !== 'nf-section').join('.') || el.tagName);
+    return [...document.querySelectorAll('.edge')].map((el) => {
+        const cs = getComputedStyle(el);
+        const own = el.closest('section');
+        let prev = own ? own.previousElementSibling : null;
+        while (prev && prev.tagName !== 'SECTION') prev = prev.previousElementSibling;
+        const r = el.getBoundingClientRect();
+        const ownR = own ? own.getBoundingClientRect() : null;
+        return {
+            own: name(own),
+            prev: name(prev),
+            dir: (el.className.match(/edge-from-[a-z]+/) || [''])[0],
+            // 孔色从 computed background-image 里抠，而不是读 --edge-from：
+            // 后者就算方向类没生效（比如拼错）也可能继承到一个值，
+            // 前者是「渐变里真的用上的那个颜色」。
+            hole: norm((cs.backgroundImage.match(/rgba?\\([^)]+\\)/) || [''])[0]),
+            ownBg: norm(own ? opaqueBg(own) : ''),
+            prevBg: norm(prev ? opaqueBg(prev) : ''),
+            h: Math.round(r.height * 10) / 10,
+            w: Math.round(r.width),
+            // 必须正好压在分界线上，差一点就成了「区块里有一排点」
+            dTop: ownR ? Math.round((r.top - ownR.top) * 10) / 10 : null,
+            size: cs.backgroundSize,
+            repeat: cs.backgroundRepeat,
+        };
+    });
+}
+"""
+
 COUNTDOWN_STATE = """
 () => {
     const box = document.querySelector('[data-countdown]');
@@ -256,6 +314,40 @@ def main() -> int:
         check(st and st["scanName"] == "hero-scan", "扫描线动画在跑",
               (st or {}).get("scanName", ""))
         page.screenshot(path=str(SHOTS / "hero-00.png"))
+
+        # ---------------- 区块过渡件：孔色必须取自上一个区块 ----------------
+        print("\n区块过渡件（邮票孔）：方向不能写反")
+        edges = page.evaluate(EDGE_STATE)
+        # 首页有六处「上下明暗一定相反」的边界加了过渡件，但作品段整块在
+        # `{% if featured_works %}` 里 —— 开发库没有精选作品时它压根不渲染，
+        # 于是期望值要按 DOM 现场算，不能写死 6（写死的话这条会因为库里没数据
+        # 而常红，很快就被当成噪音忽略掉）。
+        # 荣誉段与学习资源段刻意没有过渡件：它们的上一个区块是黑还是白取决于
+        # 两个 `{% if %}` 的组合，方向没法静态确定（模板里有说明）。
+        has_works = page.evaluate("() => !!document.querySelector('#nf-works')")
+        expect = 6 if has_works else 5
+        check(len(edges) == expect, "每处无条件黑白边界都有过渡件",
+              f"{len(edges)} 条 / 期望 {expect}"
+              f"（作品段{'渲染了' if has_works else '没渲染，它整块在 if 里'}）")
+        for e in edges:
+            print(f"     {e['own']:<18} 上接 {str(e['prev']):<18} {e['dir']:<16}"
+                  f" 孔 {e['hole']}  自身 {e['ownBg']}  上一块 {e['prevBg']}"
+                  f"  顶边偏移 {e['dTop']}")
+        check(all(e["prev"] for e in edges), "每条过渡件的上一个区块都找得到")
+        check(all(e["hole"] and e["hole"] == e["prevBg"] for e in edges),
+              "孔色 == 上一个区块的底色（读起来像从上面掰下来）",
+              "; ".join(f"{e['own']}: {e['hole']} vs {e['prevBg']}"
+                        for e in edges if e["hole"] != e["prevBg"]) or "全部一致")
+        check(all(e["hole"] != e["ownBg"] for e in edges),
+              "孔色 != 自身底色（不会整条看不见）",
+              "; ".join(f"{e['own']}: {e['hole']}"
+                        for e in edges if e["hole"] == e["ownBg"]) or "全部有反差")
+        check(all(abs(e["dTop"]) < 1 for e in edges), "每条都压在自己区块的顶边上",
+              str([e["dTop"] for e in edges]))
+        check(all(e["h"] > 1 and e["w"] > 600 for e in edges),
+              "有高度、铺满整宽", f"高 {sorted({e['h'] for e in edges})}")
+        check(all(e["repeat"].startswith("repeat") and "px" in e["size"] for e in edges),
+              "按孔距横向平铺", "; ".join(sorted({e["size"] for e in edges})))
 
         # ---------------- 分镜 02：扫描线扫过后定格 ----------------
         print("\n分镜 02：示波器网格 + 扫描线扫过后定格")
@@ -393,7 +485,7 @@ def main() -> int:
     if failures:
         print(f"{len(failures)} 项未通过：" + "、".join(failures))
         return 1
-    print("首页分镜 00 / 02 / 03 / 06 / 10 契约全部通过")
+    print("首页分镜 00 / 02 / 03 / 06 / 10 与区块过渡件契约全部通过")
     return 0
 
 

@@ -447,8 +447,72 @@ img.img-fade.img-loaded { opacity: 1; }
 /* 颗粒在最底层，内容要浮在它上面 */
 .grain > * { position: relative; z-index: 1; }
 
+/* ============================================================
+   区块过渡件（edge）
+   ------------------------------------------------------------
+   黑区与白区之间原来全是硬切 —— 首页有六处，而全站唯一的过渡件是页脚那道波。
+   一刀切本身没错（「屏幕亮起/熄灭」是刻意的叙事），但六处一模一样的一刀切
+   就成了单调。
+
+   母题取**邮票孔**：拼板上那排半圆断桥孔，是一块板从另一块上掰下来的地方。
+   语义正好是「分界」，形状又是纯几何的，所以能精确生成、任意宽度不变形。
+
+   实现要点：
+   - 挂在**下面那个区块**里（`position: absolute; top: 0`），因为
+     `.nf-section` 已经有 `position: relative` 和 `overflow: hidden`，
+     不需要额外的定位上下文，也不会溢出到别处。
+   - 孔的颜色是**上面那个区块的底色**（`--edge-from`），这样看起来才像
+     「上面那块板咬下来一排孔」，而不是「下面这块板长了一排点」。
+     用方向类给值，不要在模板里写内联颜色 —— 颜色一律走令牌。
+   - `background-size` 的宽度就是孔距，高度就是整条的高度；用 `radial-gradient`
+     而不是 SVG，因为 SVG 要 `preserveAspectRatio="none"` 拉伸才能铺满任意宽度，
+     而那会把圆孔压成椭圆（页脚那道波是纯 stroke 曲线，拉伸看不出来，孔会）。
+   ============================================================ */
+:root {
+    /* 孔距要比孔径大不了多少，才读得出「一排连着的断桥孔」；
+       拉宽到 26px 时会变成城堡齿（castellation），是另一种工艺、另一种意思。 */
+    --edge-bite-pitch: 17px;
+    --edge-bite-r: 4.5px;
+}
+
+/* 特异性刻意写成两级（`.edge.edge`）。原因是一整类同特异性的规则会把它按掉：
+   `.nf-scope > *`（core.css）、`.surf-weave|hatch|via > *`、`.grain > *`
+   都写着 `position: relative; z-index: 1`，用途是把内容提到材质层之上。
+   它们和单个 `.edge` 同为 (0,1,0)，而 core.css 在 tokens.css 之后加载 ——
+   于是挂了 `.nf-scope` 的区块里，过渡件的 position 被改回 relative、掉进常规流，
+   被区块的 padding-top 推到区块**内部**。孔照样画得好好的，所以这不是「不见了」
+   而是「跑到区块中间去了」：分镜 02 那块的 padding-top 正好 240px
+   （`.nf-bridge + .nf-section`），整条孔就落在大数字上方一片黑里，不报错。
+   `check_hero.py` 的「每条都压在自己区块的顶边上」钉住这件事。 */
+.edge.edge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    pointer-events: none;
+    z-index: 2;               /* 压过表面（0）与内容（1）*/
+}
+
+/* 邮票孔：一排半圆，圆心落在分界线上，所以只露出下半个圆。
+   实心到透明之间留 .6px 过渡 —— 写 `0 99%, transparent 100%` 的话，
+   半径只有 4.5px 时那个 1% 不到 0.05px，浏览器没有抗锯齿的余地，
+   半圆会被光栅化成方齿（放大 6 倍一眼就看出来）。 */
+.edge-bite {
+    height: var(--edge-bite-r);
+    background-image: radial-gradient(circle var(--edge-bite-r) at 50% 0,
+        var(--edge-from) 0 calc(var(--edge-bite-r) - .6px),
+        transparent var(--edge-bite-r));
+    background-size: var(--edge-bite-pitch) 100%;
+    background-repeat: repeat-x;
+}
+
+/* 方向：孔的颜色 = 上一个区块的底色 */
+.edge-from-dark { --edge-from: var(--black); }
+.edge-from-light { --edge-from: var(--paper); }
+
 /* 高对比偏好下把材质全部摘掉：这些层的存在意义是「质感」，
-   而对高对比用户来说它们只是干扰前景的噪声 */
+   而对高对比用户来说它们只是干扰前景的噪声。
+   过渡件保留 —— 它标的是结构（区块边界），不是装饰。 */
 @media (prefers-contrast: more) {
     .surf-weave, .surf-hatch, .surf-via, .surf-silk { background-image: none; }
     .grain::after { display: none; }

@@ -1,0 +1,12 @@
+{% comment %}
+区块之间的过渡件。放在**下面那个区块**的开头（`.nf-section` 里第一个元素）。
+
+    {% include "includes/edge.html" with from="light" %}
+
+`from` 是**上一个**区块的明暗（`dark` / `light`）—— 孔的颜色取自它，这样看起来
+才像「上面那块板咬下来一排孔」。写错方向的话孔会和下面这块同色、整条看不见，
+不报错。
+
+`aria-hidden`：它是纯装饰，读屏软件读到「一排孔」没有任何意义。
+{% endcomment %}
+<div class="edge edge-bite edge-from-{{ from|default:'dark' }}" aria-hidden="true"></div>

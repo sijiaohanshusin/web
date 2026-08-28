@@ -120,6 +120,8 @@
 
 <!-- ============ 白色区：三个理由（照片卡骑跨黑白分界线） ============ -->
 <section class="nf-section nf-light nf-bridge" data-nav="light">
+    {# 上面永远是黑区：公告条有则是它、无则是分镜 01，两者都是 nf-dark #}
+    {% include "includes/edge.html" with from="dark" %}
     <div class="container">
         <div class="nf-split">
             <div class="nf-split-media">
@@ -163,6 +165,7 @@
 读起来是「扫描线把这个数写出来的」。
 {% endcomment %}
 <section class="nf-section nf-dark nf-scope nf-bignum-section" data-nav="dark">
+    {% include "includes/edge.html" with from="light" %}
     <div class="container">
         <p class="nf-eyebrow reveal">SINCE {{ site_config.founding_year }}</p>
         <div class="nf-bignum reveal">
@@ -195,6 +198,7 @@
 
 <!-- ============ 白色区：三大方向 ============ -->
 <section class="nf-section nf-light" data-nav="light">
+    {% include "includes/edge.html" with from="dark" %}
     <div class="container">
         <p class="nf-eyebrow reveal">// DIRECTIONS</p>
         <h2 class="nf-display reveal">在这里，你可以<span class="accent">成为</span></h2>
@@ -249,6 +253,7 @@
 
 <!-- ============ 黑色区：招新视频 ============ -->
 <section class="nf-section nf-dark" data-nav="dark">
+    {% include "includes/edge.html" with from="light" %}
     <div class="container">
         <p class="nf-eyebrow nf-center reveal">// MOVIE</p>
         <h2 class="nf-display nf-center reveal">一分钟，认识科协</h2>
@@ -307,6 +312,8 @@
 <!-- ============ 白色区：一年之路 ============ -->
 {# 一年之路用过孔阵列：一整年的节点像一排钻孔，和上面白区的坐标纸区分开 #}
 <section class="nf-section nf-light surf-via" data-nav="light" id="nf-roadmap">
+    {# 上面是走廊所在的黑区，所以孔取黑区底色 #}
+    {% include "includes/edge.html" with from="dark" %}
     <div class="container">
         <p class="nf-eyebrow reveal">// ROADMAP</p>
         <h2 class="nf-display reveal">从萌新到大佬<span class="accent">的一年</span></h2>
@@ -346,6 +353,8 @@
 {% endcomment %}
 {% if featured_works %}
 <section class="nf-section nf-dark nf-scope" data-nav="dark" id="nf-works">
+    {# 上一个区块是白区（一年之路），所以孔取白区底色 #}
+    {% include "includes/edge.html" with from="light" %}
     <div class="container">
         <div class="nf-works-head reveal">
             <div>
@@ -372,7 +381,16 @@
 includes/honor_row.html，和荣誉墙是同一份。
 {% endcomment %}
 {% if featured_honors %}
-{# 荣誉用覆铜网格：铜是这一段的语义色，也把白区和上一段的坐标纸区分开 #}
+{% comment %}
+用覆铜网格：铜是这一段的语义色，也把白区和上一段的坐标纸区分开。
+
+**刻意不加 edge 过渡件。** 它上面是「作品」还是「一年之路」取决于
+`featured_works` 有没有内容 —— 前者是黑区、后者是白区，明暗不定。写条件判断
+（`{% if featured_works %}from=dark{% else %}...`）能对，但那种「装饰件的参数
+依赖另一个区块的渲染条件」迟早会在加一个区块时悄悄错掉：方向写反的话孔和底色
+同色、整条看不见，而且不报错。下面那个「学习资源」黑区同理，它的上一个区块要
+看两个 if 的组合。这两处留白，比留一个会烂掉的条件好。
+{% endcomment %}
 <section class="nf-section nf-light surf-hatch" data-nav="light" id="nf-honors">
     <div class="container">
         <div class="nf-works-head reveal">
