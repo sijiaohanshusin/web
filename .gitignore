@@ -19,6 +19,19 @@ app/staticfiles/
 .vscode/
 *.swp
 
+# scripts/shoot.py 的截图产物（开发期查看渲染用，不入库）
+.shots/
+
+# 本地参考资料，不属于站点代码：
+#   index_v1.html                改版前那版单页原型（Tailwind），留着对比用
+#   正面.jpg / 可能小卡片*.jpg    协会实体 PCB 卡片的设计稿（未定稿，见
+#                                docs/2026改版计划.md 的「实物电路板卡片」小节）
+#   科协招新综述/                 另一个独立 git 仓库，不能当子目录提交
+index_v1.html
+正面.jpg
+可能小卡片（电路板）（初版）背面.jpg
+科协招新综述/
+
 # 系统
 .DS_Store
 Thumbs.db

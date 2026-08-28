@@ -1,0 +1,130 @@
+# -*- coding: utf-8 -*-
+"""校验自托管字体子集与当前模板同步。
+
+**这是一个静默故障。** `SourceHanSansCN-Heavy-subset.woff2` 是按「模板里出现过
+哪些汉字」子集化出来的。改版期间新加了作品墙、荣誉墙、团队页、注册三页、新生
+指南……每一批新文案都可能带进子集里没有的字。那些字会按 `font-display: swap`
+的规则回退到系统黑体 —— 于是一行大标题里混着两种字重两种字形，页面不报错、
+控制台干净、`collectstatic` 也照常过。只有拿字库的 cmap 和模板对一遍才看得出来。
+
+判据不是「文件在不在」，而是**模板里要用的每一个字都在字库的 cmap 里**。
+「要用哪些字」直接从 `build_fonts.py` 里 import，不在这里抄第二份 —— 两份必然漂移。
+
+跑法：
+    python scripts/check_fonts.py            # 只检查
+    python scripts/check_fonts.py --list     # 把缺的字打出来（要补进子集时看）
+
+缺字的修法：拿到两个字体源文件后重跑
+    python scripts/build_fonts.py <JetBrainsMono[wght].ttf> <SourceHanSansCN-Heavy.otf>
+下载地址在 build_fonts.py 的文件头注释里。
+"""
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO / "scripts"))
+
+FONT_DIR = REPO / "app" / "static" / "fonts"
+DISPLAY = FONT_DIR / "SourceHanSansCN-Heavy-subset.woff2"
+MONO = FONT_DIR / "JetBrainsMono-subset.woff2"
+
+# mono 是全站数字与编号的主角，这些码位缺一个就会在版面上留一个豆腐块或跳字。
+# 拉丁可见区间 + 常用排版符号 + 箭头（文案里到处是「→」）。
+MONO_REQUIRED = (
+    [c for c in range(0x20, 0x7F)]
+    + [0x2013, 0x2014, 0x2018, 0x2019, 0x201C, 0x201D, 0x2026, 0x00B7]
+    + [0x2190, 0x2192, 0x2191, 0x2193]
+)
+
+failures = []
+
+
+def check(cond, label, detail=""):
+    print(f"  {'OK  ' if cond else 'FAIL'} {label}" + (f"  {detail}" if detail else ""))
+    if not cond:
+        failures.append(label)
+
+
+def coverage(path: Path) -> set[int]:
+    """字库真正能渲染的码位集合（cmap 的并集）。"""
+    from fontTools.ttLib import TTFont
+
+    font = TTFont(str(path))
+    covered: set[int] = set()
+    for table in font["cmap"].tables:
+        covered.update(table.cmap.keys())
+    font.close()
+    return covered
+
+
+def main() -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+    try:
+        import fontTools  # noqa: F401
+    except ImportError:
+        print("需要 fontTools：python -m pip install fonttools brotli")
+        print("（开发工具，不要写进 app/requirements.txt）")
+        return 2
+
+    print("字体文件就位")
+    check(DISPLAY.exists(), "标题字体子集存在", DISPLAY.name)
+    check(MONO.exists(), "mono 字体子集存在", MONO.name)
+    if failures:
+        return 1
+
+    # 体积：这两个是首屏字体，超了就该重新收窄子集而不是默默变胖
+    d_kb = DISPLAY.stat().st_size / 1024
+    m_kb = MONO.stat().st_size / 1024
+    check(d_kb <= 420, "标题字体体积在预算内（≤420KB）", f"{d_kb:.0f} KB")
+    check(m_kb <= 160, "mono 字体体积在预算内（≤160KB）", f"{m_kb:.0f} KB")
+
+    from build_fonts import collect_cjk_chars
+
+    print("\nmono：数字与编号用的码位一个都不能缺")
+    mono_cov = coverage(MONO)
+    missing_mono = [c for c in MONO_REQUIRED if c not in mono_cov]
+    check(
+        not missing_mono,
+        "拉丁 + 常用符号 + 箭头全覆盖",
+        f"缺 {len(missing_mono)} 个：" + " ".join(f"U+{c:04X}" for c in missing_mono[:12])
+        if missing_mono else f"{len(mono_cov)} 个码位",
+    )
+
+    print("\n标题字体：模板里要用的汉字必须都在子集里")
+    print("（这是「子集是不是还跟得上模板」的唯一硬证据 —— 缺字只会静静回退系统黑体）")
+    needed = collect_cjk_chars()
+    disp_cov = coverage(DISPLAY)
+    missing = sorted(ch for ch in needed if ord(ch) not in disp_cov)
+    check(len(needed) > 500,
+          "取字来源真的扫到东西了（不是空集合让断言空跑）", f"需要 {len(needed)} 字")
+    check(not missing,
+          "**模板里的汉字全部被子集覆盖**",
+          f"缺 {len(missing)} 字（占 {len(missing) / max(len(needed), 1):.1%}）"
+          if missing else f"{len(needed)} 字全覆盖")
+
+    # 中文标点也走标题字体，缺了就是一行标题里混两种引号
+    from build_fonts import CJK_PUNCT
+
+    missing_punct = [c for c in CJK_PUNCT if ord(c) not in disp_cov]
+    check(not missing_punct, "中文标点全覆盖", "缺 " + " ".join(missing_punct)
+          if missing_punct else f"{len(CJK_PUNCT)} 个")
+
+    if missing and "--list" in sys.argv:
+        print("\n缺的字（重跑 build_fonts.py 就会补上）：")
+        for i in range(0, len(missing), 40):
+            print("    " + "".join(missing[i:i + 40]))
+
+    print()
+    if failures:
+        print(f"{len(failures)} 项未通过：" + "、".join(failures))
+        if missing:
+            print("修法：拿到字体源文件后重跑 build_fonts.py（下载地址见它的文件头）")
+        return 1
+    print("字体子集契约全部通过")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

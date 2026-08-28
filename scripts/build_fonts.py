@@ -54,7 +54,14 @@ def collect_cjk_chars() -> set[str]:
             files.append(src)
     for f in files:
         text = f.read_text(encoding="utf-8", errors="ignore")
-        # 去掉 Django 模板标签/变量，保留可见文案
+        # **注释要先整块摘掉，而且必须排在别的替换之前。**
+        # 本项目的模板注释写得很长且全是中文（「为什么这里不能用 aspect-ratio」
+        # 之类），而注释一个字都不会渲染。不摘的话它们全都进子集 —— 白白把
+        # 标题字体撑大几十 KB，而且让 check_fonts.py 变成在要求「注释里的字也得
+        # 在字库里」，那是个没有意义的约束。
+        text = re.sub(r"{%\s*comment\s*%}.*?{%\s*endcomment\s*%}", "", text, flags=re.S)
+        text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
+        # 再去掉 Django 模板标签/变量，保留可见文案
         text = re.sub(r"{%.*?%}|{{.*?}}|{#.*?#}", "", text, flags=re.S)
         chars.update(re.findall(r"[\u3400-\u9fff]", text))
     chars.update(COMMON_EXTRA)
