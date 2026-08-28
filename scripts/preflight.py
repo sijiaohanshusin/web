@@ -205,7 +205,9 @@ def check_tracked_assets():
     print("\n8. 该入库的产物没有被 .gitignore 挡掉（无 Node 构建链，产物即源码）")
     groups = {
         "字体": ["app/static/fonts/JetBrainsMono-subset.woff2",
-                 "app/static/fonts/SourceHanSansCN-Heavy-subset.woff2"],
+                 "app/static/fonts/SourceHanSansCN-Heavy-subset.woff2",
+                 "app/static/fonts/SourceHanSansCN-Regular-subset.woff2",
+                 "app/static/fonts/SourceHanSansCN-Bold-subset.woff2"],
         "会标": ["app/static/brand/logo-mark.svg"],
         "vendor": ["app/static/vendor/gsap.min.js", "app/static/vendor/lenis.min.js",
                    "app/static/vendor/three.module.min.js",

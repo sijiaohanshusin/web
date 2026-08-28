@@ -28,6 +28,30 @@
     font-display: swap;
 }
 
+/* 正文的中文。**两档必须成对**：只自托管 Regular 的话，`<strong>` 和
+   `font-weight: 700` 会让浏览器把 Regular 描粗（合成假粗），而系统黑体本来有
+   真 Bold —— 自托管反倒变差。
+   字表不按模板取字，取 GB2312 一级字全集（3760 个，见 build_fonts.py 的说明）：
+   正文内容是站务以后随时写的，模板扫不到，而正文缺字比标题缺字难看得多。
+   代价是两档合计约 2MB。这是明确用体积换效果的地方（用户口径：展示效果优先，
+   重复访问有一年 immutable 缓存），如果哪天嫌重，下一步是按 unicode-range
+   切片，而不是砍字表。 */
+@font-face {
+    font-family: "ESTA Sans";
+    src: url("../fonts/SourceHanSansCN-Regular-subset.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "ESTA Sans";
+    src: url("../fonts/SourceHanSansCN-Bold-subset.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
 :root {
     --black: #050506;
     --black-2: #0b0b0e;
@@ -62,8 +86,17 @@
     --danger: #f0716e;
     --radius: 16px;
     --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, "Courier New", monospace;
-    --font-display: "ESTA Display", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    /* 系统兜底栈。它只是兜底 —— 三个自托管家族都排在它前面。
+       留着是因为字体请求可能失败（`font-display: swap` 那一刻页面必须有字）。 */
+    --font-sys: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
         "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    /* 正文：思源黑体 Regular / Bold（见下面的 @font-face 与那里的说明）。
+       改版上线后**站上读得最多的那部分文字，是唯一没被设计过的** ——
+       Mac 上是苹方、Windows 上是微软雅黑，两个访客看到的是两种气质的网站。 */
+    --font-body: "ESTA Sans", var(--font-sys);
+    /* 标题：Heavy 是按模板取字的子集，缺字时退到自己的 Bold（同一套设计、
+       只差一档字重），而不是跳到系统黑体（那是换一套字形）。 */
+    --font-display: "ESTA Display", "ESTA Sans", var(--font-sys);
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
     /* 兼容内页组件的旧变量名 */
@@ -87,6 +120,15 @@
    时钟、分步表单的段与按钮、视频手动播放按钮），这条兜住它们。
    这是全站唯一该用 !important 的地方：hidden 的语义就是「无条件不渲染」。 */
 [hidden] { display: none !important; }
+
+/* 表单控件不继承字体，这是 UA 样式表的规定（`font: 400 13.33px Arial`）。
+   于是每一个带文字的 `<button>` 都在用 Arial 画中文 —— 而 Arial 没有汉字，
+   Windows 会退到宋体，也就是全站唯一一处衬线体，出现在按钮上。
+   实测「复制群号」那个按钮就是这样（`font-family: Arial`）。
+   英文界面上看不出来，所以这类漏洞能活很久。
+   只接管 family，不写 `font: inherit` —— 后者会把 `.btn` 之外的裸控件
+   连字号行高一起改掉，那是另一件事。 */
+button, input, select, textarea, optgroup { font-family: inherit; }
 
 /* ---------- 跨页过渡（MPA View Transitions，Chromium 渐进增强） ----------
    同源页面跳转时旧页淡出、新页淡起，替代硬切白屏；
@@ -161,8 +203,7 @@
 html { scroll-behavior: smooth; }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-        "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    font-family: var(--font-body);
     background: var(--black);
     color: var(--text);
     line-height: var(--lh-relaxed);

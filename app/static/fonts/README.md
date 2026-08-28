@@ -6,10 +6,29 @@
 |---|---|---|---|
 | `JetBrainsMono-subset.woff2` | [JetBrains Mono v2.304](https://github.com/JetBrains/JetBrainsMono)（可变字重 100-800，拉丁子集） | SIL OFL 1.1 | 全站 mono 数字/编号/标签（`--font-mono`） |
 | `SourceHanSansCN-Heavy-subset.woff2` | [思源黑体 Source Han Sans CN Heavy](https://github.com/adobe-fonts/source-han-sans)（按站内标题用字子集） | SIL OFL 1.1 | 大标题真 Heavy 字重（`--font-display`） |
+| `SourceHanSansCN-Regular-subset.woff2` | 同上，Regular（GB2312 一级字全集） | SIL OFL 1.1 | **正文**（`--font-body`） |
+| `SourceHanSansCN-Bold-subset.woff2` | 同上，Bold（同一份字表） | SIL OFL 1.1 | 正文加粗，`<strong>` 与 600/700/800 |
 
-当前体积：mono 116 KB · 思源 333 KB（977 个汉字）。两个都在 `base.html` 里
-`rel=preload` —— 不 preload 的话浏览器要等 CSS 解析完才发现它们，首屏那条大标题
-会先用系统黑体画一遍再跳成真 Heavy。
+当前体积：mono 116 KB · 标题 333 KB（977 字）· 正文 1030 + 1041 KB（3760 字）。
+四个都在 `base.html` 里 `rel=preload` —— 不 preload 的话浏览器要等 CSS 解析完才
+发现它们，整页先用系统黑体画一遍再换字。
+
+## 正文两档的两条硬要求
+
+**一、字表不按模板取字，取 GB2312 一级字全集。** 标题字体的用字是固定的（内容
+作者改不到标题），而正文要承载站务以后随时写的公告、活动、作品简介、成员姓名 ——
+模板扫不到那些字。正文缺字比标题缺字难看得多：一段话里混进两种字形。
+字表从 Python 自带的 `gb2312` 编码枚举出来，**确定、离线、可复现**，不依赖某个
+网页上的「常用 3500 字表」哪天改了内容。
+
+**二、Regular 和 Bold 必须成对，而且覆盖逐字一致。** 只自托管 Regular 的话，
+`<strong>` 与 `font-weight: 700` 会让浏览器把 Regular 描粗（合成假粗）——
+而系统黑体本来有真 Bold，等于自托管之后反倒变差。两档字表不一致会更隐蔽：
+只有被加粗的那几个字掉回系统字体。`check_fonts.py` 两条都钉住了。
+
+代价是首访多约 2MB。这是明确的用体积换效果（展示效果优先、一年 immutable 缓存 +
+EdgeOne）。哪天嫌重，**下一步是按 `unicode-range` 切片，而不是砍字表** ——
+砍字表换来的是「某些字突然变成另一种字体」，那是又一个静默故障。
 
 ## 缺字是静默故障，靠脚本兜
 

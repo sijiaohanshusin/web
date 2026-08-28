@@ -1572,17 +1572,49 @@ class DeployPerfContractTests(TestCase):
         self.assertIn("immutable", block, "/static/ 少了 immutable")
         self.assertIn("max-age=31536000", block, "/static/ 的 max-age 不见了")
 
-    def test_both_self_hosted_fonts_are_preloaded(self):
-        """少 preload 一个，首屏那条大标题就会先用系统黑体画一遍再跳成真 Heavy。"""
+    def test_all_self_hosted_fonts_are_preloaded(self):
+        """少 preload 一个，那一档的文字就会先用系统黑体画一遍再跳。
+
+        四个字体各有分工：mono 是数字与编号，Heavy 是首屏大标题，
+        Regular/Bold 是页面上剩下的全部文字。正文两档还必须**成对**出现 ——
+        只有 Regular 时浏览器会把它描粗当加粗用（合成假粗）。
+        """
         import re
 
         text = _template_text("base.html")
         preloads = re.findall(r'<link rel="preload"[^>]*as="font"[^>]*>', text)
-        self.assertEqual(len(preloads), 2, f"字体 preload 不是两条：{len(preloads)}")
+        self.assertEqual(len(preloads), 4, f"字体 preload 不是四条：{len(preloads)}")
         blob = " ".join(preloads)
-        for font in ("JetBrainsMono-subset.woff2", "SourceHanSansCN-Heavy-subset.woff2"):
+        for font in ("JetBrainsMono-subset.woff2", "SourceHanSansCN-Heavy-subset.woff2",
+                     "SourceHanSansCN-Regular-subset.woff2",
+                     "SourceHanSansCN-Bold-subset.woff2"):
             with self.subTest(font=font):
                 self.assertIn(font, blob)
+
+    def test_body_font_family_is_self_hosted_not_the_system_stack(self):
+        """正文是站上读得最多的文字，不能交给访客的操作系统决定。
+
+        原来 `body` 直接写系统字体栈 —— Mac 上是苹方、Windows 上是微软雅黑，
+        两个访客看到的是两种气质的网站，而且都不是我们定的那个。
+        这条同时钉住「系统栈只能当兜底」：它必须还在，但排在自托管家族后面。
+        """
+        from pathlib import Path
+
+        from django.conf import settings
+
+        css = (Path(settings.BASE_DIR) / "static" / "css" / "tokens.css").read_text(
+            encoding="utf-8")
+        self.assertIn("--font-body: \"ESTA Sans\"", css)
+        self.assertRegex(css, r"body\s*\{[^}]*font-family:\s*var\(--font-body\)")
+        # 兜底栈还在，且 ESTA Sans 排在它前面
+        self.assertIn("--font-sys: -apple-system", css)
+        self.assertLess(css.index('--font-body: "ESTA Sans"'), css.index("body {"))
+        for weight, path in (("400", "SourceHanSansCN-Regular-subset.woff2"),
+                             ("700", "SourceHanSansCN-Bold-subset.woff2")):
+            with self.subTest(weight=weight):
+                block = css[css.index(path):]
+                self.assertIn(f"font-weight: {weight};", block[:200],
+                              f"{path} 的 @font-face 没声明 {weight} 字重")
 
     def test_clickjacking_header_comes_from_nginx_because_simpleui_drops_it(self):
         """**django-simpleui 会把 XFrameOptionsMiddleware 从 MIDDLEWARE 里 pop 掉。**

@@ -2,21 +2,39 @@
 自托管字体构建脚本（一次性/字库更新时运行）。
 
 产出（写入 app/static/fonts/）:
-    JetBrainsMono-subset.woff2        可变字重 100-800，拉丁+数字+常用符号
-    SourceHanSansCN-Heavy-subset.woff2 思源黑体 Heavy，按站内标题用字子集化
+    JetBrainsMono-subset.woff2          可变字重 100-800，拉丁+数字+常用符号
+    SourceHanSansCN-Heavy-subset.woff2  思源黑体 Heavy，按站内标题用字子集化
+    SourceHanSansCN-Regular-subset.woff2  思源黑体 Regular，正文（GB2312 一级字全集）
+    SourceHanSansCN-Bold-subset.woff2     思源黑体 Bold，正文加粗
 
-用法:
-    .venv/Scripts/python scripts/build_fonts.py <jbmono_variable.ttf> <SourceHanSansCN-Heavy.otf>
+用法（源文件放 .fontsrc/，那个目录不入库）:
+    python scripts/build_fonts.py .fontsrc/JetBrainsMono[wght].ttf \
+        .fontsrc/SourceHanSansCN-Heavy.otf
+
+    # 连正文两档一起重建（第一次或换字库时）
+    python scripts/build_fonts.py .fontsrc/JetBrainsMono[wght].ttf \
+        .fontsrc/SourceHanSansCN-Heavy.otf --body .fontsrc/SourceHanSansCN
 
 字体源文件下载:
     https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip
         -> fonts/variable/JetBrainsMono[wght].ttf
     https://github.com/adobe-fonts/source-han-sans/raw/release/SubsetOTF/CN/SourceHanSansCN-Heavy.otf
+    https://github.com/adobe-fonts/source-han-sans/raw/release/SubsetOTF/CN/SourceHanSansCN-Regular.otf
+    https://github.com/adobe-fonts/source-han-sans/raw/release/SubsetOTF/CN/SourceHanSansCN-Bold.otf
+    （思源黑体是 SIL OFL 1.1，许可记在 app/static/fonts/README.md）
 
 设计说明:
 - mono 数字是全站视觉主角（大数字/编号/群号），不能依赖访客本机装没装字体；
 - 中文标题只在 display 层使用 Heavy 字重，按模板实际出现的汉字子集化，
-  新增内容中的生僻字会回退到系统黑体（font-display: swap 保证先渲染）。
+  新增内容中的生僻字会回退到**自己的 Regular/Bold**（同一套设计，只差字重），
+  而不是跳到系统黑体（那是换了一套字形）。`check_fonts.py` 盯着缺字。
+- **正文两档不按模板取字，取 GB2312 一级字全集。** 理由：正文内容是站务以后
+  随时写的（公告、活动、作品简介、成员名字），模板扫不到；而正文缺字的后果
+  比标题缺字难看得多 —— 一段话里混进两种字形。用量不可预测的地方就别用
+  「按现有文案取字」这种会过期的子集。
+- **Regular 和 Bold 必须成对。** 只自托管 Regular 的话，`<strong>` 与
+  `font-weight: 700` 会让浏览器**合成假粗**（把 Regular 描粗），那正是这套设计
+  要摆脱的东西 —— 而现在系统黑体本来有真 Bold，等于自托管之后反倒变差。
 """
 import re
 import sys
@@ -42,6 +60,27 @@ COMMON_EXTRA = (
 )
 
 CJK_PUNCT = "，。、；：？！「」『』（）《》〈〉——……·【】"
+
+
+def gb2312_hanzi(levels: tuple[int, ...] = (1,)) -> set[str]:
+    """GB2312 里的汉字。level 1 = 一级字 3755 个（按拼音排序，现代汉语的常用字）；
+    level 2 = 二级字 3008 个（生僻字与人名用字）。
+
+    为什么从 GB2312 取而不是在网上找一份「常用 3500 字表」：Python 自带这个
+    编码，所以字表是**确定的、离线的、可复现的**，不依赖某个网页哪天改内容。
+    一级字区是 0xB0A1–0xD7F9，二级字区是 0xD8A1–0xF7FE。
+    """
+    ranges = {1: range(0xB0, 0xD8), 2: range(0xD8, 0xF8)}
+    chars: set[str] = set()
+    for level in levels:
+        for hi in ranges[level]:
+            for lo in range(0xA1, 0xFF):
+                try:
+                    ch = bytes((hi, lo)).decode("gb2312")
+                except UnicodeDecodeError:
+                    continue
+                chars.add(ch)
+    return chars
 
 
 def collect_cjk_chars() -> set[str]:
@@ -89,9 +128,12 @@ def subset_font(src: Path, out: Path, text: str, unicodes: str = "") -> None:
 
 
 def main() -> None:
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3:
         sys.exit(__doc__)
     jbmono, shs = Path(sys.argv[1]), Path(sys.argv[2])
+    body_prefix = None
+    if "--body" in sys.argv:
+        body_prefix = sys.argv[sys.argv.index("--body") + 1]
 
     print("== JetBrains Mono（可变字重，拉丁全集）==")
     latin = "".join(chr(c) for c in range(0x20, 0x7F))
@@ -110,6 +152,27 @@ def main() -> None:
         text=text,
         unicodes="U+00A0-00FF U+2013-2026 U+3000-303F U+FF00-FFEF",
     )
+
+    if not body_prefix:
+        print("\n（没给 --body，正文两档未重建；只有换字库或改字表时才需要）")
+        return
+
+    # 正文两档：GB2312 一级字 ∪ 模板里出现过的字（模板里可能有二级字，
+    # 比如人名与专业名词 —— 标题有的字正文也必须有，否则同一个词在两处长得不一样）
+    body_chars = gb2312_hanzi((1,)) | cjk
+    print(f"\n正文字表：GB2312 一级字 + 模板用字 = {len(body_chars)} 个汉字")
+    body_text = latin + CJK_PUNCT + "".join(sorted(body_chars))
+    for weight, name in (("Regular", "Regular"), ("Bold", "Bold")):
+        src = Path(f"{body_prefix}-{weight}.otf")
+        if not src.exists():
+            sys.exit(f"找不到 {src}（--body 传的是不带字重的前缀，例如 "
+                     f".fontsrc/SourceHanSansCN）")
+        print(f"== 思源黑体 {name}（正文）==")
+        subset_font(
+            src, OUT_DIR / f"SourceHanSansCN-{name}-subset.woff2",
+            text=body_text,
+            unicodes="U+00A0-00FF U+2013-2026 U+3000-303F U+FF00-FFEF",
+        )
 
 
 if __name__ == "__main__":

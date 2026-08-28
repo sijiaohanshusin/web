@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 """校验自托管字体子集与当前模板同步。
 
+四个字体、三种判据（**判据不一样是关键**）：
+  - mono（JetBrains Mono）：拉丁 + 符号 + 箭头的固定码位表全覆盖。
+  - 标题（Heavy）：按模板用字取子集 → 判据是「模板里的字都在」。
+  - 正文（Regular + Bold）：承载站务以后随时写的内容，模板扫不到 →
+    判据是 **GB2312 一级字全集**，而且两档覆盖必须逐字一致。
+
+
 **这是一个静默故障。** `SourceHanSansCN-Heavy-subset.woff2` 是按「模板里出现过
 哪些汉字」子集化出来的。改版期间新加了作品墙、荣誉墙、团队页、注册三页、新生
 指南……每一批新文案都可能带进子集里没有的字。那些字会按 `font-display: swap`
@@ -27,6 +34,10 @@ sys.path.insert(0, str(REPO / "scripts"))
 FONT_DIR = REPO / "app" / "static" / "fonts"
 DISPLAY = FONT_DIR / "SourceHanSansCN-Heavy-subset.woff2"
 MONO = FONT_DIR / "JetBrainsMono-subset.woff2"
+BODY = {
+    400: FONT_DIR / "SourceHanSansCN-Regular-subset.woff2",
+    700: FONT_DIR / "SourceHanSansCN-Bold-subset.woff2",
+}
 
 # mono 是全站数字与编号的主角，这些码位缺一个就会在版面上留一个豆腐块或跳字。
 # 拉丁可见区间 + 常用排版符号 + 箭头（文案里到处是「→」）。
@@ -110,6 +121,42 @@ def main() -> int:
     missing_punct = [c for c in CJK_PUNCT if ord(c) not in disp_cov]
     check(not missing_punct, "中文标点全覆盖", "缺 " + " ".join(missing_punct)
           if missing_punct else f"{len(CJK_PUNCT)} 个")
+
+    # ---------------- 正文两档 ----------------
+    # 正文和标题的判据不一样：标题按模板取字（内容作者改不到标题字体），
+    # 正文要承载站务以后随时写的公告与简介，所以判据是 **GB2312 一级字全集**。
+    print("\n正文两档：字表是 GB2312 一级字全集，不是模板用字")
+    print("（正文内容是站务以后写的，模板扫不到；一段话里混两种字形比标题缺字更难看）")
+    from build_fonts import gb2312_hanzi
+
+    for path in BODY.values():
+        check(path.exists(), f"{path.name} 存在")
+    if failures:
+        return 1
+
+    level1 = gb2312_hanzi((1,))
+    check(len(level1) > 3700, "GB2312 一级字表取到了（不是空集合）", f"{len(level1)} 字")
+    covs = {}
+    for weight, path in BODY.items():
+        cov = coverage(path)
+        covs[weight] = cov
+        kb = path.stat().st_size / 1024
+        miss1 = [ch for ch in level1 if ord(ch) not in cov]
+        miss_tpl = [ch for ch in needed if ord(ch) not in cov]
+        check(kb <= 1200, f"{weight} 档体积在预算内（≤1200KB）", f"{kb:.0f} KB")
+        check(not miss1, f"{weight} 档覆盖 GB2312 一级字",
+              f"缺 {len(miss1)} 字" if miss1 else f"{len(level1)} 字全覆盖")
+        # 标题字体缺字时会退到正文档，所以正文必须是标题的超集
+        check(not miss_tpl, f"{weight} 档覆盖模板用字（标题缺字时的退路）",
+              f"缺 {len(miss_tpl)} 字" if miss_tpl else f"{len(needed)} 字全覆盖")
+
+    # 两档覆盖必须完全一致：不一致的话「加粗之后这个字变成另一种字体」——
+    # 只在被加粗的那几个字上出现，最难发现的那一类
+    only400 = covs[400] - covs[700]
+    only700 = covs[700] - covs[400]
+    check(not only400 and not only700,
+          "**Regular 与 Bold 覆盖完全一致**（否则加粗会让个别字掉档）",
+          f"只有 400 有 {len(only400)} 个 / 只有 700 有 {len(only700)} 个")
 
     if missing and "--list" in sys.argv:
         print("\n缺的字（重跑 build_fonts.py 就会补上）：")
