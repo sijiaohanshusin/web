@@ -1585,7 +1585,7 @@ class DeployPerfContractTests(TestCase):
         preloads = re.findall(r'<link rel="preload"[^>]*as="font"[^>]*>', text)
         self.assertEqual(len(preloads), 5, f"字体 preload 不是五条：{len(preloads)}")
         blob = " ".join(preloads)
-        for font in ("JetBrainsMono-subset.woff2", "SourceHanSansCN-Heavy-subset.woff2",
+        for font in ("JetBrainsMono-subset.woff2", "SmileySans-subset.woff2",
                      "SourceHanSansCN-Regular-subset.woff2",
                      "SourceHanSansCN-Bold-subset.woff2",
                      "SourceHanSerifCN-SemiBold-subset.woff2"):

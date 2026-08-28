@@ -24,9 +24,16 @@
     <div class="container nf-hero-inner">
         <div class="nf-hero-text">
             <p class="nf-eyebrow line-reveal">哈尔滨工程大学 · 电子科技协会 · EST. {{ site_config.founding_year }}</p>
+{% comment %}
+标题的「工艺层」：每行加 .plated（阻焊开窗，一道横向细缝），第二行末尾加
+.pad-out（焊盘环 + 引线，语义同会标的 pad-out —— 信号从这里出去）。
+两个都是纯装饰，不动文字，读屏软件读到的还是原句。
+开窗必须挂在**行**上而不是 h1 上：挂在 h1 上时那道缝按整块高度算，
+只会切到第一行。
+{% endcomment %}
             <h1 class="nf-hero-title">
-                <span class="line-reveal">焊接每一个</span>
-                <span class="line-reveal accent">奇思妙想<em>_</em></span>
+                <span class="line-reveal plated">焊接每一个</span>
+                <span class="line-reveal plated accent"><i class="pad-out">奇思妙想</i></span>
             </h1>
             <p class="nf-hero-sub line-reveal">从点亮第一颗 LED，到站上全国大学生电子设计竞赛的领奖台。</p>
             <div class="nf-hero-cta line-reveal">

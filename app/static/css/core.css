@@ -538,14 +538,87 @@ select.input option { background: var(--bg-2); }
 /* ============================================================
    通用排版元素
    ============================================================ */
+/* ---------- 丝印条（eyebrow 的器械化） ----------
+   原来这里只有一行 mono 小字。现在把它做成**仪器面板上的丝印**：
+   左边一段刻度尺（细刻度 + 每三格一根主刻度），右边一条带端标的尺寸线。
+
+   为什么改 `.nf-eyebrow` 而不是新建组件：全站 14 处都在用它，改一次所有区块
+   标题一起器械化，模板一个字都不用动，文字本身照旧、无障碍树不变。
+
+   刻度尺用两层 repeating-linear-gradient 叠出来 —— 单层渐变没法让刻度高低交替。 */
 .nf-eyebrow {
     font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 4px;
     color: var(--accent); margin-bottom: 18px; text-transform: uppercase;
 }
+/* 两个记号都是 **inline-block**，不做成 flex 项。
+   原因是踩过：第一版把 `.nf-eyebrow` 设成 `display: flex`，而首屏那条 eyebrow
+   还带着 `.line-reveal`（`display: block`，在 core.css 里排在后面、同特异性）——
+   于是运行时不是 flex，两个伪元素退回 inline，**width/height 被直接忽略**，
+   记号一个都没画出来，而页面照常渲染、控制台干净。
+   这套 eyebrow 有 14 处调用、各自的父容器不同，与其去猜谁会覆盖 display，
+   不如让记号本身与父级的 display 无关。 */
+.nf-eyebrow::before {
+    content: ""; display: inline-block; vertical-align: middle;
+    width: 54px; height: 14px; margin-right: 13px;
+    background-image:
+        repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 6px),
+        repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 18px);
+    background-size: 100% 6px, 100% 14px;
+    background-position: 0 100%, 0 100%;
+    background-repeat: repeat-x;
+    opacity: .6;
+}
+/* 尺寸线：一段定长细线 + 两端端标（工程图的标注线语法）。
+   定长而不是撑满剩余宽度 —— 撑满会让同一个组件在宽窄容器里长得不一样。 */
+.nf-eyebrow::after {
+    content: ""; display: inline-block; vertical-align: middle;
+    width: 76px; height: 7px; margin-left: 14px;
+    border-left: 1px solid currentColor; border-right: 1px solid currentColor;
+    background: linear-gradient(currentColor, currentColor) left center / 100% 1px no-repeat;
+    opacity: .32;
+}
+@media (max-width: 720px) {
+    /* 窄屏收掉尺寸线，只留刻度：再多一截会把 eyebrow 挤成两行 */
+    .nf-eyebrow::after { display: none; }
+    .nf-eyebrow::before { width: 30px; margin-right: 9px; }
+}
+/* 分镜与区块大标题。字距从 +1px 改成负值：换成得意黑之后正字距会散架 ——
+   那款字形的侧边留白本来就小，正字距是给思源 Heavy 那种方正字形留的。 */
 .nf-display {
     font-family: var(--font-display);
     font-size: var(--fs-dsp-4); font-weight: 900; line-height: var(--lh-tight);
-    letter-spacing: 1px; margin-bottom: 34px; color: inherit;
+    letter-spacing: -.018em; margin-bottom: 34px; color: inherit;
+}
+
+/* ---------- 阻焊开窗（标题的工艺层） ----------
+   一道横向细缝把字面切开，读作「铜面被阻焊层开了一次窗」。
+   **只开一道。** 试过 45° 密斜纹（缝距 .02em），那不是工艺、是把字填成了纹理，
+   而且可读性掉得很明显 —— 76px 上勉强，48px 上糊成一片。稀疏才读得出是工艺。
+
+   用 mask 而不是把渐变画在字上：mask 不动 `color`，所以
+   `check_a11y.py` 的对比度照旧量得到。（原本还想给字加铜面渐变，
+   那要 `background-clip: text` + `color: transparent` —— 对比度直接变成量不到，
+   而且会让 `currentColor` 的焊盘一起变透明。为这个否决了铜面。） */
+.plated {
+    -webkit-mask-image: linear-gradient(#000 0 35%, transparent 35% 37.6%, #000 37.6%);
+    mask-image: linear-gradient(#000 0 35%, transparent 35% 37.6%, #000 37.6%);
+}
+
+/* 句尾焊盘：一小段引线 + 一个焊盘环，语义同会标的 pad-out（信号出口）。
+   尺寸全用 em，跟着字号缩放；颜色用 currentColor，跟着强调色走。
+
+   **必须挂在行内元素上。** 挂到 `.line-reveal` 那种 `display: block` 的行容器上时，
+   `right: .02em` 算的是整个容器的右边缘 —— 焊盘会跑到屏幕另一头去，
+   而它照样画得好好的（踩过，截图才看出来）。所以模板里包一层 `<i class="pad-out">`。 */
+.pad-out { position: relative; padding-right: .66em; font-style: normal; }
+.pad-out::before {
+    content: ""; position: absolute; right: .32em; bottom: .27em;
+    width: .22em; height: .05em; background: currentColor;
+}
+.pad-out::after {
+    content: ""; position: absolute; right: .02em; bottom: .16em;
+    width: .28em; height: .28em; border-radius: 50%;
+    border: .055em solid currentColor;
 }
 .nf-display .accent { color: var(--accent); }
 .nf-center { text-align: center; }

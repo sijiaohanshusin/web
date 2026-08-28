@@ -32,7 +32,7 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "scripts"))
 
 FONT_DIR = REPO / "app" / "static" / "fonts"
-DISPLAY = FONT_DIR / "SourceHanSansCN-Heavy-subset.woff2"
+DISPLAY = FONT_DIR / "SmileySans-subset.woff2"
 MONO = FONT_DIR / "JetBrainsMono-subset.woff2"
 BODY = {
     400: FONT_DIR / "SourceHanSansCN-Regular-subset.woff2",
@@ -89,7 +89,7 @@ def main() -> int:
     # 体积：这两个是首屏字体，超了就该重新收窄子集而不是默默变胖
     d_kb = DISPLAY.stat().st_size / 1024
     m_kb = MONO.stat().st_size / 1024
-    check(d_kb <= 420, "标题字体体积在预算内（≤420KB）", f"{d_kb:.0f} KB")
+    check(d_kb <= 320, "标题字体体积在预算内（≤320KB）", f"{d_kb:.0f} KB")
     check(m_kb <= 160, "mono 字体体积在预算内（≤160KB）", f"{m_kb:.0f} KB")
 
     from build_fonts import collect_cjk_chars

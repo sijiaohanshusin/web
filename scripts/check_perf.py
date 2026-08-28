@@ -159,7 +159,7 @@ def report_gzip():
         STATIC / "js" / "video-slots.js", STATIC / "js" / "home.js",
         STATIC / "js" / "hero-field.js",
         STATIC / "fonts" / "JetBrainsMono-subset.woff2",
-        STATIC / "fonts" / "SourceHanSansCN-Heavy-subset.woff2",
+        STATIC / "fonts" / "SmileySans-subset.woff2",
         STATIC / "fonts" / "SourceHanSansCN-Regular-subset.woff2",
         STATIC / "fonts" / "SourceHanSansCN-Bold-subset.woff2",
         STATIC / "fonts" / "SourceHanSerifCN-SemiBold-subset.woff2",

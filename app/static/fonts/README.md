@@ -5,12 +5,25 @@
 | 文件 | 来源 | 许可证 | 用途 |
 |---|---|---|---|
 | `JetBrainsMono-subset.woff2` | [JetBrains Mono v2.304](https://github.com/JetBrains/JetBrainsMono)（可变字重 100-800，拉丁子集） | SIL OFL 1.1 | 全站 mono 数字/编号/标签（`--font-mono`） |
-| `SourceHanSansCN-Heavy-subset.woff2` | [思源黑体 Source Han Sans CN Heavy](https://github.com/adobe-fonts/source-han-sans)（按站内标题用字子集） | SIL OFL 1.1 | 大标题真 Heavy 字重（`--font-display`） |
+| `SmileySans-subset.woff2` | [得意黑 Smiley Sans](https://github.com/atelier-anchor/smiley-sans)（按站内标题用字子集） | SIL OFL 1.1 | **标题**（`--font-display`） |
 | `SourceHanSansCN-Regular-subset.woff2` | 同上，Regular（GB2312 一级字全集） | SIL OFL 1.1 | **正文**（`--font-body`） |
 | `SourceHanSansCN-Bold-subset.woff2` | 同上，Bold（同一份字表） | SIL OFL 1.1 | 正文加粗，`<strong>` 与 600/700/800 |
 | `SourceHanSerifCN-SemiBold-subset.woff2` | [思源宋体 Source Han Serif CN SemiBold](https://github.com/adobe-fonts/source-han-serif)（按模板用字子集） | SIL OFL 1.1 | **第二声音**：各页导语（`--font-serif`） |
 
-当前体积：mono 116 KB · 标题 333 KB（977 字）· 正文 1030 + 1041 KB（3760 字）·
+## 标题字为什么是得意黑，不是思源黑体 Heavy
+
+原来标题用思源黑体 Heavy。它够厚，但**是最中性的一款黑体** —— 和微软雅黑、苹方
+同一类几何无衬线，所以「把标题字体自托管了」在观感上等于什么都没做，用户第一眼
+就说「看起来还是黑体，艺术性不足」。那句话是对的。
+
+得意黑是倾斜 + 紧缩的展示体，字形本身带态度；按同一份模板字表取字后 **270 KB，
+比 Heavy 的 333 KB 还小**，覆盖 9440 个码位（模板用字、GB2312 一级字、中文标点都不缺）。
+
+**`@font-face` 的 `font-weight` 必须写成范围 `100 900`。** 这个家族只有一个字形，
+而 CSS 里到处写着 `font-weight: 900`；只声明 400 的话浏览器会认为「家族里没有 900」
+而**合成假粗**（把字形描粗），那正是这套设计要摆脱的东西。
+
+当前体积：mono 116 KB · 标题 270 KB（977 字）· 正文 1030 + 1041 KB（3760 字）·
 宋体 461 KB（977 字）。五个都在 `base.html` 里 `rel=preload` —— 不 preload 的话
 浏览器要等 CSS 解析完才发现它们，整页先用系统黑体画一遍再换字。
 

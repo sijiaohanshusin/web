@@ -20,10 +20,20 @@
     font-display: swap;
 }
 
+/* 标题字：得意黑（Smiley Sans，SIL OFL）。
+   为什么换掉思源黑体 Heavy：那是最中性的一款黑体，和微软雅黑、苹方同一类 ——
+   所以「自托管了标题字体，但看起来还是黑体」正是它造成的，用户一眼就说出来了。
+   得意黑是倾斜 + 紧缩的展示体，字形本身带态度；紧缩还让同样宽度能放更大的字。
+   按模板取字后 270KB，比思源 Heavy 的 333KB 还小。
+
+   **`font-weight` 必须声明成范围 `100 900`。** 这个家族只有一个字形，而 CSS 里
+   到处写着 `font-weight: 900`（标题）—— 如果这里只声明 400，浏览器会认为
+   「家族里没有 900」而**合成假粗**（把字形描粗），那正是这套设计要摆脱的东西。
+   声明成范围等于告诉浏览器「任何字重都用这一个字形」，于是不合成。 */
 @font-face {
     font-family: "ESTA Display";
-    src: url("../fonts/SourceHanSansCN-Heavy-subset.woff2") format("woff2");
-    font-weight: 900;
+    src: url("../fonts/SmileySans-subset.woff2") format("woff2");
+    font-weight: 100 900;
     font-style: normal;
     font-display: swap;
 }
@@ -116,8 +126,8 @@
        改版上线后**站上读得最多的那部分文字，是唯一没被设计过的** ——
        Mac 上是苹方、Windows 上是微软雅黑，两个访客看到的是两种气质的网站。 */
     --font-body: "ESTA Sans", var(--font-sys);
-    /* 标题：Heavy 是按模板取字的子集，缺字时退到自己的 Bold（同一套设计、
-       只差一档字重），而不是跳到系统黑体（那是换一套字形）。 */
+    /* 标题：得意黑是按模板取字的子集，缺字时退到自己的正文 Bold，
+       而不是跳到系统黑体（那是换一套字形，且两种字形会同时出现在一行标题里）。 */
     --font-display: "ESTA Display", "ESTA Sans", var(--font-sys);
     /* 第二声音（宋体）。**只能用在模板文案 + 18px 以上**，理由见下面的
        @font-face 注释。用它的地方一律显式写 font-weight: 600 —— 这个家族

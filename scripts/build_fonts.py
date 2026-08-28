@@ -2,23 +2,29 @@
 自托管字体构建脚本（一次性/字库更新时运行）。
 
 产出（写入 app/static/fonts/）:
-    JetBrainsMono-subset.woff2          可变字重 100-800，拉丁+数字+常用符号
-    SourceHanSansCN-Heavy-subset.woff2  思源黑体 Heavy，按站内标题用字子集化
+    JetBrainsMono-subset.woff2            可变字重 100-800，拉丁+数字+常用符号
+    SmileySans-subset.woff2               得意黑，**标题**（按模板取字）
     SourceHanSansCN-Regular-subset.woff2  思源黑体 Regular，正文（GB2312 一级字全集）
     SourceHanSansCN-Bold-subset.woff2     思源黑体 Bold，正文加粗
+    SourceHanSerifCN-SemiBold-subset.woff2 思源宋体，第二声音（各页导语）
+
+标题字为什么从思源黑体 Heavy 换成得意黑：Heavy 是最中性的一款黑体，和微软雅黑、
+苹方同一类 —— 自托管之后「看起来还是黑体、艺术性不足」正是它造成的。得意黑是
+倾斜 + 紧缩的展示体，字形本身带态度，而且按模板取字后 270KB < Heavy 的 333KB。
 
 用法（源文件放 .fontsrc/，那个目录不入库）:
     python scripts/build_fonts.py .fontsrc/JetBrainsMono[wght].ttf \
-        .fontsrc/SourceHanSansCN-Heavy.otf
+        .fontsrc/smiley/SmileySans-Oblique.ttf
 
-    # 连正文两档一起重建（第一次或换字库时）
+    # 连正文两档、第二声音一起重建（第一次或换字库时）
     python scripts/build_fonts.py .fontsrc/JetBrainsMono[wght].ttf \
-        .fontsrc/SourceHanSansCN-Heavy.otf --body .fontsrc/SourceHanSansCN
+        .fontsrc/smiley/SmileySans-Oblique.ttf \
+        --body .fontsrc/SourceHanSansCN --serif .fontsrc/SourceHanSerifCN-SemiBold.otf
 
 字体源文件下载:
     https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip
         -> fonts/variable/JetBrainsMono[wght].ttf
-    https://github.com/adobe-fonts/source-han-sans/raw/release/SubsetOTF/CN/SourceHanSansCN-Heavy.otf
+    https://github.com/atelier-anchor/smiley-sans/releases  -> SmileySans-Oblique.ttf
     https://github.com/adobe-fonts/source-han-sans/raw/release/SubsetOTF/CN/SourceHanSansCN-Regular.otf
     https://github.com/adobe-fonts/source-han-sans/raw/release/SubsetOTF/CN/SourceHanSansCN-Bold.otf
     （思源黑体是 SIL OFL 1.1，许可记在 app/static/fonts/README.md）
@@ -136,7 +142,7 @@ def subset_font(src: Path, out: Path, text: str, unicodes: str = "") -> None:
 def main() -> None:
     if len(sys.argv) < 3:
         sys.exit(__doc__)
-    jbmono, shs = Path(sys.argv[1]), Path(sys.argv[2])
+    jbmono, display_src = Path(sys.argv[1]), Path(sys.argv[2])
     body_prefix = None
     if "--body" in sys.argv:
         body_prefix = sys.argv[sys.argv.index("--body") + 1]
@@ -149,12 +155,14 @@ def main() -> None:
         unicodes="U+00A0-00FF U+2013-2026 U+2190-2199 U+21D2 U+2500-257F",
     )
 
-    print("== 思源黑体 Heavy（标题用字子集）==")
+    # 标题字：得意黑（Smiley Sans，SIL OFL）。按模板取字 —— 标题文案由我们写，
+    # 扫得到；而且得意黑覆盖 9440 个码位，模板用字与 GB2312 一级字都不缺。
+    print("== 得意黑（标题用字子集）==")
     cjk = collect_cjk_chars()
     print(f"  收集到 {len(cjk)} 个汉字")
     text = latin + CJK_PUNCT + "".join(sorted(cjk))
     subset_font(
-        shs, OUT_DIR / "SourceHanSansCN-Heavy-subset.woff2",
+        display_src, OUT_DIR / "SmileySans-subset.woff2",
         text=text,
         unicodes="U+00A0-00FF U+2013-2026 U+3000-303F U+FF00-FFEF",
     )

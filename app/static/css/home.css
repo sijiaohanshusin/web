@@ -27,14 +27,30 @@
     padding: 120px 0 60px;
 }
 .nf-hero-text { max-width: 720px; }
+/* 得意黑本身是紧缩体，再收一点字距，让两行读成一个整块（海报的做法）。
+   0 字距时字与字之间会显得松，因为这个字形的侧边留白比思源 Heavy 小。 */
 .nf-hero-title {
+    letter-spacing: -.022em;
+    /* 这里的焊盘不画自己的引线 —— 让那个会闪的光标 `_` 当引线用。
+       两者都画的话句尾会出现两道横线，读起来是重复的记号。
+       于是这一处成了「信号沿光标走进焊盘」，顺带保住了光标的闪烁动效。 */
     font-family: var(--font-display);
     font-size: var(--fs-dsp-6); font-weight: 900; line-height: var(--lh-tight);
     letter-spacing: 2px; color: #fff; margin: 10px 0 26px;
 }
 .nf-hero-title .accent { color: var(--accent); }
-.nf-hero-title em { font-style: normal; animation: caret-blink 1.2s step-end infinite; font-weight: 700; }
-@keyframes caret-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+/* 句尾的收尾记号从「会闪的光标 `_`」换成焊盘 + 引线。
+   为什么不两个都留：先试过让光标当引线，但光标是 step-end 闪烁的 ——
+   灭的那半个周期里焊盘环就孤零零悬在半空，什么都没连着（移动端截图逮到的）。
+   记号只留一个，闪烁改由焊盘自己做：呼吸一下，读作「这条线是通电的」。 */
+.nf-hero-title .pad-out::after { animation: pad-live 2.4s var(--ease-out) infinite; }
+@keyframes pad-live {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .34; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .nf-hero-title .pad-out::after { animation: none; }
+}
 /* 首屏那句也是导语，用宋体（第二声音）—— 全站导语一个口径，见 tokens.css。
    它带 .line-reveal，字体变了会改动画元素的度量，所以改完跑 check_hero.py。 */
 .nf-hero-sub {
@@ -363,7 +379,11 @@ html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
     border-bottom: 1px solid var(--line-d); letter-spacing: .5px;
 }
 .term-prompt { color: var(--ok); }
+/* 终端光标的闪烁。这条 keyframes 原来定义在首屏那句标题旁边（那里也有个光标），
+   首屏改用焊盘收尾之后把它挪到这里 —— 现在只有这一个用户。
+   **动画名不存在时浏览器不报错，只是静默不动**，所以删掉定义前先 grep 谁在用。 */
 .term-caret { color: var(--accent-2); animation: caret-blink 1.2s step-end infinite; }
+@keyframes caret-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 .nf-res-row {
     display: flex; align-items: baseline; gap: 14px;
     padding: 17px 22px; color: var(--text);

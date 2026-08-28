@@ -92,7 +92,7 @@ fi
 html=$(curl -sS $R "$BASE/")
 
 echo
-echo "自托管字体（五个：mono / 标题 Heavy / 正文 Regular + Bold / 导语宋体）"
+echo "自托管字体（五个：mono / 标题得意黑 / 正文 Regular + Bold / 导语宋体）"
 # **必须查「首页实际引用的那个哈希」，不能在目录里按名字挑一个。**
 # /srv/heuesta/static 是持久卷，而 ManifestStaticFilesStorage 从不删旧哈希文件 ——
 # 目录里同时躺着几个月前的同名字体。第一版这里写的是 `ls | grep | head -1`，
@@ -126,7 +126,7 @@ fi
 
 echo
 echo "首页真的是新版（找几个改版才有的标记）"
-for probe in 'skip-link' 'view-transitions' 'nf-hero' 'SourceHanSansCN-Heavy-subset' \
+for probe in 'skip-link' 'view-transitions' 'nf-hero' 'SmileySans-subset' \
              'SourceHanSansCN-Regular-subset'; do
     if has "$probe" "$html"; then
         ok "首页含 $probe"
