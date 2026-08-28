@@ -52,6 +52,28 @@
     font-display: swap;
 }
 
+/* 第二声音：思源宋体 SemiBold。全站原来只有「几何无衬线 + 等宽」两种声音，
+   温度是平的 —— 加一个**种类**上的对比，比再加一档字号有效得多。
+
+   两条使用限制（不是风格偏好，是它会坏掉的条件）：
+   1. **只用在模板文案上。** 它的字表和标题字体一样是按模板取字的（按正文那份
+      GB2312 全集做出来是 1456KB，宋体轮廓复杂，多花 40%）。站务写的内容
+      （公告引用块、作品简介）里可能有子集外的字，那会在一段引文里混进黑体。
+   2. **只用在 18px 上下，不要拿去做小字。** 宋体的横画在纯黑底上本来就细，
+      小字号会发虚 —— 这也是只做 SemiBold 一档的原因（Regular 在暗底上撑不住）。
+      窄屏 15px 没问题：手机 DPR≥2，实际像素比 1x 桌面的 18px 还多。
+
+   现在用在哪（全是「导语」这一个角色）：`.page-hero-sub`（每页页头）、
+   `.recruit-hero p`、`.rec-hero-sub`、`.auth-lede`、`.nf-join-sub`。
+   **`.wk-detail-lede` 刻意不用** —— 它的文字来自数据库。 */
+@font-face {
+    font-family: "ESTA Serif";
+    src: url("../fonts/SourceHanSerifCN-SemiBold-subset.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
 :root {
     --black: #050506;
     --black-2: #0b0b0e;
@@ -97,6 +119,10 @@
     /* 标题：Heavy 是按模板取字的子集，缺字时退到自己的 Bold（同一套设计、
        只差一档字重），而不是跳到系统黑体（那是换一套字形）。 */
     --font-display: "ESTA Display", "ESTA Sans", var(--font-sys);
+    /* 第二声音（宋体）。**只能用在模板文案 + 18px 以上**，理由见下面的
+       @font-face 注释。用它的地方一律显式写 font-weight: 600 —— 这个家族
+       只有一档，写 400 或 700 会被浏览器映射到 600，看着对、实则在说谎。 */
+    --font-serif: "ESTA Serif", Georgia, "Songti SC", "SimSun", serif;
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
     /* 兼容内页组件的旧变量名 */

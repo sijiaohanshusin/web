@@ -114,6 +114,12 @@ def subset_font(src: Path, out: Path, text: str, unicodes: str = "") -> None:
     options.name_IDs = ["*"]
     options.notdef_outline = True
     options.recalc_bounds = True
+    # 不刷新 head.modified，少一个变动来源。
+    # **但这个脚本的输出仍然不是逐字节可复现的**：连续两次构建同一个字体，
+    # woff2 的字节就不一样（实测哈希不同、体积一样）。所以重建会把所有产出都
+    # 标成 modified，入库后哈希全变一遍、回访用户白下一次。
+    # 结论：**只在真的要改字表时重建，并且把没必要变的那几个 `git checkout` 回去。**
+    options.recalc_timestamp = False
     options.drop_tables += ["FFTM"]
     font = TTFont(str(src))
     subsetter = Subsetter(options=options)
@@ -152,6 +158,30 @@ def main() -> None:
         text=text,
         unicodes="U+00A0-00FF U+2013-2026 U+3000-303F U+FF00-FFEF",
     )
+
+    serif = None
+    if "--serif" in sys.argv:
+        serif = Path(sys.argv[sys.argv.index("--serif") + 1])
+
+    if serif:
+        # 第二声音：思源宋体 SemiBold。
+        #
+        # **字表按模板取字（和标题一样，不是正文那份 GB2312 全集）。**
+        # 一开始按正文的字表做了一版：1456KB —— 宋体的轮廓比黑体复杂，同样
+        # 3760 个字要多花 40%。而它的用途只有「页头导语」和「长文开篇」这几处
+        # 模板文案，所以按模板取字就够，代价降到三分之一。
+        # 代价是**它只能用在模板文案上**：站务写的正文（公告引用块、作品简介）
+        # 里可能有子集外的字，那会在一段引文里混进黑体 —— 所以那些地方不用它。
+        # 这条约束写进 tokens.css 的注释里，不然下一个人很容易顺手拿去用。
+        #
+        # 只做 SemiBold 一档：宋体的横画在黑底上本来就细，Regular 会发虚；
+        # 而它的用途全是「大一号的短句」，不需要字重变化。
+        print("== 思源宋体 SemiBold（第二声音，按模板取字）==")
+        subset_font(
+            serif, OUT_DIR / "SourceHanSerifCN-SemiBold-subset.woff2",
+            text=text,   # 和标题字体同一份字表
+            unicodes="U+00A0-00FF U+2013-2026 U+3000-303F U+FF00-FFEF",
+        )
 
     if not body_prefix:
         print("\n（没给 --body，正文两档未重建；只有换字库或改字表时才需要）")

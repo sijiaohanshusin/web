@@ -1583,11 +1583,12 @@ class DeployPerfContractTests(TestCase):
 
         text = _template_text("base.html")
         preloads = re.findall(r'<link rel="preload"[^>]*as="font"[^>]*>', text)
-        self.assertEqual(len(preloads), 4, f"字体 preload 不是四条：{len(preloads)}")
+        self.assertEqual(len(preloads), 5, f"字体 preload 不是五条：{len(preloads)}")
         blob = " ".join(preloads)
         for font in ("JetBrainsMono-subset.woff2", "SourceHanSansCN-Heavy-subset.woff2",
                      "SourceHanSansCN-Regular-subset.woff2",
-                     "SourceHanSansCN-Bold-subset.woff2"):
+                     "SourceHanSansCN-Bold-subset.woff2",
+                     "SourceHanSerifCN-SemiBold-subset.woff2"):
             with self.subTest(font=font):
                 self.assertIn(font, blob)
 

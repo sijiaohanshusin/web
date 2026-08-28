@@ -8,10 +8,25 @@
 | `SourceHanSansCN-Heavy-subset.woff2` | [思源黑体 Source Han Sans CN Heavy](https://github.com/adobe-fonts/source-han-sans)（按站内标题用字子集） | SIL OFL 1.1 | 大标题真 Heavy 字重（`--font-display`） |
 | `SourceHanSansCN-Regular-subset.woff2` | 同上，Regular（GB2312 一级字全集） | SIL OFL 1.1 | **正文**（`--font-body`） |
 | `SourceHanSansCN-Bold-subset.woff2` | 同上，Bold（同一份字表） | SIL OFL 1.1 | 正文加粗，`<strong>` 与 600/700/800 |
+| `SourceHanSerifCN-SemiBold-subset.woff2` | [思源宋体 Source Han Serif CN SemiBold](https://github.com/adobe-fonts/source-han-serif)（按模板用字子集） | SIL OFL 1.1 | **第二声音**：各页导语（`--font-serif`） |
 
-当前体积：mono 116 KB · 标题 333 KB（977 字）· 正文 1030 + 1041 KB（3760 字）。
-四个都在 `base.html` 里 `rel=preload` —— 不 preload 的话浏览器要等 CSS 解析完才
-发现它们，整页先用系统黑体画一遍再换字。
+当前体积：mono 116 KB · 标题 333 KB（977 字）· 正文 1030 + 1041 KB（3760 字）·
+宋体 461 KB（977 字）。五个都在 `base.html` 里 `rel=preload` —— 不 preload 的话
+浏览器要等 CSS 解析完才发现它们，整页先用系统黑体画一遍再换字。
+
+## 第二声音（宋体）只能用在模板文案上
+
+全站原来只有「几何无衬线 + 等宽」两种声音，温度是平的。宋体加的是**种类**上的
+对比，比再加一档字号有效得多 —— 但它的字表和标题字体一样是**按模板取字**的
+（按正文那份 GB2312 全集做出来是 1456 KB，宋体轮廓比黑体复杂，同样字数多花 40%）。
+
+所以：**数据库里的文字不许用它。** `.wk-detail-lede`（作品简介，会员自己写的）
+就是刻意留成黑体的，CSS 里写了原因。这条约束没法靠脚本证明，只能靠注释 ——
+`check_fonts.py` 能保证的是「模板里的字都在宋体子集里」。
+
+现在用在哪（全是「导语」这一个角色）：`.page-hero-sub`（每页页头）、
+`.recruit-hero p`、`.rec-hero-sub`、`.auth-lede`、`.nf-join-sub`。
+另外它只做 SemiBold 一档：宋体横画在纯黑底上本来就细，Regular 会发虚。
 
 ## 正文两档的两条硬要求
 
@@ -58,3 +73,11 @@ python scripts/build_fonts.py <JetBrainsMono[wght].ttf> <SourceHanSansCN-Heavy.o
 `collect_cjk_chars()` 会先整块摘掉 `{% comment %}` 与 `<!-- -->` —— 本项目的模板
 注释又长又全是中文，而注释一个字都不会渲染。不摘的话它们全进子集（实测多出
 125 个字、33 KB），而且会让上面那条检查变成在要求「注释里的字也得在字库里」。
+
+## 重建不是逐字节可复现的
+
+连续两次跑 `build_fonts.py` 构建同一个字体，产出的 woff2 字节就不一样（体积相同、
+哈希不同）。所以「顺手重跑一遍」会把五个文件全标成 modified，入库后哈希全变一遍，
+所有回访用户白下 2.5MB。
+
+**只在真的要改字表时重建**，并且把这次没必要变的那几个 `git checkout HEAD --` 回去。

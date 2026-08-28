@@ -45,13 +45,14 @@ BUDGETS = {
     # 首页的正片主体。刻意让它在开场遮罩那几秒里下完（「首访可以慢」是明确约束），
     # 而不是等滚到分镜 01 才现下、导致 3D 迟一步弹进来把「逐层制造」那段叙事打断。
     # gzip 之后这 750KB 约 190KB。**没有 WebGL / 减动效时压根不下**，下面有断言钉住。
-    # font 从 500 提到 2600：正文两档中文（GB2312 一级字全集）占约 2MB，
-    # 见 build_fonts.py 的说明与 tokens.css 的 @font-face 注释。
-    "/": {"total": 4200, "js": 1150, "css": 190, "font": 2600},
-    "/news/": {"total": 2900, "js": 200, "css": 175, "font": 2600},
-    "/recruit/": {"total": 6300, "js": 220, "css": 175, "font": 2600},
-    "/works/": {"total": 2900, "js": 200, "css": 175, "font": 2600},
-    "/accounts/register/": {"total": 2900, "js": 210, "css": 175, "font": 2600},
+    # font 从 500 提到 3100：正文两档中文（GB2312 一级字全集）约 2MB，
+    # 第二声音（宋体，按模板取字）461KB。见 build_fonts.py 与 tokens.css 的注释。
+    # 首页的 css 比内页多一份 home.css（分镜专属）+ lenis.css
+    "/": {"total": 4700, "js": 1150, "css": 215, "font": 3100},
+    "/news/": {"total": 3400, "js": 200, "css": 175, "font": 3100},
+    "/recruit/": {"total": 6800, "js": 220, "css": 175, "font": 3100},
+    "/works/": {"total": 3400, "js": 200, "css": 175, "font": 3100},
+    "/accounts/register/": {"total": 3400, "js": 210, "css": 175, "font": 3100},
 }
 
 # 只有首页的分镜 01 会 import three。别的页面拉到它就是纯浪费。
@@ -161,19 +162,20 @@ def report_gzip():
         STATIC / "fonts" / "SourceHanSansCN-Heavy-subset.woff2",
         STATIC / "fonts" / "SourceHanSansCN-Regular-subset.woff2",
         STATIC / "fonts" / "SourceHanSansCN-Bold-subset.woff2",
+        STATIC / "fonts" / "SourceHanSerifCN-SemiBold-subset.woff2",
     ]
     missing = [p.name for p in always if not p.exists()]
     total = sum(gz(p) for p in always if p.exists())
     check(not missing, "首页那套固定资源都在", ", ".join(missing))
     print(f"  → 首页首访的代码 + 字体合计 gzip 约 {total / 1024:.0f} KB"
-          f"（其中字体 {sum(gz(p) for p in always[-4:]) / 1024:.0f} KB）")
+          f"（其中字体 {sum(gz(p) for p in always[-5:]) / 1024:.0f} KB）")
     # 预算从 900KB 提到 3000KB：正文两档自托管中文字体占了约 2MB。
     # 这是明确的用体积换效果（用户口径：展示效果优先于加载时间，重复访问有一年
     # immutable 缓存 + 前面挂 EdgeOne）。**woff2 本身已经是 brotli 压缩过的**，
     # 所以这里 gzip 前后几乎一样，2MB 就是 2MB。
     # 上调而不是删掉：它现在的职责是「别再无意中多拖进来一个大件」。
-    check(total / 1024 <= 3000,
-          "首页首访「代码 + 字体」在 3000KB 预算内（不含图片与按需的 3D）",
+    check(total / 1024 <= 3500,
+          "首页首访「代码 + 字体」在 3500KB 预算内（不含图片与按需的 3D）",
           f"{total / 1024:.0f} KB")
 
 
@@ -212,14 +214,14 @@ def main() -> int:
         check(not b["bodyBlocking"], "body 里的脚本全都 defer 了", str(b["bodyBlocking"]))
         check(len(b["css"]) <= 4, "阻塞渲染的样式表不超过 4 张", str(b["css"]))
         fonts_pre = sorted(x["file"] for x in b["preloads"] if x["as"] == "font")
-        check(len(fonts_pre) == 4,
-              "**四个自托管字体都 preload 了**（少一个，那一档文字就会先用系统黑体画一遍再跳）",
+        check(len(fonts_pre) == 5,
+              "**五个自托管字体都 preload 了**（少一个，那一档文字就会先用系统黑体画一遍再跳）",
               str(fonts_pre))
 
         # ---------------- 字体真的早早开始下 ----------------
         r = page.evaluate(RESOURCES)
         font_items = [i for i in r["items"] if i["kind"] == "font"]
-        check(len(font_items) == 4, "四个字体都真的被下载了", str([i["name"] for i in font_items]))
+        check(len(font_items) == 5, "五个字体都真的被下载了", str([i["name"] for i in font_items]))
         for i in font_items:
             check(i["init"] == "link",
                   f"{i['name'].split('/')[-1]} 是 preload 拉的（不是等 CSS 解析才发现）",
@@ -267,7 +269,7 @@ def main() -> int:
             # 字体是每页都要下的大件，顺手确认这一页真的把四个都下了 ——
             # 不然「font 在预算内」在缓存命中时会以 1KB 轻松通过、等于没测
             nfont = len([i for i in r["items"] if i["kind"] == "font"])
-            check(nfont == 4, f"{url} 这一页真的下了四个字体（不是缓存命中）",
+            check(nfont == 5, f"{url} 这一页真的下了五个字体（不是缓存命中）",
                   f"{nfont} 个")
             pctx.close()
 

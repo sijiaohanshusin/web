@@ -426,7 +426,12 @@ html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
 
 /* 倒计时组件在 core.css：首页 CTA 和招新落地页都用它，按 CSS 三层的判据
    （内页也会用到 → core.css）不该留在首页专属层。 */
-.nf-join-sub { color: var(--muted); font-size: var(--fs-lead); margin-bottom: 44px; position: relative; }
+/* 导语用宋体（第二声音）。使用条件见 tokens.css 的 @font-face 注释：
+   只能是模板文案、只在 18px 上下的尺寸。这一句两条都满足。 */
+.nf-join-sub {
+    color: var(--muted); font-size: var(--fs-lead); margin-bottom: 44px; position: relative;
+    font-family: var(--font-serif); font-weight: 600;
+}
 .nf-join-qq { position: relative; display: flex; flex-direction: column; align-items: center; gap: 26px; }
 /* 次级重音：白色 mono + 品牌色底线。全页唯一的渐变发光留给「31」大数字 */
 .nf-join-number {

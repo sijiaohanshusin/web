@@ -38,6 +38,7 @@ BODY = {
     400: FONT_DIR / "SourceHanSansCN-Regular-subset.woff2",
     700: FONT_DIR / "SourceHanSansCN-Bold-subset.woff2",
 }
+SERIF = FONT_DIR / "SourceHanSerifCN-SemiBold-subset.woff2"
 
 # mono 是全站数字与编号的主角，这些码位缺一个就会在版面上留一个豆腐块或跳字。
 # 拉丁可见区间 + 常用排版符号 + 箭头（文案里到处是「→」）。
@@ -157,6 +158,25 @@ def main() -> int:
     check(not only400 and not only700,
           "**Regular 与 Bold 覆盖完全一致**（否则加粗会让个别字掉档）",
           f"只有 400 有 {len(only400)} 个 / 只有 700 有 {len(only700)} 个")
+
+    # ---------------- 第二声音（宋体） ----------------
+    # 它和标题字体同一份字表（按模板取字），所以判据也一样。
+    # 之所以不按正文那份 GB2312 全集：宋体轮廓复杂，3760 字要 1456KB。
+    # 代价是它**只能用在模板文案上**，而这条约束没法靠脚本证明 —— 只能靠
+    # tokens.css 那段注释和 CSS 里逐处的说明（`.wk-detail-lede` 就是刻意不用的）。
+    print("\n第二声音（宋体 SemiBold）：字表同标题，只服务模板文案")
+    check(SERIF.exists(), "宋体子集存在", SERIF.name)
+    if not SERIF.exists():
+        return 1
+    s_kb = SERIF.stat().st_size / 1024
+    check(s_kb <= 560, "宋体体积在预算内（≤560KB）", f"{s_kb:.0f} KB")
+    serif_cov = coverage(SERIF)
+    miss_serif = sorted(ch for ch in needed if ord(ch) not in serif_cov)
+    check(not miss_serif, "**模板里的汉字全部被宋体子集覆盖**",
+          f"缺 {len(miss_serif)} 字" if miss_serif else f"{len(needed)} 字全覆盖")
+    miss_punct_serif = [c for c in CJK_PUNCT if ord(c) not in serif_cov]
+    check(not miss_punct_serif, "宋体的中文标点全覆盖",
+          "缺 " + " ".join(miss_punct_serif) if miss_punct_serif else f"{len(CJK_PUNCT)} 个")
 
     if missing and "--list" in sys.argv:
         print("\n缺的字（重跑 build_fonts.py 就会补上）：")

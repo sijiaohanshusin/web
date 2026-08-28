@@ -54,7 +54,10 @@
     font-family: var(--font-display); color: #fff; font-weight: 900;
     font-size: var(--fs-dsp-3); line-height: var(--lh-tight); margin-bottom: 12px;
 }
-.auth-lede { color: var(--muted); font-size: var(--fs-lead); line-height: var(--lh-prose); }
+.auth-lede {
+    color: var(--muted); font-size: var(--fs-lead); line-height: var(--lh-prose);
+    font-family: var(--font-serif); font-weight: 600;   /* 导语用宋体，见 tokens.css */
+}
 
 /* 侧栏要点：一条铜色短划当项目符号（工艺记号语义，交互色留给按钮） */
 .auth-points { list-style: none; margin: 0; padding: 0; }
@@ -822,8 +825,16 @@ html.esta-pre-lock .line-reveal { animation-play-state: paused; }
 }
 .page-hero h1 .accent { color: var(--hero-accent, var(--accent)); }
 /* 页头那句说明是**导语**，不是正文：它比正文大一档、行高更松、行宽掐在 720px。
-   用流体的 --fs-lead 而不是固定档 —— 窄屏 15px（不挤），宽屏 18px（撑得住）。 */
-.page-hero-sub { color: var(--muted); font-size: var(--fs-lead); line-height: var(--lh-prose); max-width: 720px; }
+   用流体的 --fs-lead 而不是固定档 —— 窄屏 15px（不挤），宽屏 18px（撑得住）。
+
+   导语用宋体（第二声音）。这是全站唯一一处「每页都出现」的非黑体文字，
+   目的是让页头有两个声音：Heavy 黑体喊一句，宋体接着说一句。
+   文案都在模板里，符合宋体子集的使用条件（见 tokens.css）。
+   `font-weight: 600` 要显式写：那个家族只有这一档。 */
+.page-hero-sub {
+    color: var(--muted); font-size: var(--fs-lead); line-height: var(--lh-prose); max-width: 720px;
+    font-family: var(--font-serif); font-weight: 600;
+}
 .page-hero-sub strong {
     color: #fff; font-family: var(--font-mono); font-size: var(--fs-2xl);
     font-variant-numeric: tabular-nums;
@@ -1154,7 +1165,10 @@ a.fb-mine-text:hover { color: var(--brand-2); }
     background: radial-gradient(ellipse 70% 90% at 85% -10%, rgba(13, 169, 205, .16), transparent 60%);
 }
 .recruit-hero h1 { font-family: var(--font-display); color: #fff; font-size: var(--fs-dsp-3); font-weight: 900; margin-bottom: 14px; }
-.recruit-hero p { color: var(--muted); max-width: 680px; font-size: var(--fs-lead); }
+.recruit-hero p {
+    color: var(--muted); max-width: 680px; font-size: var(--fs-lead);
+    font-family: var(--font-serif); font-weight: 600;   /* 导语用宋体，见 tokens.css */
+}
 
 /* 「这一页有多长」：进来先给尺度，长页最怕的是不知道要读多久 */
 .rg-meta {
@@ -1555,7 +1569,10 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 .rec-hero-title .accent { color: var(--accent); }
 .rec-hero-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
 .rec-hero-campaign { color: var(--muted); font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: 1px; }
-.rec-hero-sub { color: var(--muted); font-size: var(--fs-lead); max-width: 620px; line-height: var(--lh-prose); }
+.rec-hero-sub {
+    color: var(--muted); font-size: var(--fs-lead); max-width: 620px; line-height: var(--lh-prose);
+    font-family: var(--font-serif); font-weight: 600;   /* 导语用宋体，见 tokens.css */
+}
 .rec-hero-sub strong { color: var(--accent-2); font-family: var(--font-mono); letter-spacing: 1px; }
 
 /* 实时报名数据。第一格是主角（已报名总数），后面三格是意向分布 */
@@ -1945,6 +1962,9 @@ div.proj-card { display: flex; }
     font-family: var(--font-display); color: #fff; font-weight: 900;
     font-size: var(--fs-dsp-2); line-height: var(--lh-tight); margin-bottom: 12px;
 }
+/* 作品导语是同一个「导语」角色，但**刻意不用宋体** —— 这段文字来自数据库
+   （`Project.summary`，会员自己写的），而宋体子集只覆盖模板用字，一个生僻字
+   就会在这段话里混进一个黑体字。别顺手把它统一过去。 */
 .wk-detail-lede { color: var(--text); font-size: var(--fs-lead); line-height: var(--lh-prose); max-width: 680px; }
 .wk-detail-meta {
     display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 18px;
