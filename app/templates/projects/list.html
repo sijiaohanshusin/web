@@ -2,25 +2,43 @@
 
 {% block title %}项目档案库 | {{ site_config.site_name_en }}{% endblock %}
 {% block description %}电子科技协会项目档案库：课题与作品的资料归档，成员协作。{% endblock %}
+{% block body_class %}page-projects{% endblock %}
 
 {% block content %}
-<div class="container page-section">
-    <div class="page-head">
+{% comment %}
+会员私有的档案库（`projects:`）。给外人看的那面是 `/works/` 作品墙（`works:`），
+两者是同一个 Project 的两副面孔 —— 见 projects/models.py 的说明。
+{% endcomment %}
+<section class="page-hero nf-scope">
+    <div class="container">
         <p class="nf-eyebrow">// PROJECTS</p>
-        <h1>项目档案库</h1>
-        <p>课题与作品的资料归档空间。项目成员可上传管理文件，其他会员可浏览项目名片。</p>
+        <h1>项目<span class="accent">档案库</span></h1>
+        <p class="page-hero-sub">
+            课题与作品的资料归档空间。项目成员可上传管理文件，其他会员可浏览项目名片。
+            做完并且愿意公开的，会出现在<a href="{% url 'works:wall' %}">作品墙</a>上。
+        </p>
     </div>
+</section>
 
+<div class="container page-section">
     <div class="filter-bar">
-        <div class="filter-tabs">
-            <a href="?status=active{% if dept %}&dept={{ dept }}{% endif %}" class="{% if status == 'active' %}active{% endif %}">进行中</a>
-            <a href="?status=archived{% if dept %}&dept={{ dept }}{% endif %}" class="{% if status == 'archived' %}active{% endif %}">已归档</a>
+        <div class="pill-row">
+            <a {% if status == 'active' %}class="pill is-current" aria-current="page"
+               {% else %}class="pill"{% endif %}
+               href="{% querystring status='active' %}">进行中</a>
+            <a {% if status == 'archived' %}class="pill is-current" aria-current="page"
+               {% else %}class="pill"{% endif %}
+               href="{% querystring status='archived' %}">已归档</a>
         </div>
         <div class="filter-spacer"></div>
-        <div class="filter-tabs">
-            <a href="?status={{ status }}" class="{% if not dept %}active{% endif %}">全部方向</a>
+        <div class="pill-row">
+            <a {% if not dept %}class="pill is-current" aria-current="page"
+               {% else %}class="pill"{% endif %}
+               href="{% querystring dept=None %}">全部方向</a>
             {% for value, label in departments %}
-                <a href="?status={{ status }}&dept={{ value }}" class="{% if dept == value %}active{% endif %}">{{ label }}</a>
+                <a {% if dept == value %}class="pill is-current" aria-current="page"
+                   {% else %}class="pill"{% endif %}
+                   href="{% querystring dept=value %}">{{ label }}</a>
             {% endfor %}
         </div>
     </div>
@@ -28,34 +46,41 @@
     {% if projects %}
         <div class="proj-grid">
             {% for p in projects %}
+            {% comment %}
+            不是成员就渲染成 div 而不是 a —— 点了会 403 的链接比不可点更糟。
+            标签的开合跨 if 分支写会很脆，所以两个分支各写一整份卡片，重复的那几行
+            换来的是「改一处不会把标签结构打破」。
+            {% endcomment %}
             {% if p.pk in my_project_ids or is_officer %}
-                <a class="proj-card" href="{% url 'projects:detail' p.pk %}">
-            {% else %}
-                <div class="proj-card proj-card-locked" title="加入项目后可查看文件">
-            {% endif %}
-                <span class="proj-card-head">
-                    <span class="badge badge-blue">{{ p.get_department_display }}</span>
-                    {% if p.status == 'archived' %}<span class="badge badge-gray">已归档</span>{% endif %}
-                    {% if p.pk in my_project_ids %}<span class="badge badge-green">我的项目</span>{% endif %}
-                </span>
-                <strong class="proj-card-title">{{ p.name }}</strong>
-                <span class="proj-card-summary">{{ p.summary|default:"暂无简介"|truncatechars:60 }}</span>
-                <span class="proj-card-foot">
-                    {{ p.members.count }} 名成员
-                    {% if p.pk in my_project_ids or is_officer %} · 查看文件 →{% else %} · 🔒 仅成员可见文件{% endif %}
-                </span>
-            {% if p.pk in my_project_ids or is_officer %}
+                <a class="card card-link proj-card" href="{% url 'projects:detail' p.pk %}">
+                    <span class="proj-card-head">
+                        <span class="badge badge-blue">{{ p.get_department_display }}</span>
+                        {% if p.status == 'archived' %}<span class="badge badge-gray">已归档</span>{% endif %}
+                        {% if p.pk in my_project_ids %}<span class="badge badge-green">我的项目</span>{% endif %}
+                    </span>
+                    <strong class="proj-card-title">{{ p.name }}</strong>
+                    <span class="proj-card-summary">{{ p.summary|default:"暂无简介"|truncatechars:60 }}</span>
+                    <span class="proj-card-foot">{{ p.member_total }} 名成员 · 查看文件 →</span>
                 </a>
             {% else %}
+                <div class="card proj-card proj-card-locked" title="加入项目后可查看文件">
+                    <span class="proj-card-head">
+                        <span class="badge badge-blue">{{ p.get_department_display }}</span>
+                        {% if p.status == 'archived' %}<span class="badge badge-gray">已归档</span>{% endif %}
+                    </span>
+                    <strong class="proj-card-title">{{ p.name }}</strong>
+                    <span class="proj-card-summary">{{ p.summary|default:"暂无简介"|truncatechars:60 }}</span>
+                    <span class="proj-card-foot">{{ p.member_total }} 名成员 · 仅成员可见文件</span>
                 </div>
             {% endif %}
             {% endfor %}
         </div>
     {% else %}
-        <div class="empty-hint">
-            <span class="empty-icon">{% include "includes/icon.html" with name="folder" cls="icon-lg" %}</span>
-            {% if status == 'archived' %}还没有已归档的项目{% else %}还没有进行中的项目{% endif %}
-        </div>
+        {% if status == 'archived' %}
+            {% include "includes/empty_state.html" with icon="folder" title="还没有已归档的项目" body="做完的项目会归档到这里。" cta="看进行中" cta_url="?status=active" %}
+        {% else %}
+            {% include "includes/empty_state.html" with icon="folder" title="还没有进行中的项目" body="项目档案库是给课题存原理图、代码和报告的地方。想开一个就找站务建。" cta="看作品墙" cta_url="/works/" %}
+        {% endif %}
     {% endif %}
 </div>
 {% endblock %}

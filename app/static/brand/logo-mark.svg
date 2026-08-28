@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 216 216" fill="none"
+     stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"
+     role="img" aria-labelledby="esta-logo-title" data-esta-logo="mark">
+  <title id="esta-logo-title">哈尔滨工程大学电子科技协会会标</title>
+  <!--
+    会标矢量版 —— 全站唯一事实来源（导航、页脚、加载动画、3D 模型都用它）。
+
+    来历：对 app/static/img/logo-mark.png 做 Zhang-Suen 细化取出走线中心线，
+    实测笔画宽 10、焊盘环 r=11、内孔 r≈7.5，再按 PCB 布线规范整理成干净几何。
+    沿用原图 216x216 坐标系，方便与位图逐点比对（scripts/verify_logo.py）。
+
+    结构 = 三个焊盘 + 三段走线，这也是描线动画与脉冲动画的叙事依据：
+      pad-in   (54,26)    信号入口，单连接
+      pad-mid  (30,110)   三向节点：上进、下出、右出
+      pad-out  (152,188)  信号出口，汇入两路
+      trunk-in   pad-in  → 左侧竖线 → pad-mid          （外侧主干上半）
+      trunk-out  pad-mid → 左侧竖线 → 底边 → pad-out    （外侧主干下半）
+      spiral     pad-mid → 向右 → 绕内框一圈 → pad-out   （内侧螺旋）
+    data-esta-order 给出点亮顺序，动画按它排时间线，改几何不用改 JS。
+
+    两条必须守住的构造规则：
+
+    1) 走线止于焊盘环外缘（半径 14.5），不画到圆心。
+       环的墨迹只占半径 7.5~14.5，圆心那一圈是空的内孔。若走线画到圆心，
+       内孔会被填掉，就不是焊盘而是一个实心圆点了。收笔点取半径 14，
+       round linecap 再向内延伸 5，笔尖落在半径 9，稳稳压在环上又不侵入内孔。
+       这也是真实 PCB 的接法：走线接到环形焊盘（annular ring），孔留给钻头。
+
+    2) 转角照原图：主干两个 90° 用二次贝塞尔圆角（等效 r≈8.5），
+       内框转角用 45° 斜切。后者是 PCB 布线不允许直角的规矩，
+       也是这个标最有辨识度的细节，重绘时刻意保留。
+
+    stroke 用 currentColor：导航栏在白区反色时靠 color 继承即可，
+    不需要 filter: invert() 那种会连带影响抗锯齿的粗暴手段。
+
+    pathLength="100" 让描线动画直接用 0~100 的 stroke-dashoffset，
+    JS 不必测量真实弧长（三段长度不同，且会随缩放变化）。
+
+    注意：本文件作为独立 .svg 被取用时走的是 XML 解析器，**任何属性都必须
+    带值**。写成 data-esta-logo（无值）在内联 HTML 里没问题，但独立文件会
+    直接解析失败、整图不渲染，而且 three.js 的 SVGLoader 也读不了。
+    scripts/verify_logo.py 会检查 XML 合法性，别把它绕过去。
+  -->
+  <g data-esta-group="traces">
+    <path data-esta-trace="trunk-in" data-esta-order="1" pathLength="100"
+          d="M 40 26
+             Q 30 26 30 36
+             L 30 96" />
+    <path data-esta-trace="spiral" data-esta-order="3" pathLength="100"
+          d="M 44 110
+             L 104 110
+             L 112 102
+             L 112 34
+             L 120 26
+             L 186 26
+             L 194 34
+             L 194 142
+             L 186 150
+             L 80 150
+             L 72 142
+             L 72 76
+             L 80 68
+             L 144 68
+             L 152 76
+             L 152 174" />
+    <path data-esta-trace="trunk-out" data-esta-order="4" pathLength="100"
+          d="M 30 124
+             L 30 178
+             Q 30 188 40 188
+             L 138 188" />
+  </g>
+  <g data-esta-group="pads" stroke-width="7">
+    <circle data-esta-pad="in" data-esta-order="0" cx="54" cy="26" r="11" pathLength="100" />
+    <circle data-esta-pad="mid" data-esta-order="2" cx="30" cy="110" r="11" pathLength="100" />
+    <circle data-esta-pad="out" data-esta-order="5" cx="152" cy="188" r="11" pathLength="100" />
+  </g>
+</svg>

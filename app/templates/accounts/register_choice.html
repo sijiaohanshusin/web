@@ -1,42 +1,62 @@
 {% extends "base.html" %}
 
 {% block title %}选择注册通道 | {{ site_config.site_name_en }}{% endblock %}
-{% block description %}哈尔滨工程大学电子科技协会 2026 招新注册与老会员身份恢复入口。{% endblock %}
+{% block description %}哈尔滨工程大学电子科技协会招新注册与老会员身份恢复入口。{% endblock %}
+{% block body_class %}page-auth{% endblock %}
 
 {% block content %}
-<div class="container page-section register-shell">
-    <div class="register-heading">
-        <p class="nf-eyebrow">// 2026 RECRUITMENT</p>
-        <span class="release-chip">招新预发布 · 报名已开放</span>
-        <h1>选择你的注册通道</h1>
-        <p>请按实际情况选择。两个通道都需要完成邮箱验证。</p>
+{% comment %}
+注册第一步：选通道。刻意不做成「一张表单里选个身份」——两条路后面的字段、审核
+方式、注册完的去处都不一样，让人先明白自己走哪条，比填到一半才发现要审核好。
+
+这一页不用 _auth_base 的两栏外壳：主体是两张需要横向铺开的卡片，塞进右栏会挤。
+
+`next` 要一路带下去（招新落地页过来的人注册完应该回招新页），所以两个通道链接
+都拼上它。丢在这一跳最容易发生，因为这里是唯一的「纯跳转」页面。
+{% endcomment %}
+<section class="auth-stage nf-scope">
+    <div class="container">
+        <div class="reg-head">
+            <p class="nf-eyebrow">// REGISTER</p>
+            {% if recruitment_open %}
+                <span class="badge badge-green">{% firstof recruitment_name "招新进行中" %} · 报名开放</span>
+            {% endif %}
+            <h1>先选一条<span class="accent">通道</span></h1>
+            <p class="reg-head-sub">两条路后面要填的东西不一样，注册完的去处也不一样。按实际情况选，选错了回来重选就行。</p>
+        </div>
+
+        <div class="reg-channels">
+            <a class="reg-channel reg-channel-primary" href="{% url 'accounts:register_new' %}{% if next %}?next={{ next|urlencode }}{% endif %}">
+                <span class="reg-channel-no">01</span>
+                <span class="reg-channel-kicker">NEW MEMBER</span>
+                <h2>我是新同学</h2>
+                <p>还没加入过协会。注册完立刻就是招新成员，可以直接填报名表。</p>
+                <ul class="reg-channel-facts">
+                    <li><b>不用等审核</b>，邮箱验证完账号就能用</li>
+                    <li>先开放公开内容与招新功能</li>
+                    <li>一面通过升预备会员，二面通过正式入队</li>
+                </ul>
+                <strong class="reg-channel-go">开始注册 <span aria-hidden="true">→</span></strong>
+            </a>
+
+            <a class="reg-channel" href="{% url 'accounts:register_returning' %}{% if next %}?next={{ next|urlencode }}{% endif %}">
+                <span class="reg-channel-no">02</span>
+                <span class="reg-channel-kicker">RETURNING MEMBER</span>
+                <h2>我是老会员</h2>
+                <p>以前就在协会，需要把科协会员或主席身份接回新站。</p>
+                <ul class="reg-channel-facts">
+                    <li>要申报<b>原届别与原身份</b></li>
+                    <li>提交后由管理组人工核验</li>
+                    <li><b>审核通过前账号不能登录</b></li>
+                </ul>
+                <strong class="reg-channel-go">申请恢复身份 <span aria-hidden="true">→</span></strong>
+            </a>
+        </div>
+
+        <div class="reg-choice-foot">
+            <p class="auth-alt">已经有账号了？<a href="{% url 'accounts:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">直接登录</a></p>
+            <p class="auth-alt">还在犹豫要不要加入？先看看<a href="{% url 'core:recruit' %}">新生指南</a>。</p>
+        </div>
     </div>
-    <div class="channel-grid">
-        <a class="channel-card channel-primary" href="{% url 'accounts:register_new' %}">
-            <span class="channel-index">01</span>
-            <span class="channel-kicker">NEW MEMBER</span>
-            <h2>新会员通道</h2>
-            <p>面向尚未加入协会的同学。注册后立即成为招新成员，可继续填写 2026 秋季招新报名。</p>
-            <ul>
-                <li>无需管理员审核</li>
-                <li>仅开放公开内容与招新功能</li>
-                <li>一面通过后升级为预备会员</li>
-            </ul>
-            <strong>开始注册 <span>→</span></strong>
-        </a>
-        <a class="channel-card" href="{% url 'accounts:register_returning' %}">
-            <span class="channel-index">02</span>
-            <span class="channel-kicker">RETURNING MEMBER</span>
-            <h2>老会员通道</h2>
-            <p>面向曾经加入协会、需要恢复科协会员或主席身份的成员。</p>
-            <ul>
-                <li>申报原届别与协会身份</li>
-                <li>注册后由管理组核验</li>
-                <li>审核通过后开放账号</li>
-            </ul>
-            <strong>申请恢复身份 <span>→</span></strong>
-        </a>
-    </div>
-    <p class="auth-alt">已有账号？<a href="{% url 'accounts:login' %}">直接登录</a></p>
-</div>
+</section>
 {% endblock %}

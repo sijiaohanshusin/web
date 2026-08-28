@@ -40,10 +40,11 @@ if os.environ.get("EMAIL_HOST_USER"):
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-# 静态文件带内容哈希文件名，配合 nginx/CDN 一年长缓存
+# 静态文件带内容哈希文件名，配合 nginx/CDN 一年长缓存。
+# 自定义存储类额外开启 ES module import 改写，原因见 config/storage.py。
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"},
+    "staticfiles": {"BACKEND": "config.storage.ESTAManifestStaticFilesStorage"},
 }
 
 # 论坛 SSO Cookie 需要覆盖主域及 bbs 子域

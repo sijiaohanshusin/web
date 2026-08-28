@@ -34,6 +34,19 @@ class Campaign(models.Model):
     def intro_html(self) -> str:
         return render_markdown(self.intro)
 
+    @classmethod
+    def current(cls) -> "Campaign | None":
+        """对外展示用的「当前批次」：优先进行中的，否则最近一个启用的。
+
+        放在模型上而不是某个视图里：报名页、导航条的招新入口、首页 CTA 的倒计时
+        都要用同一个答案，散在各处迟早会出现「导航说在招新、首页说已截止」。
+        """
+        active = cls.objects.filter(is_active=True).order_by("-opens_at")
+        for campaign in active:
+            if campaign.is_open:
+                return campaign
+        return active.first()
+
     @property
     def is_open(self) -> bool:
         """启用 + 已开放 + 未截止。"""
@@ -73,6 +86,30 @@ class Application(models.Model):
         Status.FIRST_PASS: roles.LEVEL_PREPARATORY,
         Status.SECOND_PASS: roles.LEVEL_FORMAL,
     }
+
+    # 报名进度时间线的节点。(键, 标题, 说明)
+    #
+    # 只有三个节点，「未录取」不在其中 —— 它不是流程上的第四步，而是任何一步都
+    # 可能走到的**终止态**。把它排进时间线会变成「未录取是最后一个成就」，既别扭
+    # 也不准确。模板里单独渲染。
+    PROGRESS_STEPS = (
+        ("submitted", "已报名", "材料收到了，等面试安排"),
+        ("first_pass", "一面通过", "成为预备会员，解锁会员内容"),
+        ("second_pass", "二面通过", "成为科协会员，正式入队"),
+    )
+
+    @property
+    def reached_index(self) -> int:
+        """当前进展走到了 PROGRESS_STEPS 的第几个（0 起）。未录取按走到过的最远处算。"""
+        order = [key for key, _, _ in self.PROGRESS_STEPS]
+        if self.status == self.Status.REJECTED:
+            # 未录取时数据库里不再保留「之前通过到哪一面」，只能确定报名这一步成立
+            return 0
+        return order.index(self.status) if self.status in order else 0
+
+    @property
+    def is_rejected(self) -> bool:
+        return self.status == self.Status.REJECTED
 
     campaign = models.ForeignKey(
         Campaign, verbose_name="招新批次", on_delete=models.CASCADE, related_name="applications",

@@ -1,0 +1,32 @@
+{% comment %}
+会员等级阶梯，画成一段通电的走线：焊盘 + 主干，走到哪亮到哪。
+
+用法：{% include "includes/level_ladder.html" with reached=1 %}
+reached 是「已经走到第几级」的下标（0=注册 1=招新成员 2=预备会员 3=科协会员），
+不传就一个都不亮，纯说明用。
+
+这套「焊盘 + 通电主干」和招新落地页的报名进度、首页分镜 06 的路线图是同一种
+视觉语言 —— 同一件事（推进）在全站长一个样子。
+{% endcomment %}
+<ol class="lv-ladder">
+    <li class="lv-step{% if reached >= 0 %} is-done{% endif %}">
+        <span class="lv-pad">00</span>
+        <strong>注册账号</strong>
+        <span class="lv-desc">邮箱验证，两分钟</span>
+    </li>
+    <li class="lv-step{% if reached >= 1 %} is-done{% endif %}">
+        <span class="lv-pad">01</span>
+        <strong>招新成员</strong>
+        <span class="lv-desc">可以报名、看公开内容</span>
+    </li>
+    <li class="lv-step{% if reached >= 2 %} is-done{% endif %}">
+        <span class="lv-pad">02</span>
+        <strong>预备会员</strong>
+        <span class="lv-desc">一面通过，解锁会员资料与活动</span>
+    </li>
+    <li class="lv-step{% if reached >= 3 %} is-done{% endif %}">
+        <span class="lv-pad">03</span>
+        <strong>科协会员</strong>
+        <span class="lv-desc">二面通过，正式入队</span>
+    </li>
+</ol>

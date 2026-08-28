@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 
@@ -10,12 +11,31 @@ from .models import Application, Campaign
 
 
 def _current_campaign():
-    """取最近一个启用的批次（优先进行中，否则最近的启用批次）用于展示。"""
-    active = Campaign.objects.filter(is_active=True)
-    for c in active.order_by("-opens_at"):
-        if c.is_open:
-            return c
-    return active.order_by("-opens_at").first()
+    """见 Campaign.current()。逻辑挪到模型上了，这里保留一层薄壳不动调用点。"""
+    return Campaign.current()
+
+
+def _campaign_stats(campaign) -> dict:
+    """本批次的实时报名数据。
+
+    「用真实数据当叙事」是这套设计语言的一条 —— 一个正在长的数字比一句
+    「快来报名」有说服力得多。一次 group by 拿齐，不要按部门各查一次。
+    """
+    if campaign is None:
+        return {"total": 0, "by_dept": {}}
+    rows = (campaign.applications
+            .values_list("department")
+            .annotate(n=Count("id")))
+    by_dept = {dept: n for dept, n in rows}
+    return {
+        "total": sum(by_dept.values()),
+        "by_dept": by_dept,
+        # 模板里要按固定顺序显示三条，顺手把标签也备好
+        "breakdown": [
+            (label, by_dept.get(value, 0))
+            for value, label in Application.Department.choices
+        ],
+    }
 
 
 @never_cache
@@ -37,6 +57,10 @@ def index(request):
         "can_apply": can_apply,
         "already_member": already_member,
         "form": ApplicationForm(),
+        "stats": _campaign_stats(campaign),
+        # 报名进度时间线的节点定义放视图里，模板只管画。
+        # 「未录取」不是第四个节点而是一个终止态，见模板注释。
+        "progress_steps": Application.PROGRESS_STEPS,
     }
     return render(request, "recruitment/index.html", context)
 

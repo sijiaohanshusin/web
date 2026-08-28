@@ -1,9 +1,17 @@
 {% extends "base.html" %}
-{% load static humanize %}
+{# 模板标签库按模板加载，不从父模板继承 —— base.html 里 load 过也要再 load 一次 #}
+{% load static humanize brand slots %}
 
 {% block title %}2026 招新已开放 | 哈尔滨工程大学电子科技协会{% endblock %}
 {% block description %}哈尔滨工程大学电子科技协会 2026 秋季招新现已开放，欢迎对硬件、软件和电子设计感兴趣的同学报名。{% endblock %}
 {% block body_class %}page-home{% endblock %}
+
+{% block extra_head %}
+{# 首页分镜样式只在首页加载，内页不必为它付流量 #}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block preloader %}{% include "includes/preloader.html" %}{% endblock %}
 
 {% block content %}
 
@@ -11,6 +19,8 @@
 <section class="nf-hero nf-dark" data-nav="dark" id="nf-hero">
     <canvas class="nf-hero-canvas" id="hero-canvas" aria-hidden="true"></canvas>
     <div class="nf-hero-overlay" aria-hidden="true"></div>
+    {% comment %}示波器时基扫描线，纯 CSS。装饰性，不进无障碍树{% endcomment %}
+    <i class="nf-hero-scan" aria-hidden="true"></i>
     <div class="container nf-hero-inner">
         <div class="nf-hero-text">
             <p class="nf-eyebrow line-reveal">哈尔滨工程大学 · 电子科技协会 · EST. {{ site_config.founding_year }}</p>
@@ -28,6 +38,53 @@
     <div class="nf-hero-foot container">
         <p class="nf-hero-note">* 信通学院科协 · 电子设计竞赛主力社团</p>
         <div class="nf-scroll-cue"><span></span>SCROLL</div>
+    </div>
+</section>
+
+<!-- ============ 分镜 01：会标是一块真的电路板（滚动驱动逐层制造） ============ -->
+<section class="nf-forge nf-dark" data-nav="dark" id="nf-forge">
+    <div class="nf-forge-pin">
+        <div class="container nf-forge-grid">
+            {% comment %}
+            标题、舞台、工序清单是三个平级的栅格项，不要把清单塞回 .nf-forge-copy
+            里。窄屏要重排成「标题 → 舞台 → 清单」，清单若和标题同属一个容器就排
+            不到舞台下面（除了 display:contents 没别的办法，那个在无障碍树上有历史
+            包袱）。桌面两栏的位置由 grid-template-areas 指定，与 DOM 顺序无关。
+            {% endcomment %}
+            <div class="nf-forge-copy">
+                <p class="nf-eyebrow">// 01 · 会标</p>
+                <h2 class="nf-display">我们的标<br>是一块<span class="accent">真的电路板</span></h2>
+            </div>
+            {% comment %}
+            舞台里的内联 SVG 有两个作用：WebGL 不可用时它就是会标本体，
+            3D 可用时它又是 SVGLoader 的几何来源（不必再发一次请求）。
+            {% endcomment %}
+            <div class="nf-forge-stage" id="nf-forge-stage">
+                {% inline_svg "brand/logo-mark.svg" class="nf-forge-fallback" %}
+            </div>
+            <ol class="nf-forge-steps">
+                    <li data-forge-step="substrate">
+                        <b>基板</b>
+                        <span>FR-4 覆铜板，所有工序的载体</span>
+                    </li>
+                    <li data-forge-step="copper">
+                        <b>蚀刻铜箔</b>
+                        <span>走线从入口焊盘出发，在板上绕一圈回到出口</span>
+                    </li>
+                    <li data-forge-step="pads">
+                        <b>沉金焊盘</b>
+                        <span>三个节点，元件在这里落脚，钻头在这里穿过</span>
+                    </li>
+                    <li data-forge-step="mask">
+                        <b>覆阻焊</b>
+                        <span>盖住不该焊的地方，只给焊盘留窗口</span>
+                    </li>
+                    <li data-forge-step="silk">
+                        <b>印丝印</b>
+                        <span>白墨写上位号与我们的名字</span>
+                    </li>
+            </ol>
+        </div>
     </div>
 </section>
 
@@ -62,7 +119,14 @@
         <div class="nf-split">
             <div class="nf-split-media">
                 <figure class="nf-photo-card tilt-card reveal" id="reason-photo">
-                    <img src="{% static 'img/carousel/pcb.webp' %}" alt="协会成员制作的 PCB">
+                    {% comment %}
+                    刻意不写 width/height：`.nf-photo-card img` 靠 CSS 的
+                    `aspect-ratio: 4/5` 占位，而 <img> 上宽高都给了确定值时
+                    `aspect-ratio` 会被忽略 —— 补这两个属性反而会把占位搞坏。
+                    这一张不 lazy：它在第二屏，是那一段的主体。
+                    {% endcomment %}
+                    <img src="{% static 'img/carousel/pcb.webp' %}" alt="协会成员制作的 PCB"
+                         decoding="async">
                     <figcaption>成员作品 · PCB 实物</figcaption>
                 </figure>
             </div>
@@ -88,11 +152,16 @@
 </section>
 
 <!-- ============ 黑色区：大数字 ============ -->
-<section class="nf-section nf-dark nf-bignum-section" data-nav="dark">
+{% comment %}
+分镜 02「数据」：示波器屏幕。.nf-scope 铺暗场网格（格距与白区坐标纸一致），
+扫描线扫过后大数字定格 —— data-delay 让计数在扫描线走到一半时才起跑，
+读起来是「扫描线把这个数写出来的」。
+{% endcomment %}
+<section class="nf-section nf-dark nf-scope nf-bignum-section" data-nav="dark">
     <div class="container">
         <p class="nf-eyebrow reveal">SINCE {{ site_config.founding_year }}</p>
         <div class="nf-bignum reveal">
-            <span class="nf-bignum-value"><span class="counter" data-target="{{ years }}">0</span></span>
+            <span class="nf-bignum-value"><span class="counter" data-target="{{ years }}" data-delay="820">0</span></span>
             <div class="nf-bignum-side">
                 <span class="nf-bignum-unit">年技术传承</span>
                 <span class="nf-bignum-desc">一届届学长学姐，把烙铁和示波器交到下一代手上</span>
@@ -126,7 +195,16 @@
         <h2 class="nf-display reveal">在这里，你可以<span class="accent">成为</span></h2>
         <div class="nf-dir-grid">
             <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#hardware">
-                <figure><img src="{% static 'img/recruit/oscilloscope.webp' %}" alt="硬件方向" loading="lazy"></figure>
+                <figure>
+                    {# 占位靠 `.nf-dir-card figure` 的 aspect-ratio: 16/10，同样不写 width/height #}
+                    <img src="{% static 'img/recruit/oscilloscope.webp' %}" alt="示波器与硬件实验台"
+                         loading="lazy" decoding="async">
+                    {% comment %}
+                    元件符号：三张卡构成「元件 → 芯片 → 整板」的递进。
+                    hover 时描线自绘（和加载动画的会标同一种手法）。装饰性。
+                    {% endcomment %}
+                    <span class="nf-dir-sym">{% include "includes/icon.html" with name="opamp" %}</span>
+                </figure>
                 <div class="nf-dir-body">
                     <span class="nf-dir-index">01</span>
                     <h3>硬件工程师</h3>
@@ -135,7 +213,11 @@
                 </div>
             </a>
             <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#software">
-                <figure><img src="{% static 'img/recruit/board-stm32.webp' %}" alt="软件方向" loading="lazy"></figure>
+                <figure>
+                    <img src="{% static 'img/recruit/board-stm32.webp' %}" alt="STM32 开发板"
+                         loading="lazy" decoding="async">
+                    <span class="nf-dir-sym">{% include "includes/icon.html" with name="mcu" %}</span>
+                </figure>
                 <div class="nf-dir-body">
                     <span class="nf-dir-index">02</span>
                     <h3>嵌入式开发者</h3>
@@ -144,7 +226,11 @@
                 </div>
             </a>
             <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#training">
-                <figure><img src="{% static 'img/carousel/etched-board.webp' %}" alt="竞赛方向" loading="lazy"></figure>
+                <figure>
+                    <img src="{% static 'img/carousel/etched-board.webp' %}" alt="自制蚀刻电路板"
+                         loading="lazy" decoding="async">
+                    <span class="nf-dir-sym">{% include "includes/icon.html" with name="board" %}</span>
+                </figure>
                 <div class="nf-dir-body">
                     <span class="nf-dir-index">03</span>
                     <h3>电赛选手</h3>
@@ -163,14 +249,22 @@
         <h2 class="nf-display nf-center reveal">一分钟，认识科协</h2>
         <div class="video-facade reveal" id="video-facade"
              data-embed="//player.bilibili.com/player.html?bvid={{ site_config.recruit_video_bvid }}&autoplay=1&danmaku=0&high_quality=1">
-            {% if recruit_video.pic %}
-                <img src="{{ recruit_video.pic }}" alt="{{ recruit_video.title|default:'招新宣传视频' }}"
-                     loading="lazy" referrerpolicy="no-referrer">
-            {% else %}
-                <div class="video-facade-fallback"></div>
-            {% endif %}
+            {% comment %}
+            封面走素材槽。取用顺序：协会自己剪的循环片段 → 自己拍的封面帧 →
+            B 站接口给的封面 → 空焊盘占位。
+
+            原来只有「B 站封面」和「一块渐变」两种，而 B 站接口被风控拦下时
+            （412，实测常有）就只剩那块渐变，什么信息都没有。现在最差情况也是
+            一个写明「要剪一段什么片子」的占位框，站务看得懂、也补得上。
+
+            片段在这里是装饰性的：facade 自己那颗大播放按钮才是入口，点了去 B 站
+            看完整版，所以槽位内部的小播放按钮在 facade 里用 CSS 藏掉。
+            {% endcomment %}
+            {% slot "home.movie.teaser" css_class="video-facade-media" fallback_url=recruit_video.pic show_cta=False %}
             <div class="video-facade-overlay">
-                <button class="video-play-btn" aria-label="播放视频">
+                {# type="button"：它在任何表单里都不该提交，写明了才不依赖上下文 #}
+                <button class="video-play-btn" type="button" data-video-play
+                        aria-label="播放招新宣传视频">
                     <svg viewBox="0 0 24 24" width="34" height="34"><path fill="currentColor" d="M8 5.14v13.72L19 12z"/></svg>
                 </button>
                 <span class="video-facade-title">{{ recruit_video.title|default:"电子科技协会招新宣传视频" }}</span>
@@ -189,33 +283,24 @@
         </div>
         <p class="nf-gallery-hint reveal">拖拽浏览 ⇄</p>
     </div>
+    {% comment %}
+    走廊的每一格都是独立的素材槽，登记在 core/slots.py。
+
+    这里不再遍历视图传下来的列表：原来的逻辑是「数据库里有轮播图就全用数据库
+    的，否则全用兜底列表」—— 上传一张就会把另外五格连带换掉，而且占位格永远
+    没法和真实照片混排。槽位是逐个独立的，填一个补一个。
+    {% endcomment %}
     <div class="nf-strip" id="nf-strip">
         <div class="nf-strip-track" id="nf-strip-track">
-            {% for item in gallery %}
-                {% if item.kind == "photo" %}
-                <figure class="nf-tile">
-                    <img src="{{ item.image_url }}" alt="{{ item.title }}" {% if not forloop.first %}loading="lazy"{% endif %} draggable="false">
-                    <figcaption>
-                        <strong>{{ item.title }}</strong>
-                        {% if item.caption %}<span>{{ item.caption }}</span>{% endif %}
-                    </figcaption>
-                </figure>
-                {% else %}
-                <figure class="nf-tile nf-tile-empty">
-                    <div class="nf-tile-empty-inner">
-                        <span class="nf-tile-empty-mark">[ &nbsp;&nbsp; ]</span>
-                        <strong>{{ item.title }}</strong>
-                        <span>{{ item.caption }}</span>
-                    </div>
-                </figure>
-                {% endif %}
+            {% for key in gallery_slots %}
+                {% slot key css_class="nf-tile" eager=forloop.first %}
             {% endfor %}
         </div>
     </div>
 </section>
 
 <!-- ============ 白色区：一年之路 ============ -->
-<section class="nf-section nf-light" data-nav="light">
+<section class="nf-section nf-light" data-nav="light" id="nf-roadmap">
     <div class="container">
         <p class="nf-eyebrow reveal">// ROADMAP</p>
         <h2 class="nf-display reveal">从萌新到大佬<span class="accent">的一年</span></h2>
@@ -244,6 +329,65 @@
         </div>
     </div>
 </section>
+
+<!-- ============ 分镜 07：作品（有精选作品才显示） ============ -->
+{% comment %}
+一件精选作品都没有时**整段不渲染**。空壳区块（一排占位框 + 「敬请期待」）比没有
+这一段更糟：它把「我们还什么都没有」放在了首页最显眼的叙事位上。同样的判断也
+用在上面的 B 站精选区。
+
+卡片本体走 includes/work_card.html —— 和作品墙、作品详情页底部是同一份实现。
+{% endcomment %}
+{% if featured_works %}
+<section class="nf-section nf-dark nf-scope" data-nav="dark" id="nf-works">
+    <div class="container">
+        <div class="nf-works-head reveal">
+            <div>
+                <p class="nf-eyebrow">// OUR WORK</p>
+                <h2 class="nf-display">做出来的东西</h2>
+            </div>
+            <a class="nf-link-more" href="{% url 'works:wall' %}">看全部作品 <span>→</span></a>
+        </div>
+        <div class="wk-grid reveal">
+            {% for project in featured_works %}
+                {% include "includes/work_card.html" with project=project %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- ============ 分镜 08：荣誉（有首页荣誉才显示） ============ -->
+{% comment %}
+和上面的 07 一样：一项都没有时整段不渲染。
+
+刻意**不用大数字**做主体 —— 分镜 02 已经是一屏大数字了，再来一屏会读成重复。
+这里是一小段清单：等级徽章 + 奖项名，节奏上更接近「一页名录」。行本体走
+includes/honor_row.html，和荣誉墙是同一份。
+{% endcomment %}
+{% if featured_honors %}
+<section class="nf-section nf-light" data-nav="light" id="nf-honors">
+    <div class="container">
+        <div class="nf-works-head reveal">
+            <div>
+                <p class="nf-eyebrow">// HONORS</p>
+                <h2 class="nf-display">拿过的奖</h2>
+                {% if honor_summary.total %}
+                <p class="nf-honors-sub">
+                    累计 {{ honor_summary.total }} 项，其中国家级 {{ honor_summary.national }} 项。
+                </p>
+                {% endif %}
+            </div>
+            <a class="nf-link-more" href="{% url 'honors:wall' %}">看全部荣誉 <span>→</span></a>
+        </div>
+        <div class="hn-year-list reveal">
+            {% for honor in featured_honors %}
+                {% include "includes/honor_row.html" with honor=honor show_year=True %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
 
 <!-- ============ 黑色区：学习资源 + B站 ============ -->
 <section class="nf-section nf-dark" data-nav="dark">
@@ -291,7 +435,8 @@
             {% for v in bili_videos %}
             <a class="bili-card reveal" href="{{ v.url }}" target="_blank" rel="noopener">
                 <div class="bili-cover">
-                    <img src="{{ v.pic }}" alt="{{ v.title }}" loading="lazy" referrerpolicy="no-referrer">
+                    <img src="{{ v.pic }}" alt="{{ v.title }}" loading="lazy" decoding="async"
+                         referrerpolicy="no-referrer">
                     <span class="bili-duration">{{ v.duration }}</span>
                 </div>
                 <div class="bili-info">
@@ -311,9 +456,32 @@
     <div class="container nf-center">
         <p class="nf-eyebrow reveal">// JOIN US</p>
         <h2 class="nf-display reveal">准备好点亮<br>你的<span class="accent">第一颗 LED</span> 了吗？</h2>
-        <p class="nf-join-sub reveal">2026 秋季招新现已开放，注册后即可提交报名</p>
+        <p class="nf-join-sub reveal">{% firstof recruitment_name "2026 秋季招新" %}现已开放，注册后即可提交报名</p>
+
+        {% if recruitment_closes_at %}
+        {% comment %}
+        倒计时。渐进增强：截止日期本身是服务端渲染的静态文字，永远在（也是无障碍
+        树里那份权威信息）；滴答的数字是 JS 上去之后才显示的装饰，所以初始
+        hidden，脚本没跑起来就不会露出一排 "--"。
+
+        时钟标 aria-hidden：每秒变一次的数字对读屏软件是噪音，日期那行已经把
+        信息说清楚了。
+        {% endcomment %}
+        <div class="nf-countdown reveal" data-countdown="{{ recruitment_closes_at|date:'c' }}">
+            <span class="nf-countdown-static">
+                报名截止 <time datetime="{{ recruitment_closes_at|date:'c' }}">{{ recruitment_closes_at|date:"n 月 j 日 H:i" }}</time>
+            </span>
+            <span class="nf-countdown-clock" aria-hidden="true" hidden>
+                <b data-cd="d">--</b><i>天</i>
+                <b data-cd="h">--</b><i>时</i>
+                <b data-cd="m">--</b><i>分</i>
+                <b data-cd="s">--</b><i>秒</i>
+            </span>
+        </div>
+        {% endif %}
         <div class="nf-join-qq reveal qq-join-layout">
-            <img class="home-qq-qr" src="{% static 'img/recruit-qq-1081376858.01b7379e65be.png' %}" alt="2026 电子科技协会招新 QQ 群二维码" loading="lazy">
+            <img class="home-qq-qr" src="{% static 'img/recruit-qq-1081376858.01b7379e65be.png' %}"
+                 alt="2026 电子科技协会招新 QQ 群二维码" loading="lazy" decoding="async">
             <div class="nf-join-actions">
                 <span class="nf-join-number">{{ site_config.recruit_qq_group }}</span>
                 <button class="btn btn-primary btn-lg btn-magnet" id="copy-qq" data-qq="{{ site_config.recruit_qq_group }}">复制群号</button>
@@ -329,4 +497,9 @@
 {% block extra_js %}
 <script src="{% static 'js/hero-field.js' %}" defer></script>
 <script src="{% static 'js/home.js' %}" defer></script>
+{% comment %}
+分镜模块：通过 ESTA.motion.scene() 注册，内核负责 reduced-motion 跳过、
+WebGL 门控与错误隔离。必须排在 motion-core 之后（base.html 里已保证）。
+{% endcomment %}
+<script src="{% static 'js/scenes/logo-forge.js' %}" defer></script>
 {% endblock %}

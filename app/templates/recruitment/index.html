@@ -1,84 +1,227 @@
 {% extends "base.html" %}
+{# 模板标签库按模板加载，不从父模板继承 #}
 {% load static %}
 
-{% block title %}2026 秋季招新报名 | {{ site_config.site_name_en }}{% endblock %}
-{% block description %}哈尔滨工程大学电子科技协会 2026 秋季招新报名：完成注册、选择方向并线上跟踪面试进展。{% endblock %}
+{% block title %}{% firstof campaign.name "招新报名" %} | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}哈尔滨工程大学电子科技协会招新报名：选择方向、提交报名，并在线跟踪面试进展。{% endblock %}
+{% block body_class %}page-recruitment{% endblock %}
 
 {% block content %}
-<div class="container page-section">
-    <div class="page-head">
+{% comment %}
+招新落地页。四种状态在右栏分支：未登录 / 已报名 / 已是会员 / 可报名 / 已关闭。
+再往外还有一层：连批次都没有（招新通道整体关闭）。
+
+页面结构刻意是「先给理由，再给表单」：Hero 讲清这是什么、还剩多久、已经有多少人
+报名，然后才是填写区。表单在右栏 sticky，滚动看说明时它一直在。
+{% endcomment %}
+
+<section class="rec-hero nf-scope">
+    <div class="container">
         <p class="nf-eyebrow">// JOIN US</p>
-        <span class="release-chip">2026 招新预发布 · 报名已开放</span>
-        <h1>加入电子科技协会</h1>
+        <h1 class="rec-hero-title">
+            {% if campaign %}加入<span class="accent">电子科技协会</span>{% else %}招新通道<span class="accent">暂时关闭</span>{% endif %}
+        </h1>
+
         {% if campaign %}
-            <p>{{ campaign.name }} · <span class="badge {% if campaign.is_open %}badge-green{% else %}badge-gray{% endif %}">{{ campaign.status_label }}</span></p>
+        <div class="rec-hero-meta">
+            <span class="badge {% if campaign.is_open %}badge-green{% else %}badge-gray{% endif %}">{{ campaign.status_label }}</span>
+            <span class="rec-hero-campaign">{{ campaign.name }}</span>
+        </div>
+
+        {% if recruitment_closes_at %}
+        {% comment %}倒计时组件在 core.css / site.js，与首页 CTA 同一份{% endcomment %}
+        <div class="nf-countdown" data-countdown="{{ recruitment_closes_at|date:'c' }}">
+            <span class="nf-countdown-static">
+                报名截止 <time datetime="{{ recruitment_closes_at|date:'c' }}">{{ recruitment_closes_at|date:"n 月 j 日 H:i" }}</time>
+            </span>
+            <span class="nf-countdown-clock" aria-hidden="true" hidden>
+                <b data-cd="d">--</b><i>天</i>
+                <b data-cd="h">--</b><i>时</i>
+                <b data-cd="m">--</b><i>分</i>
+                <b data-cd="s">--</b><i>秒</i>
+            </span>
+        </div>
+        {% endif %}
+
+        {% comment %}
+        实时报名数据。「用真实数据当叙事」—— 一个正在长的数字比一句「快来报名」
+        有说服力。0 人时换一句话：显示「0 人已报名」只会让人更不想当第一个。
+        {% endcomment %}
+        <div class="rec-stats">
+            {% if stats.total %}
+            <div class="rec-stat rec-stat-lead">
+                <strong>{{ stats.total }}</strong>
+                <span>人已报名</span>
+            </div>
+            {% for label, n in stats.breakdown %}
+            <div class="rec-stat">
+                <strong>{{ n }}</strong>
+                <span>{{ label }}</span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="rec-stats-empty">本批次刚刚开放 —— 你可以是第一个。</p>
+            {% endif %}
+        </div>
         {% else %}
-            <p>招新通道平时关闭，开学季开放。先去 <a href="{% url 'core:recruit' %}">新生指南</a> 了解我们吧。</p>
+        <p class="rec-hero-sub">
+            招新通道平时关闭，开学季开放。先去<a href="{% url 'core:recruit' %}">新生指南</a>了解我们，
+            或者加 QQ 群 <strong>{{ site_config.recruit_qq_group }}</strong> 等消息。
+        </p>
         {% endif %}
     </div>
+</section>
 
-    {% if campaign %}
-    <div class="recruit-apply-layout">
-        <div class="panel recruit-intro">
-            {% if campaign.intro %}
-                <div class="md-body">{{ campaign.intro_html }}</div>
-            {% else %}
-                <p>欢迎加入！填写右侧报名表，我们会通过站内通知告诉你面试安排与结果。</p>
-                <p>注册和报名阶段为<strong>招新成员</strong>，仅开放公开内容。通过一面成为<strong>预备会员</strong>，通过二面成为<strong>科协会员</strong>。</p>
-            {% endif %}
-            <div class="qq-card">
-                <img src="{% static 'img/recruit-qq-1081376858.01b7379e65be.png' %}" alt="2026 电子科技协会招新 QQ 群二维码">
-                <div><span>面试通知与交流</span><strong>QQ 群 {{ site_config.recruit_qq_group }}</strong><small>扫码或复制群号加入</small></div>
+{% if campaign %}
+<div class="container rec-body">
+    <div class="rec-main">
+        {% if campaign.intro %}
+            <div class="md-body">{{ campaign.intro_html }}</div>
+        {% else %}
+            <h2>怎么加入</h2>
+            {% comment %}
+            不要写「右边的报名表」—— 窄屏是单栏堆叠，表单在下面。指路一律用锚点。
+            {% endcomment %}
+            <p>填<a href="#rec-apply">报名表</a>就行。面试安排与结果都通过站内通知告诉你，不用反复来刷这一页。</p>
+            <h2>会员等级是怎么走的</h2>
+            <p>注册和报名阶段是<strong>招新成员</strong>，只开放公开内容。通过一面成为<strong>预备会员</strong>，
+               解锁会员资料与活动；通过二面成为<strong>科协会员</strong>，正式入队。</p>
+            <h2>零基础可以报吗</h2>
+            <p>可以，而且大部分人都是。我们有成体系的免费培训：C 语言、STM32、运放、滤波器，
+               一学年 10+ 场，配套 27 章自编电子学教材。缺的是时间和动手意愿，不是基础。</p>
+        {% endif %}
+
+        <div class="qq-card">
+            <img src="{% static 'img/recruit-qq-1081376858.01b7379e65be.png' %}" alt="电子科技协会招新 QQ 群二维码" loading="lazy">
+            <div>
+                <span>面试通知与日常交流</span>
+                <strong>QQ 群 {{ site_config.recruit_qq_group }}</strong>
+                <small>扫码或复制群号加入</small>
             </div>
         </div>
-
-        <div class="panel recruit-apply-box">
-            {% if not user.is_authenticated %}
-                <h2>先登录再报名</h2>
-                <p class="recruit-hint">报名需要一个账号，方便我们联系你、你也能随时查看进展。</p>
-                <div class="recruit-actions">
-                    <a class="btn btn-primary" href="{% url 'accounts:register' %}?next={% url 'recruitment:index' %}">注册</a>
-                    <a class="btn btn-outline" href="{% url 'accounts:login' %}?next={% url 'recruitment:index' %}">登录</a>
-                </div>
-            {% elif my_app %}
-                <h2>你的报名</h2>
-                <div class="recruit-status">
-                    <span class="recruit-status-badge" style="background:{{ my_app.status_color }};">{{ my_app.get_status_display }}</span>
-                    <span class="recruit-status-dept">{{ my_app.get_department_display }}</span>
-                </div>
-                <ul class="recruit-status-timeline">
-                    <li class="done">已报名 · {{ my_app.created_at|date:"m-d H:i" }}</li>
-                    <li class="{% if my_app.status == 'first_pass' or my_app.status == 'second_pass' %}done{% endif %}">一面通过 → 预备会员</li>
-                    <li class="{% if my_app.status == 'second_pass' %}done{% endif %}">二面通过 → 科协会员</li>
-                </ul>
-                {% if my_app.status == 'rejected' %}
-                    <p class="recruit-hint">本次结果为未录取，欢迎继续参加培训和活动，下次招新再来！</p>
-                {% else %}
-                    <p class="recruit-hint">面试安排与结果会通过<a href="{% url 'notify:list' %}">站内通知</a>告诉你，保持关注～</p>
-                {% endif %}
-            {% elif already_member %}
-                <h2>你已经是科协会员</h2>
-                <p class="recruit-hint">无需重复报名。去 <a href="{% url 'events:list' %}">活动</a> 或 <a href="{{ forum_url }}" target="_blank" rel="noopener">论坛</a> 看看吧。</p>
-            {% elif can_apply %}
-                <h2>报名表</h2>
-                <form method="post" action="{% url 'recruitment:apply' %}" class="recruit-form">
-                    {% csrf_token %}
-                    {% for field in form %}
-                        {% include "includes/field.html" %}
-                    {% endfor %}
-                    <button type="submit" class="btn btn-primary btn-block">提交报名</button>
-                </form>
-            {% else %}
-                <h2>报名已关闭</h2>
-                <p class="recruit-hint">当前批次不在报名时间内。关注公告和 QQ 群获取下次招新消息。</p>
-            {% endif %}
-        </div>
     </div>
-    {% else %}
-        <div class="empty-hint">
-            <span class="empty-icon">{% include "includes/icon.html" with name="badge" cls="icon-lg" %}</span>
-            暂无进行中的招新。开学季见！
+
+    <aside class="rec-side" id="rec-apply">
+        <div class="panel rec-box">
+        {% if not user.is_authenticated %}
+            <h2>先有账号，再报名</h2>
+            <p class="rec-hint">报名要一个账号：我们靠它联系你，你也靠它随时看进展。注册两分钟。</p>
+            <div class="rec-actions">
+                <a class="btn btn-primary" href="{% url 'accounts:register' %}?next={% url 'recruitment:index' %}">注册</a>
+                <a class="btn btn-outline" href="{% url 'accounts:login' %}?next={% url 'recruitment:index' %}">已有账号，登录</a>
+            </div>
+
+        {% elif my_app %}
+            <h2>你的报名</h2>
+            <div class="rec-status">
+                <span class="rec-status-badge" style="background:{{ my_app.status_color }};">{{ my_app.get_status_display }}</span>
+                <span class="rec-status-dept">{{ my_app.get_department_display }}</span>
+            </div>
+
+            {% comment %}
+            进度时间线：一条竖向的 PCB 走线，节点是方形焊盘，走到哪通电到哪。
+            「未录取」不是第四个节点而是终止态，所以单独渲染 —— 把它排进时间线
+            会读成「未录取是最后一个成就」。
+            {% endcomment %}
+            <ol class="rec-track">
+                {% for key, title, desc in progress_steps %}
+                <li class="rec-track-item{% if forloop.counter0 <= my_app.reached_index %} is-done{% endif %}">
+                    <span class="rec-track-pad">{{ forloop.counter|stringformat:"02d" }}</span>
+                    <strong>{{ title }}</strong>
+                    <span class="rec-track-desc">{{ desc }}</span>
+                    {% if forloop.first %}<time>{{ my_app.created_at|date:"n-j H:i" }}</time>{% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+
+            {% if my_app.is_rejected %}
+                <p class="rec-note rec-note-warn">
+                    本次结果是未录取。这不影响你参加公开培训和活动 —— 下次招新我们还在。
+                </p>
+            {% else %}
+                <p class="rec-hint">
+                    面试安排与结果会通过<a href="{% url 'notify:list' %}">站内通知</a>告诉你。
+                </p>
+            {% endif %}
+
+        {% elif already_member %}
+            <h2>你已经是科协会员</h2>
+            <p class="rec-hint">不用再报名了。去<a href="{% url 'events:list' %}">活动</a>看看，
+               或者上<a href="{{ forum_url }}" target="_blank" rel="noopener">论坛</a>找队友。</p>
+
+        {% elif can_apply %}
+            <h2>报名表</h2>
+            {% comment %}
+            分步表单。**渐进增强**：这是一张完整的表单、一次 POST；三个 fieldset
+            默认全部展开，没有 JS 也能填能交。form-enhance.js 给 form 加
+            .is-stepped 之后才一次只显示一段。
+
+            所以千万不要把「下一步」做成必经之路 —— 提交按钮始终在 DOM 里且可用。
+            标记契约（data-step / data-review-for 等）见 form-enhance.js 文件头，
+            注册表单用的是同一份实现。
+            {% endcomment %}
+            <form method="post" action="{% url 'recruitment:apply' %}" class="rec-form" id="rec-form"
+                  data-stepped-form>
+                {% csrf_token %}
+
+                <ol class="rec-progress" data-step-dots aria-hidden="true">
+                    <li class="is-current"><span></span>选方向</li>
+                    <li><span></span>说说你</li>
+                    <li><span></span>确认</li>
+                </ol>
+
+                <fieldset class="rec-step" data-step>
+                    <legend>想去哪个方向</legend>
+                    <p class="rec-step-hint">选不准就选「都想试试」，培训期还能换。</p>
+                    <div class="rec-choice">
+                        {% for radio in form.department %}
+                        <label class="rec-choice-item">
+                            {{ radio.tag }}
+                            <span class="rec-choice-body">
+                                <strong>{{ radio.choice_label }}</strong>
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% for error in form.department.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
+                </fieldset>
+
+                <fieldset class="rec-step" data-step>
+                    <legend>说说你</legend>
+                    {% include "includes/field.html" with field=form.skills %}
+                    {% include "includes/field.html" with field=form.self_intro %}
+                </fieldset>
+
+                <fieldset class="rec-step" data-step>
+                    <legend>确认提交</legend>
+                    <dl class="rec-review">
+                        <dt>方向</dt><dd data-review-for="department">—</dd>
+                        <dt>特长</dt><dd data-review-for="skills">—</dd>
+                        <dt>自我介绍</dt><dd data-review-for="self_intro">—</dd>
+                    </dl>
+                    <p class="rec-step-hint">提交后不能自己改。要改内容找站务，或在 QQ 群里说一声。</p>
+                </fieldset>
+
+                <div class="rec-nav">
+                    <button type="button" class="btn btn-ghost" data-step-prev hidden>← 上一步</button>
+                    <button type="button" class="btn btn-primary" data-step-next hidden>下一步 →</button>
+                    <button type="submit" class="btn btn-primary btn-block" data-step-submit>提交报名</button>
+                </div>
+            </form>
+
+        {% else %}
+            <h2>本批次已经不收报名了</h2>
+            <p class="rec-hint">当前不在报名时间内。关注<a href="{% url 'news:list' %}">公告</a>或
+               QQ 群 <strong>{{ site_config.recruit_qq_group }}</strong> 获取下次招新的消息。</p>
+        {% endif %}
         </div>
-    {% endif %}
+    </aside>
 </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if can_apply %}
+<script src="{% static 'js/form-enhance.js' %}" defer></script>
+{% endif %}
 {% endblock %}

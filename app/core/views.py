@@ -6,7 +6,6 @@ from django.core.cache import cache
 from django.db.models import Count
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.templatetags.static import static
 
 from accounts.roles import is_officer
 from news.models import Post
@@ -14,17 +13,17 @@ from notify.models import Notification
 from notify.services import notify_user
 
 from . import bilibili
-from .models import CarouselImage, Feedback, FeedbackReply, SiteConfig
+from .models import Feedback, FeedbackReply, SiteConfig
 
-# 数据库没有轮播图时的兜底走廊：真实素材 + 留白占位格。
-# 占位格（kind=placeholder）等照片补齐后，由管理员在后台上传真实图片替换。
-FALLBACK_GALLERY = [
-    {"kind": "photo", "image_url": "img/carousel/pcb.webp", "title": "PCB 设计与打样", "caption": "从原理图到一块真正的电路板"},
-    {"kind": "placeholder", "title": "科协合影", "caption": "这一格，留给 2026 级的你"},
-    {"kind": "photo", "image_url": "img/carousel/etched-board.webp", "title": "自制腐蚀板", "caption": "动手做，是科协的传统"},
-    {"kind": "placeholder", "title": "实验室日常", "caption": "照片整理中 · 敬请期待"},
-    {"kind": "photo", "image_url": "img/carousel/soldering.webp", "title": "焊接实践", "caption": "烙铁与热风枪，亲手搭建电路"},
-    {"kind": "placeholder", "title": "电赛获奖合影", "caption": "下一张领奖照，主角是你"},
+# 首页图片走廊的槽位顺序。内容、比例、拍摄要求都在 core/slots.py，这里只定顺序。
+# 视图刻意不去查 MediaSlot：{% slot %} 自己会取（整表缓存，一次查询覆盖所有槽位）。
+GALLERY_SLOT_KEYS = [
+    "home.gallery.pcb",
+    "home.gallery.group",
+    "home.gallery.etched",
+    "home.gallery.lab",
+    "home.gallery.solder",
+    "home.gallery.award",
 ]
 
 
@@ -40,29 +39,34 @@ def home(request):
         videos = bilibili.get_latest_videos(config.bilibili_mid, limit=3)
     recruit_video = bilibili.get_video_info(config.recruit_video_bvid)
 
-    db_images = list(CarouselImage.objects.filter(is_active=True))
-    if db_images:
-        gallery = [
-            {"kind": "photo", "image_url": item.image.url, "title": item.title, "caption": item.caption}
-            for item in db_images
-        ]
-    else:
-        gallery = [
-            {**item, "image_url": static(item["image_url"])} if item["kind"] == "photo" else item
-            for item in FALLBACK_GALLERY
-        ]
-
     years = datetime.date.today().year - config.founding_year
 
     latest_posts = list(Post.objects.published().visible_to(request.user)[:3])
+
+    # 分镜 07「作品」。口径走 Project.public()（同一个方法喂作品墙、作品详情、
+    # 这里），否则迟早出现「首页展示了一个作品墙上没有的作品」。
+    # 一件都没有时整段不渲染 —— 见模板注释，空壳区块比没有这段更糟。
+    from projects.models import Project
+
+    featured_works = list(Project.public().filter(is_featured=True)[:3])
+
+    # 分镜 08「荣誉」。口径走 Honor.wall()（和荣誉墙同一个），一项都没有时整段
+    # 不渲染。数字同样是数出来的，不是手填的。
+    from news.models import Honor
+
+    featured_honors = list(Honor.wall().filter(is_featured=True)[:4])
+    honor_summary = Honor.summary() if featured_honors else None
 
     context = {
         "bili_stats": stats,
         "bili_videos": videos,
         "recruit_video": recruit_video,
-        "gallery": gallery,
+        "gallery_slots": GALLERY_SLOT_KEYS,
         "years": years,
         "latest_posts": latest_posts,
+        "featured_works": featured_works,
+        "featured_honors": featured_honors,
+        "honor_summary": honor_summary,
     }
     return render(request, "core/home.html", context)
 
@@ -124,7 +128,13 @@ def feedback(request):
 
     my_feedbacks = []
     if request.user.is_authenticated:
-        my_feedbacks = request.user.feedbacks.annotate(reply_count=Count("replies"))[:10]
+        # order_by 显式写：annotate() 会建 GROUP BY，带 GROUP BY 的查询不再套用
+        # Meta.ordering（`-created_at`），「我的反馈」就会变成任意顺序 —— 而且这里
+        # 还切了前 10 条，取到的是哪 10 条都不确定。
+        my_feedbacks = (
+            request.user.feedbacks.annotate(reply_count=Count("replies"))
+            .order_by("-created_at")[:10]
+        )
     return render(request, "core/feedback.html", {"my_feedbacks": my_feedbacks})
 
 

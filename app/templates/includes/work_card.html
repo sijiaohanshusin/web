@@ -1,0 +1,39 @@
+{% comment %}
+作品卡片。三个地方用：作品墙、作品详情页底部的「还有这些」、首页分镜 07。
+
+参数：
+  project  Project 实例
+  eager    首屏那几张传 True，其余懒加载
+
+封面缺位时渲染空焊盘占位（includes/empty_board.html），**不是**换一张默认图 ——
+「这件作品还差一张照片」是有信息量的状态，一张不相干的默认图只会误导。
+
+`data-vt-card` + `data-vt-part="cover"` 是跨页转场的标记（见 view-transitions.js）：
+点进详情页时这张封面会长成详情页顶部那张大图。只在**真有封面**时标 —— 占位框两边
+形状一样，morph 一下没有信息量，反而让「缺图」这件事看着像在动。
+{% endcomment %}
+<a class="wk-card" href="{{ project.public_url }}" data-vt-card>
+    {% if project.cover %}
+    <figure class="wk-cover" data-vt-part="cover">
+        <img src="{{ project.cover.url }}" alt="{{ project.name }} 的封面"
+             {% if project.cover_w %}width="{{ project.cover_w }}" height="{{ project.cover_h }}"{% endif %}
+             loading="{% if eager %}eager{% else %}lazy{% endif %}" decoding="async">
+    </figure>
+    {% else %}
+    {% include "includes/empty_board.html" with label="还差一张封面" brief="做完了记得拍一张 4:3 的成品照。" ratio="4 / 3" css_class="wk-cover" %}
+    {% endif %}
+
+    <div class="wk-card-body">
+        <div class="wk-card-meta">
+            <span class="wk-dept">{{ project.get_department_display }}</span>
+            {% if project.is_featured %}<span class="wk-star" title="精选作品">精选</span>{% endif %}
+        </div>
+        <h3 class="wk-card-title">{{ project.name }}</h3>
+        {% if project.teaser %}<p class="wk-card-teaser">{{ project.teaser }}</p>{% endif %}
+        {% if project.tag_list %}
+        <ul class="wk-tags">
+            {% for tag in project.tag_list %}<li>{{ tag }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+</a>

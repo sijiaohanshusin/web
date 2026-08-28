@@ -49,6 +49,14 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    # **这一条在运行时会被 django-simpleui 摘掉。**
+    # simpleui 的 apps.py 在 ready() 里无条件 `settings.MIDDLEWARE.pop(index)`
+    # 掉它（它的后台 UI 靠 iframe 开标签页，而 Django 默认 X_FRAME_OPTIONS='DENY'
+    # 会把自己的 iframe 也挡掉）。后果是**整站都不发 X-Frame-Options** —— 登录页、
+    # 注册表单、驾驶舱都能被任意站点套进 iframe，而这里看起来完全正常。
+    # 所以这个头由 nginx 在 `location /` 里发（见 ops/nginx/heuesta.cn.conf），
+    # 那一层 simpleui 碰不到。这一行留着是为了：simpleui 哪天不再摘它时，
+    # 保护会自动回到 Django 这一侧。`DeployPerfContractTests` 钉住这件事的现状。
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "core.middleware.DynamicPagesNoCacheMiddleware",
     "accounts.sso.SsoCookieMiddleware",
@@ -59,6 +67,10 @@ MIDDLEWARE = [
 NODEBB_JWT_SECRET = os.environ.get("NODEBB_JWT_SECRET", "")
 SSO_COOKIE_NAME = "heuesta_sso"
 SSO_COOKIE_DOMAIN: str | None = None  # prod 覆盖为 .heuesta.cn
+
+# SAMEORIGIN 而不是 DENY：simpleui 的后台要能把自己的页面套进自己的 iframe。
+# 真正发这个头的是 nginx（simpleui 摘掉了那个中间件，见上面 MIDDLEWARE 的注释）。
+X_FRAME_OPTIONS = "SAMEORIGIN"
 FORUM_URL = os.environ.get("FORUM_URL", "https://bbs.heuesta.cn")
 
 # ---- 邮件（验证码 / 找回密码 / 审核通知）----
@@ -124,6 +136,10 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = Path(os.environ.get("DJANGO_MEDIA_ROOT", BASE_DIR / "media"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# B 站开放接口开关。关掉后 core.bilibili 的所有取数直接降级返回空，
+# 页面照常渲染（首页粉丝数/精选视频区自动隐藏）。测试环境默认关闭，见 dev.py。
+BILIBILI_API_ENABLED = True
 
 # 单个上传文件最大 200MB（nginx 侧同样限制 client_max_body_size）
 DATA_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024

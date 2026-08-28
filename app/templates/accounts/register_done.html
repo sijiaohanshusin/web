@@ -1,22 +1,82 @@
-{% extends "base.html" %}
+{% extends "accounts/_auth_base.html" %}
 {% load static %}
 
-{% block title %}注册成功 | {{ site_config.site_name_en }}{% endblock %}
+{% block title %}{% if channel == 'returning' %}申请已提交{% else %}注册完成{% endif %} | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}哈尔滨工程大学电子科技协会注册完成。{% endblock %}
 
-{% block content %}
-<div class="container">
-    <div class="auth-card returning-done">
-        <p class="nf-eyebrow">// IDENTITY REVIEW</p>
-        <h1>身份恢复申请已提交</h1>
-        <p class="auth-sub" style="margin-top:10px;">
-            管理组核验通过后即可登录，审核结果会发送到你的注册邮箱。<br>
-            如需补充信息，可在招新 QQ 群联系管理组。
-        </p>
-        <div class="qq-card qq-card-compact">
-            <img src="{% static 'img/recruit-qq-1081376858.01b7379e65be.png' %}" alt="2026 电子科技协会招新 QQ 群二维码">
-            <div><span>2026 招新 QQ 群</span><strong>{{ site_config.recruit_qq_group }}</strong></div>
+{% block auth_kicker %}{% if channel == 'returning' %}IDENTITY REVIEW{% else %}WELCOME{% endif %}{% endblock %}
+{% block auth_title %}{% if channel == 'returning' %}申请已提交{% else %}账号已就位{% endif %}{% endblock %}
+{% block auth_lede %}{% if channel == 'returning' %}管理组核验通过后账号才能登录，结果会发到你的注册邮箱。{% else %}你现在是招新成员，账号可以正常登录使用。{% endif %}{% endblock %}
+
+{% block auth_aside %}
+{% comment %}
+「完成」不等于「结束」—— 这一页的唯一任务是回答「那我现在干什么」。所以两条路
+都必须给出明确的下一步，不能只放一个「返回首页」了事。
+
+老会员那条路的下一步是「等」，那就把等待期间能做的事写清楚（去哪问、多久有
+结果、期间账号什么状态）；新会员那条路是「现在没有开放的报名批次」时才会走到，
+所以下一步是关注公告与 QQ 群。
+{% endcomment %}
+{% if channel == 'returning' %}
+    <ol class="lv-ladder">
+        <li class="lv-step is-done">
+            <span class="lv-pad">01</span>
+            <strong>申请已提交</strong>
+            <span class="lv-desc">信息与申报身份已记录</span>
+        </li>
+        <li class="lv-step">
+            <span class="lv-pad">02</span>
+            <strong>管理组核验</strong>
+            <span class="lv-desc">和历史记录核对原身份</span>
+        </li>
+        <li class="lv-step">
+            <span class="lv-pad">03</span>
+            <strong>账号开放</strong>
+            <span class="lv-desc">通过后可登录，身份直接接回</span>
+        </li>
+    </ol>
+    <p class="auth-note">核验期间账号是「待审核」状态，登录会被拦住 —— 这是正常的，不是密码错了。</p>
+{% else %}
+    {% include "includes/level_ladder.html" with reached=1 %}
+    <p class="auth-note">当前没有开放中的招新批次。批次一开你就能直接填报名表，届时会在公告和 QQ 群里说。</p>
+{% endif %}
+{% endblock %}
+
+{% block auth_panel %}
+<div class="panel auth-box">
+    <h2 class="auth-box-title">{% if channel == 'returning' %}接下来怎么办{% else %}现在可以做这些{% endif %}</h2>
+
+    {% if channel == 'returning' %}
+        <ul class="auth-points">
+            <li>核验一般在开学季的几天内完成</li>
+            <li>要补充说明就在 QQ 群里找站务，带上学号</li>
+            <li>结果通知会发到注册邮箱，也检查一下垃圾箱</li>
+        </ul>
+    {% else %}
+        <ul class="auth-points">
+            <li>去<a href="{% url 'core:recruit' %}">新生指南</a>看协会在做什么</li>
+            <li>逛<a href="{% url 'news:list' %}">公告</a>与<a href="{% url 'events:list' %}">活动</a>，公开场次现在就能报</li>
+            <li>在<a href="{% url 'accounts:profile' %}">个人中心</a>补个头像和擅长方向</li>
+        </ul>
+    {% endif %}
+
+    <div class="qq-card qq-card-compact">
+        <img src="{% static 'img/recruit-qq-1081376858.01b7379e65be.png' %}" alt="电子科技协会招新 QQ 群二维码" loading="lazy">
+        <div>
+            <span>{% if channel == 'returning' %}核验进度与补充材料{% else %}招新通知与日常交流{% endif %}</span>
+            <strong>QQ 群 {{ site_config.recruit_qq_group }}</strong>
+            <small>扫码或复制群号加入</small>
         </div>
-        <a class="btn btn-outline" href="{% url 'core:home' %}">返回首页</a>
+    </div>
+
+    <div class="rec-actions">
+        {% if channel == 'returning' %}
+            <a class="btn btn-outline" href="{% url 'core:home' %}">返回首页</a>
+            <a class="btn btn-ghost" href="{% url 'accounts:login' %}">审核通过了？去登录</a>
+        {% else %}
+            <a class="btn btn-primary" href="{% url 'core:recruit' %}">看新生指南</a>
+            <a class="btn btn-outline" href="{% url 'core:home' %}">返回首页</a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

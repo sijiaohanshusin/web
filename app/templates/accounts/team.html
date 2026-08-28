@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}团队 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}哈尔滨工程大学电子科技协会现任团队：主席团与各方向负责人，以及在册成员规模。{% endblock %}
+{% block body_class %}page-team{% endblock %}
+
+{% block content %}
+{% comment %}
+公开团队页。这一页回答的是「带我的人是谁」，不是一份会员名册。
+
+两条前提决定了整页结构：
+  1. **隐私是硬约束。** 注册时的同意书写的是「身份核验、招新联系、账号安全」，
+     没有一个字提到「公开展示在官网上」。所以上墙要本人在个人资料页单独勾选，
+     默认关闭，站务不能代勾。页面上一个手机号 / 邮箱 / 学号都不出现，找人一律
+     指向招新 QQ 群。
+  2. **一个人都没勾时这一页也要站得住。** 所以先给聚合数字（在册人数 / 覆盖学院
+     数 / 跨越届数）—— 那不是个人信息，却是这一页最有说服力的一句话。
+{% endcomment %}
+
+<section class="page-hero nf-scope" style="--hero-accent: var(--accent-2)">
+    <div class="container">
+        <p class="nf-eyebrow">// THE TEAM</p>
+        <h1>带你的<span class="accent">人</span></h1>
+        {% comment %}
+        最后那句话必须跟着有没有人在墙上变。写死「下面这些是……带项目的人」的话，
+        一个人都没勾时它就在指着一个空区块说谎。
+        {% endcomment %}
+        <p class="page-hero-sub">
+            {% if summary.total %}
+            协会目前在册 <strong>{{ summary.total }}</strong> 人{% if summary.colleges %}，来自 <strong>{{ summary.colleges }}</strong> 个学院{% endif %}{% if summary.cohorts %}，横跨 <strong>{{ summary.cohorts }}</strong> 届{% endif %}。
+            {% endif %}
+            {% if members %}
+            下面这些是现在真正在带培训、带项目的人 —— 你进来之后遇到的就是他们。
+            {% else %}
+            协会由学生自己运营，培训、比赛、实验室值班都是学生在带，每一届由上一届带出来。
+            {% endif %}
+        </p>
+    </div>
+</section>
+
+<div class="container page-section">
+    {% if members %}
+    {% comment %}
+    一栏网格，职位画在卡片上。**不按职位分节** —— 协会的职位大多一人一个，
+    分节的话五个人变成五个只装一张卡的分节，整页又空又长（截图之后推翻的第一版）。
+    顺序由 User.team() 按 Position.sort_order 排好，主席团自然在前。
+    {% endcomment %}
+    <div class="tm-grid">
+        {% for member in members %}
+            {% include "includes/team_card.html" with member=member %}
+        {% endfor %}
+    </div>
+
+    <p class="tm-foot">
+        想找具体某个人，先进招新 QQ 群 <strong>{{ site_config.recruit_qq_group }}</strong> 说一声就行。
+        这一页不放个人联系方式。
+    </p>
+
+    {% else %}
+    <div class="panel empty-state">
+        <p class="nf-eyebrow">// NOT PUBLISHED YET</p>
+        <h2>团队名单还没公开</h2>
+        <p>
+            协会是有主席团和各方向负责人的，只是要不要把自己的名字和照片放到公开页面上，
+            得由每个人自己决定 —— 我们不替谁做这个决定。
+        </p>
+        <p>
+            现在想找人，直接进招新 QQ 群 <strong>{{ site_config.recruit_qq_group }}</strong>，
+            或者先读<a href="{% url 'core:recruit' %}">新生指南</a>了解协会一年在做什么。
+        </p>
+    </div>
+    {% endif %}
+
+    {% if user.is_authenticated and user.is_officer %}
+    <div class="tm-officer-note">
+        <strong>站务可见</strong>
+        <p>
+            职位在<a href="{% url 'dashboard:positions' %}">驾驶舱 · 职位管理</a>里任命。
+            但<strong>任命不等于上墙</strong> —— 还要本人在<a href="{% url 'accounts:profile_edit' %}">个人资料</a>里
+            勾上「在公开团队页展示我」。这是本人的同意，站务代勾不了。
+            {% if pending_optin %}
+            现在有 <strong>{{ pending_optin }}</strong> 位在任成员还没勾。
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

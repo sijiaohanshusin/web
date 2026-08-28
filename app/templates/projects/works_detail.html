@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ project.name }} | 作品墙 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}{{ project.teaser|default:project.name }}{% endblock %}
+{% block body_class %}page-works{% endblock %}
+
+{% block content %}
+{% comment %}
+作品详情。只认公开作品（视图用 `Project.public()` 取，不是 `Project.objects`），
+否则外人拿到一个 id 就能读到还没准备好公开的项目简介。
+
+这一页不出现任何项目文件。会员看到一个「进档案库」的入口，外人连入口都没有。
+{% endcomment %}
+
+<section class="wk-detail-hero nf-scope">
+    <div class="container">
+        <p class="nf-eyebrow">// {{ project.get_department_display }}</p>
+        <h1>{{ project.name }}</h1>
+        {% if project.highlight %}<p class="wk-detail-lede">{{ project.highlight }}</p>{% endif %}
+        <div class="wk-detail-meta">
+            {% if project.tag_list %}
+            <ul class="wk-tags">
+                {% for tag in project.tag_list %}<li>{{ tag }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+            <span class="wk-detail-date">{{ project.created_at|date:"Y 年 n 月" }}起</span>
+        </div>
+    </div>
+</section>
+
+<div class="container wk-detail-body">
+    <div class="wk-detail-main">
+        {% comment %}
+        `data-vt-part="cover"` 与作品墙卡片上那个配对（见 view-transitions.js）。
+        它**不在** `[data-vt-card]` 里，脚本据此认出「这是本页自己的那张图」——
+        页面底部「还有这些」的推荐卡片同样带这个标记，但它们在卡片里。
+        {% endcomment %}
+        {% if project.cover %}
+        <figure class="wk-shot wk-shot-lead" data-vt-part="cover">
+            <img src="{{ project.cover.url }}" alt="{{ project.name }}"
+                 {% if project.cover_w %}width="{{ project.cover_w }}" height="{{ project.cover_h }}"{% endif %}
+                 decoding="async">
+        </figure>
+        {% else %}
+        {% include "includes/empty_board.html" with label="还差一张封面" brief="4:3 横构图的成品照，能看清做出来的是什么。" ratio="4 / 3" css_class="wk-shot" %}
+        {% endif %}
+
+        {% if project.summary %}
+        <div class="md-body wk-detail-text">{{ project.summary|linebreaks }}</div>
+        {% endif %}
+
+        {% if shots %}
+        <h2 class="wk-sub">过程与细节</h2>
+        <div class="wk-gallery">
+            {% for shot in shots %}
+            <figure class="wk-shot">
+                <img src="{{ shot.image.url }}" alt="{{ shot.caption|default:project.name }}"
+                     {% if shot.width %}width="{{ shot.width }}" height="{{ shot.height }}"{% endif %}
+                     loading="lazy" decoding="async">
+                {% if shot.caption %}<figcaption>{{ shot.caption }}</figcaption>{% endif %}
+            </figure>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <aside class="wk-detail-side">
+        {% if team %}
+        <div class="panel">
+            <h2>做的人</h2>
+            <ul class="wk-team">
+                {% for m in team %}
+                <li>
+                    <strong>{{ m.user.display_name }}</strong>
+                    <span>{% if m.role == 'lead' %}负责人{% else %}{{ m.user.full_title }}{% endif %}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="panel">
+            <h2>想做这样的东西？</h2>
+            <p class="wk-side-text">协会的培训就是从零把人带到能做出这些。零基础可以，大部分人都是。</p>
+            <div class="rec-actions">
+                {% if recruitment_open %}
+                <a class="btn btn-primary" href="{% url 'recruitment:index' %}">现在报名 →</a>
+                {% else %}
+                <a class="btn btn-primary" href="{% url 'core:recruit' %}">看新生指南 →</a>
+                {% endif %}
+                <a class="btn btn-outline" href="{% url 'works:wall' %}">← 回作品墙</a>
+            </div>
+        </div>
+
+        {% if can_open_archive %}
+        <div class="panel">
+            <h2>项目档案</h2>
+            <p class="wk-side-text">你是这个项目的成员或站务，可以进档案库看原理图、代码和报告。</p>
+            <a class="btn btn-ghost btn-sm" href="{% url 'projects:detail' project.pk %}">打开档案 →</a>
+        </div>
+        {% endif %}
+    </aside>
+</div>
+
+{% if more %}
+<div class="container page-section">
+    <h2 class="wk-sub">还有这些</h2>
+    <div class="wk-grid">
+        {% for other in more %}
+            {% include "includes/work_card.html" with project=other %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

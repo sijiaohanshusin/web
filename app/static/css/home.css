@@ -1,0 +1,644 @@
+/* ============================================================
+   HEU ESTA 官网 · 第 3 层：首页分镜
+   ------------------------------------------------------------
+   只有首页加载（base.html 的 extra_head 块）。一屏一分镜：
+   HERO / 三个理由 / 大数字 / 三大方向 / 招新视频 / 图片走廊 /
+   时间轴 / 学习资源与 B 站 / 加入我们 / 公告速览条。
+
+   依赖 tokens.css 与 core.css。这里的选择器不应出现在其他页面。
+   ============================================================ */
+
+/* ============================================================
+   HERO（全屏粒子信号海洋）
+   ============================================================ */
+.nf-hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+.nf-hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.nf-hero-overlay {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+        linear-gradient(90deg, rgba(5, 5, 6, .88) 0%, rgba(5, 5, 6, .55) 34%, rgba(5, 5, 6, .05) 62%, transparent 100%),
+        linear-gradient(180deg, rgba(5, 5, 6, .6) 0%, transparent 22%, transparent 72%, rgba(5, 5, 6, .92) 100%);
+}
+@keyframes halo-breath { from { opacity: .7; } to { opacity: 1; transform: scale(1.05); } }
+
+.nf-hero-inner {
+    position: relative; z-index: 2;
+    display: grid; grid-template-columns: 1fr; align-items: center;
+    padding: 120px 0 60px;
+}
+.nf-hero-text { max-width: 720px; }
+.nf-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(46px, 7.2vw, 96px); font-weight: 900; line-height: 1.12;
+    letter-spacing: 2px; color: #fff; margin: 10px 0 26px;
+}
+.nf-hero-title .accent { color: var(--accent); }
+.nf-hero-title em { font-style: normal; animation: caret-blink 1.2s step-end infinite; font-weight: 700; }
+@keyframes caret-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.nf-hero-sub { color: var(--muted); font-size: clamp(15px, 1.6vw, 18px); max-width: 480px; margin-bottom: 44px; }
+.nf-hero-cta { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; color: var(--text); }
+
+.nf-hero-foot {
+    position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 30px; gap: 20px;
+}
+.nf-hero-note { color: #7b8494; font-size: 12.5px; }
+.nf-scroll-cue {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 3px; color: #7b8494;
+}
+.nf-scroll-cue span { display: block; width: 1px; height: 44px; background: linear-gradient(180deg, transparent, var(--accent)); animation: cue-drop 1.8s var(--ease-out) infinite; }
+@keyframes cue-drop { 0% { transform: scaleY(0); transform-origin: top; } 55% { transform: scaleY(1); transform-origin: top; } 56% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
+
+/* 示波器时基扫描线：一条竖线匀速扫过整屏，压在粒子波场之上、文字之下。
+   这是分镜 00 里「示波器」这条设计语言的落点 —— 粒子是被观测的信号，
+   扫描线是观测本身。刻意做得很淡（0.5 峰值透明度）：它要在余光里被感觉到，
+   不能抢巨字。加载动画盖着时按住，和巨字同一拍开始。 */
+.nf-hero-scan {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 2px; z-index: 1;
+    pointer-events: none; opacity: 0;
+    background: linear-gradient(180deg,
+        transparent, rgba(65, 216, 232, .5) 22%, rgba(65, 216, 232, .5) 78%, transparent);
+    box-shadow: 0 0 22px rgba(65, 216, 232, .35);
+    animation: hero-scan 9s linear 1.6s infinite;
+}
+html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
+@keyframes hero-scan {
+    0% { opacity: 0; transform: translateX(0); }
+    6% { opacity: 1; }
+    88% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(100vw); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .nf-hero-scan { display: none; }
+}
+
+/* Hero 粒子动画的绘制逻辑在 js/hero-field.js */
+
+/* ============================================================
+   白色区：三个理由
+   ============================================================ */
+.nf-split { display: grid; grid-template-columns: 1fr 1.1fr; gap: clamp(40px, 6vw, 90px); align-items: center; }
+.nf-photo-card {
+    position: relative; border-radius: 24px; overflow: hidden;
+    box-shadow: 0 40px 90px rgba(14, 17, 22, .22);
+    /* transform 由 JS lerp 逐帧驱动，不能再叠 CSS transition（会追赶打架） */
+    transform-style: preserve-3d; will-change: transform;
+}
+.nf-photo-card img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; }
+.nf-photo-card figcaption {
+    position: absolute; left: 18px; bottom: 18px; padding: 7px 16px; border-radius: 999px;
+    background: rgba(5, 5, 6, .62); color: #fff; font-size: 12.5px; letter-spacing: 1px;
+    backdrop-filter: blur(8px);
+}
+.nf-reasons { list-style: none; counter-reset: reason; }
+.nf-reasons li {
+    counter-increment: reason; position: relative;
+    padding: 26px 0 26px 74px; border-bottom: 1px solid var(--line-l);
+}
+.nf-reasons li:last-child { border-bottom: none; }
+.nf-reasons li::before {
+    content: "0" counter(reason);
+    position: absolute; left: 0; top: 26px;
+    font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--copper);
+}
+.nf-reasons h3 { font-size: 19px; font-weight: 800; margin-bottom: 8px; }
+.nf-reasons p { font-size: 14.5px; }
+
+/* 桥接元素：三个理由的照片卡骑跨白/黑分界线（全站唯一一处，桌面端）
+   意象：作品从坐标纸伸进暗室 */
+@media (min-width: 1025px) {
+    .nf-bridge { overflow: visible; padding-bottom: clamp(50px, 6vw, 80px); }
+    .nf-bridge .nf-split-media { transform: translateY(clamp(105px, 12vw, 145px)); }
+    .nf-bridge + .nf-section { padding-top: clamp(170px, 20vw, 240px); }
+}
+
+/* ============================================================
+   黑色区：大数字
+   ============================================================ */
+.nf-bignum-section { text-align: left; }
+.nf-bignum { position: relative; display: flex; align-items: baseline; gap: 30px; flex-wrap: wrap; margin-bottom: clamp(50px, 7vw, 90px); }
+
+/* 「31」的示波器扫描编排：扫描线扫过，数字随之计数亮起 */
+.nf-bignum::after {
+    content: ""; position: absolute; top: -5%; bottom: -5%; left: 0; width: 3px;
+    background: linear-gradient(180deg, transparent, var(--accent-2) 30%, var(--accent-2) 70%, transparent);
+    box-shadow: 0 0 20px rgba(65, 216, 232, .8), 0 0 60px rgba(13, 169, 205, .4);
+    opacity: 0; pointer-events: none;
+}
+.nf-bignum.is-visible::after { animation: scan-sweep 1.7s var(--ease-out) .1s 1 both; }
+@keyframes scan-sweep {
+    0% { opacity: 0; left: 0; }
+    10% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { opacity: 0; left: calc(100% - 3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .nf-bignum.is-visible::after { animation: none; opacity: 0; }
+}
+.nf-bignum-value {
+    font-family: var(--font-mono); font-weight: 800; line-height: .95;
+    font-size: clamp(110px, 22vw, 280px); letter-spacing: -6px;
+    background: linear-gradient(115deg, #fff 30%, var(--accent-2) 75%, var(--accent));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 10px 50px rgba(13, 169, 205, .25));
+}
+.nf-bignum-side { display: flex; flex-direction: column; gap: 10px; max-width: 300px; }
+.nf-bignum-unit { font-size: clamp(20px, 2.6vw, 30px); font-weight: 800; color: #fff; }
+.nf-bignum-desc { color: var(--muted); font-size: 14.5px; }
+.nf-substats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-top: 1px solid var(--line-d); }
+.nf-substat { padding: 30px 24px 6px; border-left: 1px solid var(--line-d); }
+.nf-substat:first-child { border-left: none; padding-left: 0; }
+.nf-substat strong { display: block; font-family: var(--font-mono); font-size: clamp(26px, 3.4vw, 42px); font-weight: 700; color: #fff; }
+.nf-substat > span { color: var(--muted); font-size: 13.5px; letter-spacing: 2px; }
+
+/* ============================================================
+   白色区：三大方向
+   ============================================================ */
+.nf-dir-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 20px; }
+.nf-dir-card {
+    display: block; border-radius: 22px; overflow: hidden; background: var(--white);
+    box-shadow: 0 10px 40px rgba(14, 17, 22, .08); color: var(--ink);
+    transition: transform .55s var(--ease-out), box-shadow .55s var(--ease-out);
+}
+.nf-dir-card:hover { transform: translateY(-10px); box-shadow: 0 34px 70px rgba(14, 17, 22, .16); color: var(--ink); }
+.nf-dir-card figure { position: relative; overflow: hidden; aspect-ratio: 16 / 10; background: #e8ebf0; }
+
+/* 元件符号：压在照片右上角的一枚白色徽标，hover 时描线自绘。
+   用铜色是因为它属于「工艺记号」那一类语义（编号、位号、符号），
+   信号青留给交互状态。 */
+.nf-dir-sym {
+    position: absolute; top: 12px; right: 12px; z-index: 1;
+    width: 40px; height: 40px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: rgba(255, 255, 255, .9); color: var(--copper);
+    box-shadow: 0 4px 14px rgba(14, 17, 22, .14);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.nf-dir-sym .icon { width: 24px; height: 24px; }
+/* 描线自绘：这几个图标没有 pathLength，所以用一个够大的固定 dasharray
+   （60 覆盖三个符号里最长的那条路径）配合 keyframes 从「全部虚掉」画回实线。
+   静止态必须是画好的 —— 只在 hover 时重画，不要让符号默认残缺。 */
+.nf-dir-sym .icon > * { stroke-dasharray: 60; stroke-dashoffset: 0; }
+.nf-dir-card:hover .nf-dir-sym { color: var(--accent); }
+.nf-dir-card:hover .nf-dir-sym .icon > * {
+    animation: sym-draw var(--t-cine) var(--ease-rise) both;
+}
+@keyframes sym-draw { from { stroke-dashoffset: 60; } to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+    .nf-dir-sym .icon > * { animation: none !important; stroke-dashoffset: 0 !important; }
+}
+.nf-dir-card img { width: 100%; height: 100%; object-fit: cover; transition: transform .8s var(--ease-out); }
+.nf-dir-card:hover img { transform: scale(1.07); }
+.nf-dir-body { padding: 26px 26px 30px; position: relative; }
+.nf-dir-index {
+    position: absolute; top: -16px; right: 24px;
+    font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--copper);
+    background: var(--white); border: 1px solid var(--line-l); border-radius: 999px; padding: 4px 12px;
+    box-shadow: 0 6px 16px rgba(14, 17, 22, .08);
+}
+.nf-dir-body h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.nf-dir-body p { font-size: 14px; margin-bottom: 18px; min-height: 44px; }
+.nf-dir-body .nf-link-more { color: var(--ink); }
+
+/* ============================================================
+   招新视频
+   ============================================================ */
+.video-facade {
+    position: relative; aspect-ratio: 16 / 9; max-width: 940px; margin: 0 auto;
+    border-radius: 22px; overflow: hidden; cursor: pointer;
+    border: 1px solid var(--line-d);
+    box-shadow: 0 40px 100px rgba(0, 0, 0, .6), 0 0 60px rgba(13, 169, 205, .1);
+    background: var(--bg-2);
+    transition: transform .5s var(--ease-out), box-shadow .5s;
+}
+.video-facade:hover { transform: scale(1.012); box-shadow: 0 50px 110px rgba(0, 0, 0, .65), 0 0 80px rgba(13, 169, 205, .18); }
+.video-facade img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.8) brightness(.82); }
+/* 封面由 {% slot %} 渲染，撑满 facade。降饱和 + 压亮度是为了让上面那层
+   播放按钮和标题读得出来 —— 这一条原来只作用于 <img>，视频封面同样需要。 */
+.video-facade-media {
+    position: absolute; inset: 0; border-radius: inherit;
+    filter: saturate(.8) brightness(.82);
+}
+.video-facade-media video { filter: none; }
+/* facade 里的槽位是装饰性的：入口是 facade 自己那颗大按钮（点了去 B 站看完整
+   版），槽位内部再来一颗小的会变成两个播放按钮抢注意力。 */
+.video-facade .slot-video-play { display: none; }
+/* 占位框在 facade 里只当背板：留下示波器网格和四角定位标，把居中的文字块藏掉。
+   facade 自己的浮层已经有播放按钮 + 视频标题 + 提示，两组居中文字叠在一个盒子里
+   会互相压成一团（截图确认过，完全读不了）。要看「该补什么片子」去素材中心。 */
+.video-facade .slot.is-empty { border: 0; }
+.video-facade .slot-empty-body { display: none; }
+.video-facade-fallback {
+    position: absolute; inset: 0;
+    background:
+        radial-gradient(circle at 30% 40%, rgba(13, 169, 205, .25), transparent 55%),
+        radial-gradient(circle at 75% 65%, rgba(2, 30, 60, .8), transparent 60%),
+        var(--bg-2);
+}
+.video-facade-overlay {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    background: linear-gradient(180deg, rgba(5, 5, 6, .15), rgba(5, 5, 6, .6));
+    transition: background .3s;
+}
+.video-facade:hover .video-facade-overlay { background: linear-gradient(180deg, rgba(5, 5, 6, .05), rgba(5, 5, 6, .5)); }
+.video-play-btn {
+    width: 88px; height: 88px; border-radius: 50%; border: none; cursor: pointer;
+    background: rgba(255, 255, 255, .96); color: var(--black);
+    display: flex; align-items: center; justify-content: center; padding-left: 6px;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, .4); animation: play-pulse 2.4s ease-out infinite;
+    transition: transform .35s var(--ease-out), background .25s;
+}
+.video-facade:hover .video-play-btn { transform: scale(1.12); background: var(--accent); color: #fff; }
+@keyframes play-pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, .35); } 100% { box-shadow: 0 0 0 30px rgba(255, 255, 255, 0); } }
+.video-facade-title { color: #fff; font-size: 17.5px; font-weight: 700; text-shadow: 0 2px 12px rgba(0, 0, 0, .6); padding: 0 20px; text-align: center; }
+.video-facade-hint { color: rgba(233, 237, 244, .7); font-size: 12.5px; letter-spacing: 1px; }
+.video-facade iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* ============================================================
+   图片走廊（全宽 · 可拖拽 · 自动漂移 · 含留白占位格）
+   ============================================================ */
+.nf-gallery-section { padding: clamp(90px, 12vw, 150px) 0; overflow: hidden; }
+.nf-gallery-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 46px; gap: 20px; }
+.nf-gallery-head .nf-display { margin-bottom: 0; }
+.nf-gallery-hint { color: var(--muted); font-family: var(--font-mono); font-size: 13px; letter-spacing: 2px; }
+
+.nf-strip {
+    cursor: grab; user-select: none; -webkit-user-select: none;
+    /* 两侧渐隐：全宽横滑的边缘更柔 */
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+}
+.nf-strip.dragging { cursor: grabbing; }
+.nf-strip-track { display: flex; gap: 22px; width: max-content; padding: 6px 4vw; will-change: transform; }
+.nf-tile {
+    position: relative; flex: 0 0 auto;
+    width: clamp(260px, 30vw, 460px); aspect-ratio: 4 / 3;
+    border-radius: 20px; overflow: hidden; background: var(--bg-2);
+    border: 1px solid var(--line-d);
+    transition: transform .5s var(--ease-out), border-color .3s;
+}
+.nf-tile:hover { transform: translateY(-8px); border-color: var(--line-d-strong); }
+.nf-tile img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.nf-tile figcaption {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 22px 18px;
+    background: linear-gradient(180deg, transparent, rgba(5, 5, 6, .85));
+    display: flex; flex-direction: column; gap: 2px;
+}
+.nf-tile figcaption strong { color: #fff; font-size: 16.5px; }
+.nf-tile figcaption span { color: var(--muted); font-size: 13px; }
+
+/* 走廊每一格现在都是素材槽（.slot，样式在 core.css）。原来那套 .nf-tile-empty
+   留白占位格已被空焊盘占位取代，规则一并删除 —— 它的职责完全被 .slot.is-empty
+   覆盖，留着只会让人猜哪个才是生效的那份。
+   .nf-tile 仍然保留：它负责走廊里的尺寸、圆角与 hover 抬升，由 {% slot %} 的
+   css_class 参数挂上去。 */
+
+/* ============================================================
+   白色区：时间轴（滚动进度线）
+   ============================================================ */
+/* 一年之路 = 一条 PCB 走线：主干是未通电的裸铜，滚动把电流从左推到右，
+   电流经过哪个节点，那个方形焊盘就点亮。节点刻意做成**方形 SMD 焊盘**而不是
+   圆形过孔 —— 和实物卡片底部那套装饰走线用的是同一种焊盘。
+   走线本来就穿过焊盘中心（主干 top:25px，焊盘 52px 高、中心 26px），所以不需要
+   额外画折角，真实板子上一排焊盘也是这么串的。 */
+.nf-timeline { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 34px; margin-top: 60px; }
+.nf-tl-line {
+    position: absolute; top: 25px; left: 2%; right: 2%; height: 3px;
+    /* 裸铜：比 --copper 淡，读起来是「还没通电」 */
+    background: rgba(201, 138, 61, .3);
+    border-radius: 2px; overflow: hidden;
+}
+.nf-tl-line i {
+    display: block; height: 100%; width: 0; position: relative;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    transition: width .2s linear;
+}
+/* 电流头：走线最前端那一点更亮，像正在推进 */
+.nf-tl-line i::after {
+    content: ""; position: absolute; right: 0; top: 50%; transform: translate(50%, -50%);
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent-2);
+    box-shadow: 0 0 12px var(--accent-2), 0 0 26px rgba(13, 169, 205, .7);
+}
+.nf-tl-item { position: relative; padding-top: 64px; }
+.nf-tl-num {
+    position: absolute; top: 0; left: 0;
+    width: 52px; height: 52px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-weight: 700; font-size: 15px; color: var(--copper);
+    background: var(--white); border: 1.5px solid rgba(201, 138, 61, .55);
+    box-shadow: 0 10px 24px rgba(14, 17, 22, .1);
+    transition: border-color var(--t-base) var(--ease-out),
+                color var(--t-base), box-shadow var(--t-base);
+}
+/* 通电：电流已经流过这个焊盘 */
+.nf-tl-num.is-live {
+    color: var(--accent); border-color: var(--accent);
+    box-shadow: 0 10px 24px rgba(14, 17, 22, .1),
+                0 0 0 4px rgba(13, 169, 205, .12), 0 0 18px rgba(13, 169, 205, .35);
+}
+@media (prefers-reduced-motion: reduce) {
+    .nf-tl-line i { transition: none; }
+}
+.nf-tl-item h3 { font-size: 17.5px; font-weight: 800; margin-bottom: 8px; }
+.nf-tl-item p { font-size: 14px; }
+
+/* ============================================================
+   黑色区：学习资源 + B 站
+   ============================================================ */
+/* 学习资源：终端目录清单（把版面主角让给精选视频） */
+.nf-res-term {
+    margin: 30px 0 90px; border: 1px solid var(--line-d); border-radius: 18px;
+    background: rgba(255, 255, 255, .02); overflow: hidden;
+}
+.term-bar {
+    padding: 14px 22px; font-family: var(--font-mono); font-size: 13.5px;
+    color: var(--muted); background: rgba(255, 255, 255, .03);
+    border-bottom: 1px solid var(--line-d); letter-spacing: .5px;
+}
+.term-prompt { color: var(--ok); }
+.term-caret { color: var(--accent-2); animation: caret-blink 1.2s step-end infinite; }
+.nf-res-row {
+    display: flex; align-items: baseline; gap: 14px;
+    padding: 17px 22px; color: var(--text);
+    border-bottom: 1px solid var(--line-d);
+    transition: background .25s, color .25s;
+}
+.nf-res-row:last-child { border-bottom: none; }
+.nf-res-row:hover { background: rgba(13, 169, 205, .07); color: var(--text); }
+.res-branch { font-family: var(--font-mono); color: var(--copper); flex-shrink: 0; font-size: 14px; }
+.res-name { color: #fff; font-size: 16.5px; font-weight: 700; white-space: nowrap; }
+.res-desc { color: var(--muted); font-size: 13.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.res-go {
+    font-size: 13.5px; font-weight: 600; color: var(--accent-2);
+    white-space: nowrap; flex-shrink: 0;
+}
+.res-go span { display: inline-block; transition: transform .3s var(--ease-out); }
+.nf-res-row:hover .res-go span { transform: translateX(5px); }
+
+.nf-bili-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 26px; gap: 16px; flex-wrap: wrap; color: var(--text); }
+.nf-bili-head h3 { color: #fff; font-size: 22px; font-weight: 800; }
+.bili-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.bili-card {
+    border-radius: 18px; overflow: hidden; border: 1px solid var(--line-d);
+    background: rgba(255, 255, 255, .02);
+    transition: transform .5s var(--ease-out), border-color .3s, box-shadow .5s;
+}
+.bili-card:hover { transform: translateY(-7px); border-color: var(--line-d-strong); box-shadow: 0 20px 50px rgba(0, 0, 0, .5); }
+.bili-cover { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--bg-2); }
+.bili-cover img {
+    width: 100%; height: 100%; object-fit: cover;
+    /* 压制五花八门的封面：统一降饱和降亮，向站点暗色基调靠拢 */
+    filter: saturate(.78) brightness(.86) contrast(1.04);
+    transition: transform .7s var(--ease-out), filter .4s;
+}
+.bili-cover::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, rgba(5, 5, 6, .1), rgba(5, 5, 6, .42));
+    transition: opacity .4s;
+}
+.bili-card:hover .bili-cover img { transform: scale(1.06); filter: saturate(.95) brightness(.96) contrast(1.02); }
+.bili-card:hover .bili-cover::after { opacity: .45; }
+.bili-duration {
+    position: absolute; right: 10px; bottom: 10px; z-index: 1; padding: 2px 9px; border-radius: 999px;
+    background: rgba(5, 5, 6, .8); color: #fff; font-size: 12px; font-family: var(--font-mono);
+}
+.bili-info { padding: 15px 17px 17px; }
+.bili-info h3 {
+    color: var(--text); font-size: 14.5px; font-weight: 600; line-height: 1.5; margin-bottom: 9px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 43px;
+}
+.bili-card:hover .bili-info h3 { color: #fff; }
+.bili-views { color: var(--muted); font-size: 12.5px; }
+
+/* ============================================================
+   加入我们
+   ============================================================ */
+.nf-join { position: relative; padding: clamp(110px, 15vw, 190px) 0; overflow: hidden; }
+.nf-join-halo {
+    position: absolute; left: 50%; top: 55%; transform: translate(-50%, -50%);
+    width: 90vw; height: 90vw; max-width: 1100px; max-height: 1100px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(13, 169, 205, .14) 0%, transparent 60%);
+    animation: halo-breath 6s ease-in-out infinite alternate;
+}
+.nf-join .nf-display { margin-bottom: 18px; }
+
+/* 倒计时组件在 core.css：首页 CTA 和招新落地页都用它，按 CSS 三层的判据
+   （内页也会用到 → core.css）不该留在首页专属层。 */
+.nf-join-sub { color: var(--muted); font-size: 16px; margin-bottom: 44px; position: relative; }
+.nf-join-qq { position: relative; display: flex; flex-direction: column; align-items: center; gap: 26px; }
+/* 次级重音：白色 mono + 品牌色底线。全页唯一的渐变发光留给「31」大数字 */
+.nf-join-number {
+    font-family: var(--font-mono); font-weight: 800;
+    font-size: clamp(40px, 7vw, 84px); letter-spacing: 6px; line-height: 1;
+    color: #fff;
+    padding-bottom: 18px;
+    border-bottom: 3px solid var(--accent);
+}
+.nf-join-actions { display: flex; align-items: center; gap: 30px; flex-wrap: wrap; justify-content: center; color: var(--text); }
+
+/* ============================================================
+   公告速览条（首页专属；列表页卡片在 core.css）
+   ============================================================ */
+.nf-news-strip { padding: 46px 0 54px; border-top: 1px solid var(--line-d); }
+.nf-news-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.nf-news-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.nf-news-item {
+    display: flex; flex-direction: column; gap: 8px; padding: 18px 20px;
+    border: 1px solid var(--line-d); border-radius: 14px; background: var(--panel);
+    transition: border-color .25s, transform .25s var(--ease-out);
+}
+.nf-news-item:hover { border-color: rgba(13, 169, 205, .55); transform: translateY(-3px); }
+.nf-news-meta { display: flex; align-items: center; gap: 8px; }
+.nf-news-meta time { color: var(--muted); font-family: var(--font-mono); font-size: 12.5px; }
+.nf-news-item strong { color: #fff; font-size: 15.5px; line-height: 1.5; }
+.nf-news-excerpt { color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+/* ============================================================
+   响应式（首页分镜部分）
+   ============================================================ */
+@media (max-width: 1024px) {
+    .nf-hero-inner { padding-top: 110px; }
+    .nf-split { grid-template-columns: 1fr; }
+    .nf-dir-grid, .bili-grid { grid-template-columns: repeat(2, 1fr); }
+    .nf-timeline { grid-template-columns: repeat(2, 1fr); }
+    /* 窄屏排成多行，一条横贯的主干没有意义，隐藏。
+       焊盘的通电改由每一项自己的入场可见性驱动（.reveal 已经在做），
+       这样「走到哪里、亮到哪里」的手感在窄屏一样在。 */
+    .nf-tl-line { display: none; }
+    .nf-tl-item.is-visible .nf-tl-num {
+        color: var(--accent); border-color: var(--accent);
+        box-shadow: 0 10px 24px rgba(14, 17, 22, .1),
+                    0 0 0 4px rgba(13, 169, 205, .12), 0 0 18px rgba(13, 169, 205, .35);
+    }
+    .nf-substats { grid-template-columns: repeat(2, 1fr); }
+    .nf-substat { padding-left: 0; border-left: none; }
+}
+
+@media (max-width: 720px) {
+    .nf-hero { min-height: auto; }
+    .nf-hero-inner { padding: 100px 0 30px; }
+    .nf-hero-cta { gap: 20px; }
+    .nf-hero-foot { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .nf-scroll-cue { display: none; }
+    .nf-dir-grid, .bili-grid { grid-template-columns: 1fr; }
+    .nf-res-row { flex-wrap: wrap; row-gap: 4px; }
+    .res-desc { flex-basis: 100%; order: 4; white-space: normal; padding-left: 30px; }
+    .nf-timeline { grid-template-columns: 1fr; }
+    .nf-reasons li { padding-left: 58px; }
+    .nf-gallery-head { flex-direction: column; align-items: flex-start; }
+    .nf-tile { width: 78vw; }
+    .nf-bignum { gap: 16px; }
+    .nf-news-row { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   分镜 01：会标是一块真的电路板（逐层制造）
+   ------------------------------------------------------------
+   默认（无 WebGL / reduced-motion / 动效库没加载）就是一段普通区块：
+   内联 SVG 会标 + 完整工艺清单，信息一条不少，高度也是自然高度。
+
+   只有在 html.motion-ready.has-webgl 且非 reduced-motion 时才升级成
+   滚动分镜：区块拉高、内容用 position:sticky 钉住。刻意不用
+   ScrollTrigger 的 pin —— 它要插 pin-spacer 改 DOM，和 Lenis 配合
+   容易抖，sticky 是浏览器原生行为。
+   ============================================================ */
+.nf-forge { position: relative; padding: clamp(90px, 12vw, 150px) 0; }
+.nf-forge-pin { display: flex; align-items: center; }
+/* 不要在这里写 width：这个元素同时带 .container，写死宽度会盖掉
+   .container 的 min(1240px, 92%)，内容直接溢出到视口边缘 */
+/* 三个栅格项（标题 / 舞台 / 工序清单）的位置全由 areas 指定，不跟 DOM 顺序绑，
+   这样窄屏重排成「标题 → 舞台 → 清单」不用动模板 */
+.nf-forge-grid {
+    display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    grid-template-areas:
+        "copy  stage"
+        "steps stage";
+    grid-template-rows: auto auto;
+    column-gap: clamp(36px, 6vw, 84px); row-gap: 26px;
+    align-content: center;
+}
+.nf-forge-copy { grid-area: copy; align-self: end; }
+.nf-forge-steps { grid-area: steps; align-self: start; }
+.nf-forge-stage { grid-area: stage; align-self: center; }
+
+.nf-forge-copy .nf-display { margin-bottom: 0; }
+
+/* 工艺清单：编号用焊锡铜（延续全站"编号=铜色"的语义），
+   左侧一条走线样式的竖轴串起五道工序 */
+.nf-forge-steps {
+    list-style: none; counter-reset: forge; position: relative;
+    padding-left: 30px; margin: 0;
+}
+.nf-forge-steps::before {
+    content: ""; position: absolute; left: 5px; top: 10px; bottom: 10px;
+    width: 2px; background: var(--line-d); border-radius: 2px;
+}
+.nf-forge-steps li {
+    counter-increment: forge; position: relative;
+    padding: 13px 0; color: var(--muted);
+    transition: color var(--t-base) var(--ease-out);
+}
+.nf-forge-steps li::before {
+    content: ""; position: absolute; left: -30px; top: 21px;
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--line-d-strong); background: var(--black);
+    transition: border-color var(--t-base), background var(--t-base),
+                box-shadow var(--t-base);
+}
+.nf-forge-steps b {
+    display: block; color: var(--text); font-size: 16.5px; font-weight: 700;
+    letter-spacing: .5px; transition: color var(--t-base);
+}
+.nf-forge-steps b::before {
+    content: "0" counter(forge);
+    display: inline-block; min-width: 32px;
+    font: 700 13px/1 var(--font-mono); color: var(--copper);
+}
+.nf-forge-steps span { display: block; font-size: 14px; line-height: 1.65; }
+
+/* 当前工序：焊盘点亮 + 文字提亮 */
+.nf-forge-steps li.is-active::before {
+    border-color: var(--accent-2); background: var(--accent-2);
+    box-shadow: 0 0 0 4px rgba(65, 216, 232, .18), 0 0 14px rgba(65, 216, 232, .7);
+}
+.nf-forge-steps li.is-active { color: var(--text); }
+.nf-forge-steps li.is-active b { color: #fff; }
+/* 已完成的工序：焊盘留下铜色实心，像已经焊上了 */
+.nf-forge-steps li.is-done::before {
+    border-color: var(--copper-2); background: var(--copper);
+}
+
+/* 舞台：3D 挂载点 */
+.nf-forge-stage {
+    position: relative; width: 100%;
+    aspect-ratio: 1 / 1; max-height: min(74vh, 620px);
+    margin-inline: auto;
+}
+.nf-forge-stage canvas { border-radius: 20px; }
+/* 兜底 SVG：默认显示；只有 3D 真正挂载成功（JS 加 .is-3d）才隐藏，
+   这样 3D 模块加载失败时不会两头空 */
+.nf-forge-fallback {
+    width: 100%; height: 100%; color: var(--accent-2); opacity: .9;
+}
+.nf-forge-stage.is-3d .nf-forge-fallback { display: none; }
+
+@media (max-width: 1024px) {
+    .nf-forge-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas: "copy" "stage" "steps";
+        row-gap: 26px;
+    }
+    .nf-forge-stage { max-height: 56vh; }
+}
+
+/* ---- 升级成滚动分镜 ---- */
+html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge {
+    /* 340vh 给五道工序 + 通电留出擦洗行程；再长就显得拖沓 */
+    height: 340vh; padding: 0;
+}
+html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-pin {
+    position: sticky; top: 0; height: 100vh;
+}
+
+/* 单栏 + 钉住的组合下，内容必须塞进 100vh。
+   踩过：直接把桌面两栏堆叠，标题 + 五条带说明的工序 + 1:1 舞台合计远超一屏，
+   钉住之后标题被固定导航切掉、板子整块掉到屏幕外 —— 移动端等于没有这段分镜。
+   窄屏不是缩小桌面版，而是换一套构图：舞台放大居中当主角，工序清单压成一列
+   只剩标题的进度条。说明文字是这里唯一可以牺牲的东西。 */
+@media (max-width: 1024px) {
+    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-pin {
+        /* 固定导航是悬浮层，不占流；居中排布必须自己让出这段高度 */
+        padding-top: 76px; align-items: center;
+    }
+    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-grid {
+        row-gap: 18px;
+    }
+    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-copy .nf-display {
+        font-size: clamp(26px, 7.2vw, 40px); line-height: 1.16;
+    }
+    /* 用 vh 定宽（而不是靠 max-height 压）才能保持正方形：舞台一旦被
+       max-height 截断就变成宽扁的，3D 里会标左右留一大片空 */
+    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-stage {
+        width: min(100%, 46vh); max-height: none;
+    }
+    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-steps {
+        padding-left: 26px;
+    }
+    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-steps li {
+        padding: 5px 0;
+    }
+    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-steps li::before {
+        top: 9px; width: 10px; height: 10px; left: -26px;
+    }
+    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-steps b {
+        font-size: 15px;
+    }
+    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-steps span {
+        display: none;
+    }
+}
+@media (max-width: 720px) {
+    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge { height: 300vh; }
+}

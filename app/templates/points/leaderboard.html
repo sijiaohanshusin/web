@@ -1,19 +1,25 @@
 {% extends "base.html" %}
 
 {% block title %}积分排行榜 | {{ site_config.site_name_en }}{% endblock %}
+{% block body_class %}page-leaderboard{% endblock %}
 
 {% block content %}
-<div class="container page-section">
-    <div class="page-head">
+<section class="page-hero nf-scope" style="--hero-accent: var(--copper-2)">
+    <div class="container">
         <p class="nf-eyebrow">// LEADERBOARD</p>
-        <h1>积分排行榜</h1>
-        <p>参加培训、讲座并签到即可积累积分。{% if my_total is not None %}你当前有 <strong>{{ my_total }}</strong> 分，<a href="{% url 'points:mine' %}">查看明细 →</a>{% endif %}</p>
+        <h1>积分<span class="accent">排行榜</span></h1>
+        <p class="page-hero-sub">
+            参加培训、讲座并签到即可积累积分。
+            {% if my_total is not None %}你当前有 <strong>{{ my_total }}</strong> 分，<a href="{% url 'points:mine' %}">查看明细 →</a>{% endif %}
+        </p>
     </div>
+</section>
 
+<div class="container page-section">
     {% if rows %}
         <div class="lb-list">
             {% for u in rows %}
-            <div class="lb-row {% if forloop.counter <= 3 %}lb-top{% endif %}">
+            <div class="card lb-row {% if forloop.counter <= 3 %}lb-top{% endif %}">
                 <span class="lb-rank">
                     {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}{{ forloop.counter }}{% endif %}
                 </span>
@@ -31,10 +37,7 @@
             {% endfor %}
         </div>
     {% else %}
-        <div class="empty-hint">
-            <span class="empty-icon">{% include "includes/icon.html" with name="spark" cls="icon-lg" %}</span>
-            还没有人获得积分，第一个上榜的会是你吗？
-        </div>
+        {% include "includes/empty_state.html" with icon="spark" title="还没有人获得积分" body="积分来自活动签到。第一个上榜的会是你吗？" cta="看活动" cta_url="/events/" %}
     {% endif %}
 </div>
 {% endblock %}

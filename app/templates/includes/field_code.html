@@ -1,0 +1,20 @@
+{% comment %}
+邮箱验证码字段：输入框 + 发送按钮 + 就近的消息位。
+
+用法：{% include "includes/field_code.html" with field=form.code purpose="register" %}
+purpose 是 /accounts/send-code/ 认的用途（register / reset / login）。
+
+这个 partial 存在的理由：原来三个页面各手写了一遍，其中注册页那份还漏了消息位，
+于是「该邮箱已注册」这类服务端提示在注册页完全看不见 —— 用户只看到按钮闪一下。
+`[data-code-msg]` 是 auth-code.js 找消息位的钩子，别改名。
+{% endcomment %}
+<div class="form-group {% if field.errors %}has-error{% endif %}">
+    <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="req">*</span>{% endif %}</label>
+    <div class="code-row">
+        {{ field }}
+        <button type="button" class="btn btn-outline"
+                data-send-code="{{ purpose }}" data-email="{{ email_selector|default:'#id_email' }}">获取验证码</button>
+    </div>
+    <small class="form-help" data-code-msg></small>
+    {% for error in field.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
+</div>

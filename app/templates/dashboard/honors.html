@@ -1,0 +1,95 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}荣誉录入{% endblock %}
+{% block page_title %}荣誉录入{% endblock %}
+
+{% block content %}
+<div class="dash-panel">
+    <h2>{% if editing %}修改「{{ editing.title }}」{% else %}录入一项获奖{% endif %}</h2>
+    <p class="form-help">
+        荣誉墙（<a href="{% url 'honors:wall' %}" target="_blank" rel="noopener">/honors/</a>）
+        的统计数字是**从这些记录数出来的**，不是手填的 —— 所以录进来才算数。
+        证书照片选填，有的话会额外出现在荣誉墙顶部的证书条带里。
+    </p>
+    {% comment %}
+    **必须有 enctype** —— 表单里有证书照片。漏了它不报错，只是图永远存不上。
+    {% endcomment %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save">
+        {% if editing %}<input type="hidden" name="id" value="{{ editing.pk }}">{% endif %}
+        <div class="form-grid">
+            {% for field in form %}
+                {% include "includes/field.html" %}
+            {% endfor %}
+        </div>
+        <div class="news-form-actions">
+            {% comment %}
+            data-honor-save 是给 scripts/check_honors.py 定位用的钩子。这一页有很多
+            `button[type=submit]`（每行都有撤回/放首页/删除三个小表单），靠「第一个
+            匹配」定位会随 DOM 顺序变化而点错东西。
+            {% endcomment %}
+            <button type="submit" class="btn btn-primary" data-honor-save>{% if editing %}保存修改{% else %}录入{% endif %}</button>
+            {% if editing %}<a class="btn btn-ghost" href="{% url 'dashboard:honors' %}">取消</a>{% endif %}
+        </div>
+    </form>
+</div>
+
+<div class="dash-panel">
+    <h2>
+        已录入 {{ items|length }} 项
+        <small style="font-weight:400;color:var(--muted);">
+            （公开的：国家级 {{ summary.national }} · 省级 {{ summary.provincial }} · 校级 {{ summary.school }}）
+        </small>
+    </h2>
+    <div class="dash-table-wrap">
+        <table class="table">
+            <thead>
+                <tr><th>年份</th><th>等级</th><th>奖项</th><th>获奖人</th><th>喜报</th><th>状态</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+            {% for h in items %}
+                <tr>
+                    <td>{{ h.year }}</td>
+                    <td><span class="badge {% if h.level >= 30 %}badge-amber{% elif h.level >= 20 %}badge-blue{% else %}badge-gray{% endif %}">{{ h.get_level_display }}</span></td>
+                    <td>
+                        {{ h.title }}
+                        {% if h.contest %}<small style="color:var(--muted);"> · {{ h.contest }}</small>{% endif %}
+                        {% if h.certificate %}<small style="color:var(--accent-2);"> · 有证书图</small>{% endif %}
+                    </td>
+                    <td>{{ h.awardee|default:"—" }}</td>
+                    <td>{% if h.post %}<a href="{{ h.post.get_absolute_url }}" target="_blank" rel="noopener">{{ h.post.title|truncatechars:18 }}</a>{% else %}—{% endif %}</td>
+                    <td>
+                        <span class="badge {% if h.is_public %}badge-green{% else %}badge-gray{% endif %}">{% if h.is_public %}公开{% else %}未公开{% endif %}</span>
+                        {% if h.is_featured %}<span class="badge badge-amber">首页</span>{% endif %}
+                    </td>
+                    <td class="dash-row-actions">
+                        <a class="btn btn-ghost btn-sm" href="?edit={{ h.pk }}">编辑</a>
+                        <form method="post" class="inline-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="toggle_public">
+                            <input type="hidden" name="id" value="{{ h.pk }}">
+                            <button type="submit" class="btn btn-outline btn-sm">{% if h.is_public %}撤回{% else %}公开{% endif %}</button>
+                        </form>
+                        <form method="post" class="inline-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="toggle_featured">
+                            <input type="hidden" name="id" value="{{ h.pk }}">
+                            <button type="submit" class="btn btn-outline btn-sm">{% if h.is_featured %}移出首页{% else %}放首页{% endif %}</button>
+                        </form>
+                        <form method="post" class="inline-form" onsubmit="return confirm('删除「{{ h.title }}」？');">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="id" value="{{ h.pk }}">
+                            <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="7"><div class="dash-empty">还没有录入任何获奖记录</div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

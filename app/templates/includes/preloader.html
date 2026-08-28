@@ -1,0 +1,119 @@
+{% load brand %}
+{% comment %}
+开场加载动画（分镜 00）。
+
+放在 <body> 最开头，靠下面这段内联 critical CSS 立即可见 —— 不能等 core.css，
+否则会先闪一下未样式化的内容。
+
+三条硬约束，改动前先读：
+
+1) 描线动画必须是纯 CSS。JS 只负责进度数字和退场。这样即使 preloader.js
+   加载失败，用户仍然看到会标画出来，而不是一个空黑屏。
+
+2) 必须有纯 CSS 的兜底隐藏。最后那条 animation 在 9 秒后无条件把遮罩收掉，
+   不依赖任何 JS。任何"永久盖住页面"的风险都不可接受。
+
+3) prefers-reduced-motion 下整块不显示（display:none），不是"快速播一遍"。
+   前庭敏感用户不该被一个全屏动画拦在门口。
+
+只在首页用（开场是首页的叙事组成部分）。内页直接进内容，不做加载动画。
+同一会话内二次进入首页也跳过，靠 sessionStorage 判断，见 preloader.js。
+{% endcomment %}
+<style>
+  /* ---- 遮罩 ---- */
+  .esta-pre {
+    position: fixed; inset: 0; z-index: var(--z-preloader, 300);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 26px; background: var(--black, #050506);
+    /* 兜底：9 秒后无条件收掉，不依赖 JS */
+    animation: esta-pre-failsafe 0s linear 9s forwards;
+  }
+  @keyframes esta-pre-failsafe { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+
+  /* 退场：整块向上抽走，像揭开幕布，把 Hero 让出来 */
+  .esta-pre.is-done {
+    animation: none;
+    transform: translateY(-100%);
+    transition: transform .82s var(--ease-rise, cubic-bezier(.16, 1, .3, 1));
+  }
+  .esta-pre.is-done .esta-pre-inner { opacity: 0; transition: opacity .3s ease; }
+  {% comment %}
+  锁滚动。注意副作用：给 body 加 overflow 会让 body 变成滚动容器，页面里所有
+  position: sticky 都改为相对 body 的 scrollport 定位，而 body 自己不滚 ——
+  于是锁期间 sticky 全部失效。加载动画是全屏遮挡的，用户看不到；但自动化断言
+  在这个窗口里取值就会得到「sticky 没生效」的假失败。谁要复用这个锁去做弹窗，
+  记住这一条。
+  {% endcomment %}
+  html.esta-pre-lock, html.esta-pre-lock body { overflow: hidden; }
+
+  .esta-pre-inner { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+
+  /* ---- 会标描线 ---- */
+  .esta-pre-logo { width: clamp(104px, 14vw, 168px); height: auto; color: var(--accent-2, #41d8e8); }
+  .esta-pre-logo [data-esta-order] {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: esta-pre-draw 1.05s var(--ease-rise, cubic-bezier(.16, 1, .3, 1)) forwards;
+  }
+  @keyframes esta-pre-draw { to { stroke-dashoffset: 0; } }
+  /* 按 data-esta-order 逐段点亮：焊盘 → 主干 → 螺旋 → 出口。
+     顺序写在 SVG 里（data-esta-order），改几何不用改这里的语义。 */
+  .esta-pre-logo [data-esta-order="0"] { animation-delay: 0s; }
+  .esta-pre-logo [data-esta-order="1"] { animation-delay: .14s; }
+  .esta-pre-logo [data-esta-order="2"] { animation-delay: .40s; }
+  .esta-pre-logo [data-esta-order="3"] { animation-delay: .54s; }
+  .esta-pre-logo [data-esta-order="4"] { animation-delay: .96s; }
+  .esta-pre-logo [data-esta-order="5"] { animation-delay: 1.22s; }
+
+  .esta-pre-word {
+    font-family: var(--font-mono, ui-monospace, Consolas, monospace);
+    font-size: 11.5px; letter-spacing: 5px; color: var(--muted, #97a1b3);
+    opacity: 0; animation: esta-pre-fade .7s ease 1.1s forwards;
+  }
+  @keyframes esta-pre-fade { to { opacity: 1; } }
+
+  /* ---- 进度：底部一条 1px 走线 ---- */
+  .esta-pre-bar {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+    background: rgba(255, 255, 255, .1);
+  }
+  .esta-pre-bar i {
+    display: block; height: 100%; width: 0;
+    background: linear-gradient(90deg, var(--accent, #0da9cd), var(--accent-2, #41d8e8));
+    box-shadow: 0 0 12px rgba(65, 216, 232, .8);
+    transition: width .35s var(--ease-out, cubic-bezier(.22, 1, .36, 1));
+  }
+  /* 底部读数做成仪器面板的样子：左侧标签 + 右侧三位数，等宽数字不跳动。
+     刻意不做成满屏大数字——协会的气质是仪器，不是综艺。 */
+  .esta-pre-readout {
+    position: absolute; left: 0; right: 0; bottom: 14px;
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 0 20px; pointer-events: none;
+    font-family: var(--font-mono, ui-monospace, Consolas, monospace);
+    color: var(--muted, #97a1b3);
+    opacity: 0; animation: esta-pre-fade .5s ease .25s forwards;
+  }
+  .esta-pre-label { font-size: 10.5px; letter-spacing: 3.5px; }
+  .esta-pre-pct {
+    font-size: 13px; letter-spacing: 2px; font-variant-numeric: tabular-nums;
+    color: var(--accent-2, #41d8e8);
+  }
+  .esta-pre-pct::after { content: "%"; font-size: 10px; opacity: .6; margin-left: 2px; }
+
+  /* ---- 无障碍：不给前庭敏感用户看全屏动画 ---- */
+  @media (prefers-reduced-motion: reduce) {
+    .esta-pre { display: none; }
+  }
+</style>
+
+<div class="esta-pre" id="esta-preloader" role="status" aria-live="polite" aria-label="页面加载中">
+  <div class="esta-pre-inner">
+    {% inline_svg "brand/logo-mark.svg" class="esta-pre-logo" %}
+    <span class="esta-pre-word">HEU ESTA</span>
+  </div>
+  <div class="esta-pre-readout">
+    <span class="esta-pre-label">初始化信号链路</span>
+    <span class="esta-pre-pct" id="esta-pre-pct">000</span>
+  </div>
+  <div class="esta-pre-bar"><i id="esta-pre-bar"></i></div>
+</div>

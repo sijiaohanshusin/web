@@ -2,20 +2,27 @@
 {% load humanize %}
 
 {% block title %}通知中心 | {{ site_config.site_name_en }}{% endblock %}
+{% block body_class %}page-notify{% endblock %}
 
 {% block content %}
-<div class="container page-section">
-    <div class="page-head">
+<section class="page-hero nf-scope">
+    <div class="container">
         <p class="nf-eyebrow">// NOTIFICATIONS</p>
-        <h1>通知中心</h1>
-        <p>等级变更、勋章授予、反馈回复等站内消息都在这里。</p>
+        <h1>通知<span class="accent">中心</span></h1>
+        <p class="page-hero-sub">等级变更、勋章授予、反馈回复等站内消息都在这里。</p>
     </div>
+</section>
 
+<div class="container page-section">
     <div class="filter-bar">
-        <div class="filter-tabs">
-            <a href="{% url 'notify:list' %}" class="{% if tab != 'unread' %}active{% endif %}">全部</a>
-            <a href="?tab=unread" class="{% if tab == 'unread' %}active{% endif %}">
-                未读{% if unread_count %}（{{ unread_count }}）{% endif %}
+        <div class="pill-row">
+            <a {% if tab != 'unread' %}class="pill is-current" aria-current="page"
+               {% else %}class="pill"{% endif %}
+               href="{% querystring tab=None page=None %}">全部</a>
+            <a {% if tab == 'unread' %}class="pill is-current" aria-current="page"
+               {% else %}class="pill"{% endif %}
+               href="{% querystring tab='unread' page=None %}">
+                未读{% if unread_count %} <b>{{ unread_count }}</b>{% endif %}
             </a>
         </div>
         <div class="filter-spacer"></div>
@@ -31,7 +38,7 @@
     {% if page.object_list %}
         <div class="ntf-list">
             {% for n in page.object_list %}
-            <a class="ntf-item {% if not n.is_read %}ntf-unread{% endif %}" href="{% url 'notify:go' n.pk %}">
+            <a class="card card-link ntf-item {% if not n.is_read %}ntf-unread{% endif %}" href="{% url 'notify:go' n.pk %}">
                 <span class="ntf-dot" aria-hidden="true"></span>
                 <span class="ntf-main">
                     <span class="ntf-title">
@@ -45,22 +52,13 @@
             {% endfor %}
         </div>
 
-        {% if page.paginator.num_pages > 1 %}
-            <div class="pagination">
-                {% if page.has_previous %}
-                    <a href="?page={{ page.previous_page_number }}{% if tab == 'unread' %}&tab=unread{% endif %}">‹</a>
-                {% endif %}
-                <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
-                {% if page.has_next %}
-                    <a href="?page={{ page.next_page_number }}{% if tab == 'unread' %}&tab=unread{% endif %}">›</a>
-                {% endif %}
-            </div>
-        {% endif %}
+        {% include "includes/pager.html" with page=page %}
     {% else %}
-        <div class="empty-hint">
-            <span class="empty-icon">{% include "includes/icon.html" with name="bell" cls="icon-lg" %}</span>
-            {% if tab == 'unread' %}没有未读通知，清爽！{% else %}还没有收到任何通知{% endif %}
-        </div>
+        {% if tab == 'unread' %}
+            {% include "includes/empty_state.html" with icon="bell" title="没有未读通知" body="都看过了。" cta="看全部通知" cta_url="/notify/" %}
+        {% else %}
+            {% include "includes/empty_state.html" with icon="bell" title="还没有收到任何通知" body="等级变更、勋章授予、反馈回复都会推到这里。报名活动、上传资料之后就会陆续有消息。" cta="看活动" cta_url="/events/" %}
+        {% endif %}
     {% endif %}
 </div>
 {% endblock %}

@@ -1,0 +1,219 @@
+{% extends "dashboard/base.html" %}
+{% load slots %}
+
+{% block title %}素材中心{% endblock %}
+{% block page_title %}素材中心{% endblock %}
+
+{% block content %}
+{% comment %}
+这一页回答一个问题：网站现在还缺哪些图，缺的那张要怎么拍。
+
+所以主体是「槽位清单」而不是「文件列表」。站务的心智模型应该是「首页那一格
+该放什么」，不是「media 目录里有哪些文件」。每张卡片的预览直接用 {% slot %}
+渲染 —— 与官网走的是同一段代码，看到的就是线上真实效果，不会两边不一致。
+{% endcomment %}
+
+<div class="dash-panel">
+    <div class="ms-summary">
+        <div class="ms-stat">
+            <strong>{{ filled }}</strong><span>已上传</span>
+        </div>
+        <div class="ms-stat {% if missing %}is-warn{% endif %}">
+            <strong>{{ missing }}</strong><span>还空着</span>
+        </div>
+        <div class="ms-stat">
+            <strong>{{ total }}</strong><span>登记的位置</span>
+        </div>
+        <p class="ms-summary-note">
+            「还空着」= 既没有上传、也没有仓库自带兜底图的位置，它们在官网上显示为带拍摄要求的占位框。
+            新增位置需要改代码（<code>app/core/slots.py</code>），这里只负责往里填图。
+        </p>
+    </div>
+</div>
+
+{% if todo %}
+<div class="dash-panel" style="margin-top:16px;">
+    <h2>先补这几张</h2>
+    <p class="ms-hint">按重要程度排。空着的排在前面，其后是「有兜底图、但值得换成更好的」。</p>
+    <ol class="ms-todo">
+        {% for card in todo %}
+        <li class="ms-todo-item {% if card.state == 'missing' %}is-missing{% endif %}">
+            <a href="#slot-{{ card.spec.key|slugify }}">
+                <strong>{{ card.spec.label }}</strong>
+                {% if card.state == 'missing' %}
+                    <span class="badge badge-warn">空着</span>
+                {% else %}
+                    <span class="badge badge-gray">有兜底图</span>
+                {% endif %}
+            </a>
+            <span class="ms-todo-brief">{{ card.spec.brief }}</span>
+        </li>
+        {% endfor %}
+    </ol>
+</div>
+{% endif %}
+
+{% for group in groups %}
+<div class="dash-panel dash-panel-wide" style="margin-top:16px;">
+    <h2>{{ group.name }}</h2>
+    <div class="ms-grid">
+        {% for card in group.cards %}
+        <section class="ms-card {% if card.state == 'missing' %}is-missing{% endif %}"
+                 id="slot-{{ card.spec.key|slugify }}"
+                 data-slot-card="{{ card.spec.key }}">
+            <header class="ms-card-head">
+                <strong>{{ card.spec.label }}</strong>
+                {% if card.spec.kind == "video" %}<span class="badge badge-blue">视频</span>{% endif %}
+                {% if card.state == 'filled' %}<span class="badge badge-ok">已上传</span>
+                {% elif card.state == 'off' %}<span class="badge badge-gray">已停用</span>
+                {% elif card.state == 'fallback' %}<span class="badge badge-gray">兜底图</span>
+                {% else %}<span class="badge badge-warn">空着</span>{% endif %}
+            </header>
+            <code class="ms-key">{{ card.spec.key }}</code>
+
+            {% comment %}
+            预览用 {% slot %} 本体渲染，show_cta=False 关掉占位框里的上传入口 ——
+            旁边就是上传表单，再来一个链接是噪音。
+            {% endcomment %}
+            <div class="ms-preview" data-ms-preview>
+                {% slot card.spec.key show_cta=False eager=True %}
+            </div>
+
+            <p class="ms-brief"><span>拍摄要求</span>{{ card.spec.brief }}</p>
+            <p class="ms-meta">
+                比例 {{ card.spec.ratio }}
+                {% if card.obj %}
+                    · {{ card.obj.width }}×{{ card.obj.height }}
+                    · {{ card.obj.updated_at|date:"n月j日 H:i" }}
+                    {% if card.obj.updated_by %}· {{ card.obj.updated_by.display_name }}{% endif %}
+                {% endif %}
+            </p>
+
+            {% comment %}
+            表单默认折起来。六个位置各摊开一份表单会把页面拉到三屏，而这一页
+            最主要的用途是「扫一眼还缺什么」，不是逐个填。深链进来时脚本会把
+            对应那张自动展开。
+            {% endcomment %}
+            <details class="ms-form-wrap" data-ms-form>
+                <summary>{% if card.obj %}替换 / 编辑{% else %}上传这张{% endif %}</summary>
+                <form method="post" enctype="multipart/form-data" class="ms-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save">
+                    <input type="hidden" name="key" value="{{ card.spec.key }}">
+                    {% for field in card.form.main_fields %}
+                        {% include "includes/field.html" %}
+                    {% endfor %}
+                    <div class="ms-focal">
+                        {% for field in card.form.focal_fields %}
+                            {% include "includes/field.html" %}
+                        {% endfor %}
+                        <p class="ms-focal-hint">定比例裁切时主体不会被切掉头。直接点上面的预览图更快。</p>
+                    </div>
+                    <div class="ms-form-ops">
+                        <button type="submit" class="btn btn-primary btn-sm">保存</button>
+                        {% if card.obj %}
+                        <button type="submit" class="btn btn-ghost btn-sm" name="action" value="toggle">
+                            {% if card.obj.is_active %}停用{% else %}启用{% endif %}
+                        </button>
+                        <button type="submit" class="btn btn-danger btn-sm" name="action" value="delete"
+                                onclick="return confirm('删除「{{ card.spec.label }}」的图？该位置会回到占位状态。');">
+                            删除
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </details>
+        </section>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+
+{% if legacy %}
+<div class="dash-panel dash-panel-wide" style="margin-top:16px;">
+    <h2>旧轮播图搬迁（{{ legacy|length }} 张）</h2>
+    <p class="ms-hint">
+        轮播图已不再驱动首页。选一个目标位置直接把图搬过去，不用先下载再上传。
+        搬迁是<strong>复制</strong>，原记录保留；确认首页正常后再到站点设置里删掉旧记录。
+    </p>
+    <div class="ms-legacy">
+        {% for item in legacy %}
+        <div class="ms-legacy-item">
+            <img src="{{ item.image.url }}" alt="{{ item.title }}" loading="lazy">
+            <div class="ms-legacy-body">
+                <strong>{{ item.title }}</strong>
+                <small>{{ item.caption|default:"（无说明）" }}</small>
+                <form method="post" class="ms-legacy-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="migrate">
+                    <input type="hidden" name="carousel_id" value="{{ item.pk }}">
+                    <select class="input" name="key" required>
+                        <option value="">搬到哪个位置…</option>
+                        {% for value, label in slot_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-ghost btn-sm">搬过去</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% comment %}
+key 通过一个 type 非 JS 的 <script> 传给脚本，而不是直接插进 JS 字面量里。
+这样 Django 的自动转义仍然生效，拼出来的也不会是可执行代码 —— 它来自 URL 查询
+参数，属于外部输入。
+{% endcomment %}
+<script id="ms-focus" type="application/json">{{ focus_key }}</script>
+<script>
+/* 两件小事，都是为了让「设焦点」真的有人用：
+   1. 从官网占位框点「上传这张 →」带着 ?key= 过来时，滚到那张卡片并高亮
+   2. 直接点预览图设焦点 —— 没人愿意去想「主体在横向 38% 处」这种数字，
+      但所有人都会点脸的位置。点完立刻改 object-position 给出即时反馈。 */
+(function () {
+    "use strict";
+
+    var raw = document.getElementById("ms-focus");
+    var key = raw ? raw.textContent.trim() : "";
+    if (key) {
+        // 不拼选择器字符串：key 来自 URL，拿它拼 querySelector 等于把外部输入
+        // 交给选择器解析器。遍历比对属性值，既安全又不会因特殊字符炸掉。
+        document.querySelectorAll("[data-slot-card]").forEach(function (card) {
+            if (card.getAttribute("data-slot-card") !== key) return;
+            card.classList.add("is-focused");
+            // 从官网点「上传这张」过来的人就是要上传，别让他再点一下展开
+            var box = card.querySelector("[data-ms-form]");
+            if (box) box.open = true;
+            card.scrollIntoView({ block: "center" });
+        });
+    }
+
+    // 点预览图设焦点
+    document.querySelectorAll("[data-slot-card]").forEach(function (card) {
+        var preview = card.querySelector("[data-ms-preview]");
+        var img = preview && preview.querySelector("img");
+        var fx = card.querySelector('input[name$="focal_x"]');
+        var fy = card.querySelector('input[name$="focal_y"]');
+        if (!img || !fx || !fy) return;
+
+        preview.classList.add("is-pickable");
+        preview.title = "点击画面设置裁切焦点";
+        preview.addEventListener("click", function (e) {
+            var r = img.getBoundingClientRect();
+            var x = Math.round(((e.clientX - r.left) / r.width) * 100);
+            var y = Math.round(((e.clientY - r.top) / r.height) * 100);
+            x = Math.max(0, Math.min(100, x));
+            y = Math.max(0, Math.min(100, y));
+            fx.value = x;
+            fy.value = y;
+            img.style.objectPosition = x + "% " + y + "%";
+        });
+    });
+})();
+</script>
+{% endblock %}

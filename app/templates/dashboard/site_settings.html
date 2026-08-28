@@ -20,8 +20,19 @@
     </div>
 
     <div class="dash-panel">
-        <h2>添加轮播图</h2>
-        <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">建议宽 1600px、500KB 以内；有启用的轮播图后，首页走廊将展示这里的照片（替换掉留白占位格）。</p>
+        <h2>添加轮播图<span class="badge badge-gray" style="margin-left:8px;">已停用</span></h2>
+        {% comment %}
+        这一栏不再驱动首页。首页图片走廊已改成素材槽：每一格独立，缺图的那格
+        显示成带拍摄要求的占位框，填一格补一格。旧逻辑是「数据库里有轮播图就
+        全用数据库的」，上传一张会把另外五格连带换掉。
+        面板与已上传的图都先留着，等站务把图搬到素材中心之后再删，避免丢素材。
+        {% endcomment %}
+        <p style="color:var(--warn);font-size:13px;margin-bottom:10px;">
+            这里上传的图<strong>不会</strong>再出现在首页。首页走廊现在由「素材槽」驱动，
+            每个位置单独上传，缺图的位置会显示拍摄要求。请改用素材中心；
+            本栏与下方已上传的图暂时保留，仅供搬迁时取回原图。
+        </p>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">建议宽 1600px、500KB 以内。</p>
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <input type="hidden" name="form" value="carousel_add">

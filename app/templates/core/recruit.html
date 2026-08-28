@@ -5,38 +5,73 @@
 {% block description %}电子科技协会新生扫盲指南：培训安排、硬件基础知识、软件基础知识与学习资源。{% endblock %}
 
 {% block content %}
+{% load slots %}
 
-<div class="recruit-hero">
+{% comment %}
+新生指南。全站最长的一页，所以这一页的设计问题不是「好不好看」而是**读者会不会
+迷路**：进来时不知道有多长、读到一半不知道在哪、划过去了也不知道还剩多少。
+
+三件事解决它：
+  1. 顶部一条阅读进度线（`.rg-bar`，纯增强，没有 JS 就是一条 0 宽的线）
+  2. 左侧目录是一段竖着的 PCB 走线：章节是焊盘，读过哪一章那个焊盘就通电
+     —— 和招新报名进度、等级阶梯、首页分镜 06 同一种视觉语言
+  3. 章节编号用丝印体 01~05，正文标题和目录一一对应
+
+**器材图鉴继续走静态 `<img>`**，没有改成素材槽：那 69 张是「图鉴」（元件棚拍、
+软件界面截图），一张干净的棚拍比实验室里的模糊抓拍更能说明问题，而素材槽的
+前提是「这里缺一张我们自己的照片」。真正该进素材槽的是每章一张现场照，见
+core/slots.py 的「新生指南 · 现场照」组。
+{% endcomment %}
+
+{# 阅读进度线：宽度由 recruit-guide.js 写。没有 JS 时保持 0 宽，不留残迹 #}
+<div class="rg-bar" aria-hidden="true"><i id="rg-bar-fill"></i></div>
+
+<div class="recruit-hero nf-scope">
     <div class="container">
         <p class="nf-eyebrow">// FRESHMAN GUIDE</p>
         <h1>新生指南 · 从零开始的电子之旅</h1>
-        <p>欢迎加入电子科技协会！这份指南带你认识协会的培训体系、常用元件与工具、开发软件和学习资源。看不懂没关系，一年后回头看，你会惊讶自己走了多远。</p>
+        <p>这份指南把大一一整年的路线摊开给你看：培训怎么排、要认哪些元件和工具、用什么软件、卡住了去哪查。看不懂没关系 —— 一年后回头看，你会惊讶自己走了多远。</p>
+        <div class="rg-meta">
+            <span class="rg-meta-item"><b>5</b> 章</span>
+            <span class="rg-meta-sep"></span>
+            <span class="rg-meta-item"><b>约 12</b> 分钟读完</span>
+            <span class="rg-meta-sep"></span>
+            <span class="rg-meta-item">大一上到大一下<b> 1</b> 整年</span>
+        </div>
     </div>
 </div>
 
 <div class="container recruit-layout">
-    <nav class="recruit-toc" id="recruit-toc">
-        <a href="#intro">协会简介</a>
-        <a href="#training">培训安排</a>
-        <a href="#hardware">硬件基础</a>
-        <a href="#software">软件基础</a>
-        <a href="#resources">学习资源</a>
+    {% comment %}
+    目录即走线。data-rg-no 是丝印编号，通电状态由脚本按滚动位置加 .is-read /
+    .is-current。窄屏换构图：横向药丸行，编号缩进药丸里（见 core.css）。
+    {% endcomment %}
+    <nav class="recruit-toc" id="recruit-toc" aria-label="章节目录">
+        <a href="#intro"><span class="rg-pad">01</span>协会简介</a>
+        <a href="#training"><span class="rg-pad">02</span>培训安排</a>
+        <a href="#hardware"><span class="rg-pad">03</span>硬件基础</a>
+        <a href="#software"><span class="rg-pad">04</span>软件基础</a>
+        <a href="#resources"><span class="rg-pad">05</span>学习资源</a>
     </nav>
 
     <div class="recruit-content">
 
         <!-- ================= 协会简介 ================= -->
         <section id="intro">
-            <h2>协会简介</h2>
+            <h2><span class="rg-no">01</span>协会简介</h2>
             <div class="sec-sub">// WHO WE ARE</div>
-            <p>电子科技协会是一个致力于电子技术和计算机科学普及与创新的学生组织。我们为对电子技术和软件开发感兴趣的同学提供学习、交流和实践的平台。</p>
-            <p>无论你是零基础小白，还是有一定经验的爱好者，这里都有适合你的活动和资源！</p>
+            <p>电子科技协会成立于 1995 年，是哈尔滨工程大学信息与通信工程学院下的学生技术组织。我们做的事很具体：<strong>教一年，然后一起去比赛</strong>。</p>
+            <p>协会分<strong>硬件</strong>与<strong>软件</strong>两个方向，但不是两条互不相干的路 —— 大一下的合作任务（自制万用表）就要两边坐在一张桌子上。硬件从音乐盒、运放、滤波器开始；软件从 C 语言、STM32 的 GPIO 与定时器开始。所有培训免费，配套 27 章自编电子学教材。</p>
+            <p>零基础完全可以，而且大部分人都是。真正缺的是时间和动手意愿，不是基础。</p>
+            <p>带培训的是上一届的学长学姐 —— <a href="{% url 'team:wall' %}">看看现在是谁在带 →</a></p>
         </section>
 
         <!-- ================= 培训安排 ================= -->
         <section id="training">
-            <h2>培训安排</h2>
+            <h2><span class="rg-no">02</span>培训安排</h2>
             <div class="sec-sub">// TRAINING SCHEDULE</div>
+            <p>一学年 10+ 场培训，每场都带一个要交的任务。下面两张表是硬件部与软件部的完整进度，两条路在大一下合并成一个共同任务。</p>
+            {% slot "recruit.training.session" css_class="rg-shot" %}
 
             <details class="fold" open>
                 <summary>硬件部培训安排</summary>
@@ -80,7 +115,7 @@
 
         <!-- ================= 硬件基础知识 ================= -->
         <section id="hardware">
-            <h2>硬件基础知识</h2>
+            <h2><span class="rg-no">03</span>硬件基础知识</h2>
             <div class="sec-sub">// HARDWARE 101</div>
 
             <details class="fold" open>
@@ -88,7 +123,12 @@
                 <div class="fold-body">
 
                     <div class="component-block">
-                        <h4>电阻器</h4>
+                        {% comment %}
+                        元件名是 h3 而不是 h4：外面那层是 `<h2>硬件基础知识</h2>`，
+                        中间的「常用电子元件」是 `<summary>` —— 而 summary 不是标题，
+                        所以写 h4 就从 h2 直接跳到了 h4。字号由 CSS 定，和层级无关。
+                        {% endcomment %}
+                        <h3>电阻器</h3>
                         <p>限制电流的元件，单位是欧姆（Ω），用于控制电路中的电压和电流。遵循欧姆定律 V = I × R。常见类型：碳膜电阻、金属膜电阻、绕线电阻、可变电阻（电位器）。</p>
                         <div class="img-grid">
                             <figure><img src="{% static 'img/recruit/resistor-1.webp' %}" alt="色环电阻" loading="lazy"><figcaption>色环电阻</figcaption></figure>
@@ -99,7 +139,7 @@
                     </div>
 
                     <div class="component-block">
-                        <h4>电容器</h4>
+                        <h3>电容器</h3>
                         <p>储存电荷的元件，单位是法拉（F），特点是「阻直流、通交流」，用于滤波、耦合、定时等电路。常见类型：陶瓷电容、电解电容、薄膜电容、可变电容。</p>
                         <div class="img-grid">
                             <figure><img src="{% static 'img/recruit/capacitor-1.webp' %}" alt="电解电容" loading="lazy"><figcaption>电解电容</figcaption></figure>
@@ -111,7 +151,7 @@
                     </div>
 
                     <div class="component-block">
-                        <h4>电感器</h4>
+                        <h3>电感器</h3>
                         <p>储存磁能的元件，单位是亨利（H），特点是「阻交流、通直流」，用于滤波、振荡、变压器等电路。常见类型：空芯电感、铁氧体磁芯电感、铁芯电感、可调电感。</p>
                         <div class="img-grid">
                             <figure><img src="{% static 'img/recruit/inductor-1.webp' %}" alt="色环电感" loading="lazy"><figcaption>色环电感</figcaption></figure>
@@ -122,7 +162,7 @@
                     </div>
 
                     <div class="component-block">
-                        <h4>二极管</h4>
+                        <h3>二极管</h3>
                         <p>单向导电的半导体器件：正向导通、反向截止，硅管正向压降约 0.7V。用于整流、检波、稳压等电路。常见类型：整流二极管、稳压（齐纳）二极管、发光二极管（LED）、肖特基二极管。</p>
                         <div class="img-grid">
                             <figure><img src="{% static 'img/recruit/diode-led.webp' %}" alt="发光二极管" loading="lazy"><figcaption>发光二极管</figcaption></figure>
@@ -133,7 +173,7 @@
                     </div>
 
                     <div class="component-block">
-                        <h4>晶体管</h4>
+                        <h3>晶体管</h3>
                         <p>放大和开关信号的半导体器件，是现代电子设备的核心元件。三种工作状态：截止、放大、饱和。常见类型：双极型晶体管（BJT）、场效应晶体管（FET）、MOSFET、IGBT。</p>
                         <div class="img-grid">
                             <figure><img src="{% static 'img/recruit/bjt.webp' %}" alt="三极管" loading="lazy"><figcaption>三极管</figcaption></figure>
@@ -143,7 +183,7 @@
                     </div>
 
                     <div class="component-block">
-                        <h4>运算放大器</h4>
+                        <h3>运算放大器</h3>
                         <p>调节和放大模拟信号的器件，接入适当的反馈网络后可以实现放大、滤波、比较等各种功能，特点是高输入阻抗、低输出阻抗、增益可调。协会第二次硬件培训的主角就是它。</p>
                         <div class="img-grid">
                             <figure><img src="{% static 'img/recruit/opamp-general.webp' %}" alt="通用运放" loading="lazy"><figcaption>通用运放</figcaption></figure>
@@ -191,6 +231,8 @@
             <details class="fold">
                 <summary>硬件常用工具</summary>
                 <div class="fold-body">
+                    <p>下面是器材图鉴。协会自己的工作台长这样：</p>
+                    {% slot "recruit.hardware.bench" css_class="rg-shot" %}
                     <div class="img-grid img-grid-lg">
                         <figure><img src="{% static 'img/recruit/multimeter.webp' %}" alt="万用表" loading="lazy"><figcaption>万用表 —— 测电压、电流、电阻的瑞士军刀</figcaption></figure>
                         <figure><img src="{% static 'img/recruit/soldering-iron.webp' %}" alt="烙铁" loading="lazy"><figcaption>烙铁 —— 焊接的基本功从它开始</figcaption></figure>
@@ -229,8 +271,10 @@
 
         <!-- ================= 软件基础知识 ================= -->
         <section id="software">
-            <h2>软件基础知识</h2>
+            <h2><span class="rg-no">04</span>软件基础知识</h2>
             <div class="sec-sub">// SOFTWARE 101</div>
+            <p>软件方向不是「只写代码」：写出来的东西最后要跑在一块自己焊的板子上。</p>
+            {% slot "recruit.software.debug" css_class="rg-shot" %}
 
             <details class="fold" open>
                 <summary>编程语言介绍</summary>
@@ -350,7 +394,7 @@
 
         <!-- ================= 学习资源 ================= -->
         <section id="resources">
-            <h2>学习资源</h2>
+            <h2><span class="rg-no">05</span>学习资源</h2>
             <div class="sec-sub">// RESOURCES</div>
 
             <details class="fold" open>
@@ -414,42 +458,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-// 目录高亮当前章节：IO 驱动 + 左侧滑动指示条 + 点击立即响应
-(function () {
-    "use strict";
-    var toc = document.getElementById("recruit-toc");
-    var links = toc.querySelectorAll("a");
-    var sections = Array.from(links).map(function (a) {
-        return document.querySelector(a.getAttribute("href"));
-    });
-
-    var marker = document.createElement("span");
-    marker.className = "toc-marker";
-    marker.setAttribute("aria-hidden", "true");
-    toc.appendChild(marker);
-
-    function setActive(link) {
-        links.forEach(function (a) { a.classList.toggle("active", a === link); });
-        marker.style.height = link.offsetHeight + "px";
-        marker.style.transform = "translateY(" + link.offsetTop + "px)";
-        toc.classList.add("toc-live");
-    }
-
-    var observer = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-            if (!entry.isIntersecting) return;
-            links.forEach(function (a) {
-                if (a.getAttribute("href") === "#" + entry.target.id) setActive(a);
-            });
-        });
-    }, { rootMargin: "-20% 0px -70% 0px" });
-    sections.forEach(function (s) { if (s) observer.observe(s); });
-
-    // 点击立即高亮，不等滚动到位
-    links.forEach(function (a) {
-        a.addEventListener("click", function () { setActive(a); });
-    });
-})();
-</script>
+<script src="{% static 'js/recruit-guide.js' %}" defer></script>
 {% endblock %}

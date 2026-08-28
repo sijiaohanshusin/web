@@ -1,0 +1,36 @@
+{% comment %}
+「空焊盘」占位框 —— 缺图时的正式设计状态，不是异常分支。
+虚线板框 + 四角定位标（照 PCB 的 fiducial 画，和 3D 基板丝印上那四个同源）。
+
+参数：
+  label      这一格要放什么（必填）
+  brief      拍摄要求 / 说明（可选，窄屏会隐藏）
+  ratio      aspect-ratio 的值，负责在图片下载完成前把版面高度占住（必填）
+  css_class  额外类名
+  slot_key   素材槽的 key（只有 {% slot %} 会传）
+  upload_url 站务直达上传的地址（只有 {% slot %} 会传）
+  is_officer 站务才看得到上传入口
+
+这份标记有两个使用者：素材槽（includes/slot.html 的空状态）和作品墙上还没传
+封面的作品。抽出来是为了让「缺图长什么样」只有一处定义 —— 复制第二份的话，
+两边的占位框迟早看起来不像一套设计。
+{% endcomment %}
+<figure class="slot is-empty {{ css_class }}" style="aspect-ratio: {{ ratio }}"
+        {% if slot_key %}data-slot-key="{{ slot_key }}"{% endif %}>
+    <i class="slot-fid" aria-hidden="true"></i>
+    <i class="slot-fid" aria-hidden="true"></i>
+    <i class="slot-fid" aria-hidden="true"></i>
+    <i class="slot-fid" aria-hidden="true"></i>
+    <div class="slot-empty-body">
+        <span class="slot-empty-mark" aria-hidden="true">[&nbsp;&nbsp;&nbsp;]</span>
+        <strong class="slot-empty-label">{{ label }}</strong>
+        {% if brief %}<span class="slot-empty-brief">{{ brief }}</span>{% endif %}
+        {% if is_officer %}
+            {% if upload_url %}
+            <a class="slot-empty-cta" href="{{ upload_url }}">上传这张 →</a>
+            {% elif slot_key %}
+            <code class="slot-empty-key">{{ slot_key }}</code>
+            {% endif %}
+        {% endif %}
+    </div>
+</figure>

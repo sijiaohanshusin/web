@@ -12,12 +12,15 @@ from django.views.decorators.http import require_POST
 
 from django.utils import timezone
 
+import re
 import uuid
+from pathlib import Path
 
 from accounts import roles
 from accounts.models import Medal, Position, ReturningMembershipRequest, UserMedal
 from core import bilibili
-from core.models import CarouselImage, Feedback, SiteConfig
+from core import slots as slot_registry
+from core.models import CarouselImage, Feedback, MediaSlot, SiteConfig
 from events.forms import EventForm
 from events.models import Event, EventSignup
 from files.forms import ResourceUploadForm
@@ -34,7 +37,7 @@ from projects.forms import ProjectForm
 from projects.models import Project, ProjectMember
 
 from .decorators import admin_required, officer_required
-from .forms import CarouselImageForm, SiteConfigForm
+from .forms import CarouselImageForm, MediaSlotForm, SiteConfigForm
 from .models import BiliSnapshot
 
 User = get_user_model()
@@ -427,26 +430,96 @@ def medals(request):
 
     context = {
         "active_nav": "medals",
-        "medals": Medal.objects.annotate(holders=Count("awarded")).all(),
+        # order_by 必须显式写：`annotate()` 会建 GROUP BY，而带 GROUP BY 的查询
+        # **不再套用 Meta.ordering**（生成的 SQL 里压根没有 ORDER BY），于是列表
+        # 变成数据库返回的任意顺序，页面照常渲染、没有任何报错。
+        "medals": Medal.objects.annotate(holders=Count("awarded")).order_by("sort_order", "id"),
         "recent_grants": UserMedal.objects.select_related("user", "medal", "granted_by")[:30],
     }
     return render(request, "dashboard/medals.html", context)
 
 
+def _fixed_position_names() -> set[str]:
+    """老会员通道审核时会 `update_or_create` 的五个职位名。
+
+    这五个不能改名、不能删：`returning_review()` 按**名字**去建它们，改掉名字之后
+    下一次审核会静默再建一个同义的新职位，于是同一个「硬件主席」在库里有两条、
+    团队页上出现两个分组。所以这里把它们标成固定项，驾驶舱只允许改颜色和简介。
+    """
+    return {item[0] for item in _RETURNING_POSITIONS.values()}
+
+
+_HEX_COLOR = re.compile(r"^#[0-9A-Fa-f]{6}$")
+
+
+def _clean_hex(value: str, fallback: str) -> str:
+    """职位颜色会直接进模板的 style 属性，只放行标准六位十六进制值。"""
+    value = (value or "").strip()
+    return value if _HEX_COLOR.match(value) else fallback
+
+
 @admin_required
 def positions(request):
+    fixed_names = _fixed_position_names()
+
     if request.method == "POST":
         form = request.POST.get("form")
+
+        if form == "create":
+            name = (request.POST.get("name") or "").strip()[:30]
+            if not name:
+                messages.error(request, "请填写职位名称。")
+            elif Position.objects.filter(name=name).exists():
+                messages.error(request, f"职位「{name}」已存在。")
+            else:
+                Position.objects.create(
+                    name=name,
+                    color=_clean_hex(request.POST.get("color"), "#0da9cd"),
+                    blurb=(request.POST.get("blurb") or "").strip()[:80],
+                    sort_order=int(request.POST.get("sort_order") or 100),
+                    # **自定义职位永不授予驾驶舱权限。** 需要站务权限就直接把等级
+                    # 提到「站务管理」，那条路有日志、有通知、有审计。把它做成这一页
+                    # 上的一个复选框等于多开一条没人盯着的提权入口。
+                    grants_management=False,
+                )
+                messages.success(request, f"职位「{name}」已创建。可以任命成员了。")
+            return redirect("dashboard:positions")
+
+        if form == "update":
+            pos = get_object_or_404(Position, pk=request.POST.get("position_id"))
+            pos.color = _clean_hex(request.POST.get("color"), pos.color)
+            pos.blurb = (request.POST.get("blurb") or "").strip()[:80]
+            pos.sort_order = int(request.POST.get("sort_order") or pos.sort_order)
+            pos.save(update_fields=["color", "blurb", "sort_order"])
+            messages.success(request, f"职位「{pos.name}」已更新。")
+            return redirect("dashboard:positions")
+
+        if form == "delete":
+            pos = get_object_or_404(Position, pk=request.POST.get("position_id"))
+            if pos.name in fixed_names:
+                messages.error(request, f"「{pos.name}」是固定职位，不能删除。")
+            else:
+                # SET_NULL：在任的人只是失去职位，账号和等级不动
+                name, count = pos.name, pos.holders.count()
+                pos.delete()
+                messages.success(
+                    request,
+                    f"职位「{name}」已删除。" + (f"{count} 位在任成员的职位已清空。" if count else ""),
+                )
+            return redirect("dashboard:positions")
+
         if form == "assign":
-            fixed_names = {item[0] for item in _RETURNING_POSITIONS.values()}
-            pos = get_object_or_404(
-                Position, pk=request.POST.get("position_id"), name__in=fixed_names,
-            )
+            pos = get_object_or_404(Position, pk=request.POST.get("position_id"))
             user = get_object_or_404(User, pk=request.POST.get("user_id"))
             user.position = pos
             user.save(update_fields=["position"])
-            messages.success(request, f"已任命 {user.display_name} 为「{pos.name}」。")
+            messages.success(
+                request,
+                f"已任命 {user.display_name} 为「{pos.name}」。"
+                "要出现在公开团队页上，还需要本人在个人资料里勾选公开展示。",
+            )
             return redirect("dashboard:positions")
+
         if form == "unassign":
             user = get_object_or_404(User, pk=request.POST.get("user_id"))
             user.position = None
@@ -454,12 +527,23 @@ def positions(request):
             messages.success(request, f"已解除 {user.display_name} 的职位。")
             return redirect("dashboard:positions")
 
-    fixed_names = [item[0] for item in _RETURNING_POSITIONS.values()]
+    # order_by 必须显式写：`annotate()` 建了 GROUP BY，带 GROUP BY 的查询不再套用
+    # Meta.ordering（SQL 里压根没有 ORDER BY）。这一页尤其明显 —— 职位顺序就是
+    # 团队页上的卡片顺序，乱了就是主席排在干事后面，而且不报错。
+    all_positions = list(
+        Position.objects.annotate(count=Count("holders")).order_by("sort_order", "id")
+    )
+    for pos in all_positions:
+        pos.is_fixed = pos.name in fixed_names
+
+    holders = User.objects.filter(position__isnull=False).select_related("position")
 
     context = {
         "active_nav": "positions",
-        "positions": Position.objects.filter(name__in=fixed_names).annotate(count=Count("holders")),
-        "holders": User.objects.filter(position__isnull=False).select_related("position"),
+        "positions": all_positions,
+        "holders": holders,
+        # 任命 ≠ 上墙。没有这个数字，站务任命完只会以为团队页坏了。
+        "awaiting_optin": sum(1 for u in holders if not u.show_on_team),
     }
     return render(request, "dashboard/positions.html", context)
 
@@ -638,10 +722,12 @@ def events_manage(request):
                 messages.success(request, f"活动「{title}」已删除。")
         return redirect(request.POST.get("next") or "dashboard:events")
 
+    # order_by 显式写：annotate() 的 GROUP BY 会让 Meta.ordering 失效，而这个列表
+    # 还要分页 —— 无序查询分页会让同一条记录在两页里重复出现或者干脆消失
     items = Event.objects.select_related("created_by").annotate(
         signup_total=Count("signups"),
         checkin_total=Count("signups", filter=Q(signups__checkin_at__isnull=False)),
-    )
+    ).order_by("-start_at")
     query = request.GET.get("q", "").strip()
     if query:
         items = items.filter(Q(title__icontains=query) | Q(location__icontains=query))
@@ -901,10 +987,11 @@ def projects_manage(request):
                 messages.success(request, f"项目「{name}」及其文件已删除。")
         return redirect(request.POST.get("next") or "dashboard:projects")
 
+    # 同上：annotate() 的 GROUP BY 让 Meta.ordering 失效，而这个列表要分页
     items = Project.objects.select_related("created_by").annotate(
         member_total=Count("members", distinct=True),
         file_total=Count("files", distinct=True),
-    )
+    ).order_by("status", "-updated_at")
     query = request.GET.get("q", "").strip()
     if query:
         items = items.filter(Q(name__icontains=query) | Q(summary__icontains=query))
@@ -926,7 +1013,9 @@ def project_edit(request, pk: int | None = None):
     project = get_object_or_404(Project, pk=pk) if pk else None
 
     if request.method == "POST":
-        form = ProjectForm(request.POST, instance=project)
+        # 必须接 request.FILES：表单里有展示封面。漏了它不会报错，只是封面
+        # 永远存不上 —— 保存成功、页面正常、图没了。
+        form = ProjectForm(request.POST, request.FILES, instance=project)
         lead_name = (request.POST.get("lead") or "").strip()
         if form.is_valid():
             item = form.save(commit=False)
@@ -1007,3 +1096,245 @@ def carousel_update(request, pk: int):
         except (TypeError, ValueError):
             messages.error(request, "排序值无效。")
     return redirect("dashboard:site_settings")
+
+
+# ---------------------------------------------------------------- 素材中心（站务可用）
+
+@officer_required
+def media_slots(request):
+    """素材中心：把「网站还缺哪些图」变成一份可以照着拍的清单。
+
+    列表从 core/slots.py 的登记表出发，而不是从 MediaSlot 表出发 —— 这是整个
+    设计的关键。还没人上传的槽位在数据库里没有行，若按表列就永远看不见它，
+    而「缺什么」恰恰是站务最需要知道的信息。
+
+    页面只列槽位、不列图片文件：站务的心智模型应该是「首页那一格该放什么」，
+    不是「media 目录里有哪些文件」。
+    """
+    if request.method == "POST":
+        return _media_slot_post(request)
+
+    existing = {obj.key: obj for obj in MediaSlot.objects.select_related("updated_by")}
+
+    groups = []
+    for group, specs in slot_registry.by_group().items():
+        cards = []
+        for spec in specs:
+            obj = existing.get(spec.key)
+            cards.append({
+                "spec": spec,
+                "obj": obj,
+                # 有兜底静态图的槽位不算「缺」：页面上那里有协会自己的照片，
+                # 只是还没被更好的替换掉。清单要区分「空着」和「可以换更好的」。
+                "state": ("filled" if obj and obj.is_active
+                          else "off" if obj
+                          else "fallback" if spec.fallback
+                          else "missing"),
+                "form": MediaSlotForm(instance=obj, prefix=_prefix(spec.key),
+                                      kind=spec.kind),
+            })
+        groups.append({"name": group, "cards": cards})
+
+    all_cards = [c for g in groups for c in g["cards"]]
+    todo = sorted(
+        [c for c in all_cards if c["state"] in ("missing", "fallback")],
+        key=lambda c: (c["state"] != "missing", c["spec"].priority),
+    )
+
+    context = {
+        "active_nav": "media",
+        "groups": groups,
+        "todo": todo,
+        "total": len(all_cards),
+        "filled": sum(1 for c in all_cards if c["state"] == "filled"),
+        "missing": sum(1 for c in all_cards if c["state"] == "missing"),
+        # 旧轮播图还留在库里，给一条搬进槽位的路径，别让站务手工下载再上传
+        "legacy": CarouselImage.objects.all(),
+        "slot_choices": [(s.key, f"{s.group} · {s.label}") for s in slot_registry.SLOTS],
+        "focus_key": request.GET.get("key", ""),
+    }
+    return render(request, "dashboard/media_slots.html", context)
+
+
+def _prefix(key: str) -> str:
+    """表单前缀：一页上有十几个表单，字段名必须互不冲突。
+
+    点号在 HTML name 里合法，但 Django 的表单前缀会拼成 `prefix-field`，
+    保持简单起见换成下划线。
+    """
+    return key.replace(".", "_")
+
+
+def _media_slot_post(request):
+    """素材中心的三个写操作：上传/替换、启停、删除，外加旧轮播图搬迁。"""
+    action = request.POST.get("action")
+    key = request.POST.get("key", "")
+    back = redirect(f"{reverse('dashboard:media_slots')}?key={key}" if key
+                    else "dashboard:media_slots")
+
+    if action == "migrate":
+        return _migrate_carousel(request, back)
+
+    spec = slot_registry.get(key)
+    if spec is None:
+        messages.error(request, f"没有登记过的素材槽「{key}」，请检查 core/slots.py。")
+        return redirect("dashboard:media_slots")
+
+    obj = MediaSlot.objects.filter(key=key).first()
+
+    if action == "toggle":
+        if not obj:
+            messages.error(request, f"「{spec.label}」还没有上传过图。")
+            return back
+        obj.is_active = not obj.is_active
+        obj.updated_by = request.user
+        obj.save()
+        messages.success(request, f"「{spec.label}」已{'启用' if obj.is_active else '停用'}。")
+        return back
+
+    if action == "delete":
+        if obj:
+            obj.image.delete(save=False)
+            obj.delete()
+            messages.success(request, f"「{spec.label}」的图已删除，该位置回到占位状态。")
+        return back
+
+    if action == "save":
+        form = MediaSlotForm(request.POST, request.FILES, instance=obj,
+                             prefix=_prefix(key), kind=spec.kind)
+        if form.is_valid():
+            oversized = form.oversized_videos()
+            item = form.save(commit=False)
+            item.key = key
+            item.updated_by = request.user
+            item.save()
+            messages.success(request, f"「{spec.label}」已保存。")
+            if oversized:
+                # 不拦，只提醒：判断「这段画面值不值这么多流量」是人的事，
+                # 但得让他知道自己传了多大。
+                messages.warning(
+                    request,
+                    "以下文件超过建议体积（1.5MB）：" + "、".join(oversized)
+                    + "。服务器没有 CDN，能压就压一下。",
+                )
+            return back
+        # 表单有错就重新渲染整页，但只有出错那张卡片带着错误信息
+        messages.error(request, f"「{spec.label}」保存失败：{_first_error(form)}")
+        return back
+
+    messages.error(request, "未知操作。")
+    return redirect("dashboard:media_slots")
+
+
+def _first_error(form) -> str:
+    for field, errors in form.errors.items():
+        label = form.fields[field].label if field in form.fields else field
+        return f"{label} — {errors[0]}"
+    return "请检查填写内容"
+
+
+def _migrate_carousel(request, back):
+    """把旧轮播图的图片文件复制进指定槽位。
+
+    复制而不是移动：原记录留着，万一搬错了还能重来。搬完之后站务自己删旧记录。
+    """
+    from django.core.files.base import ContentFile
+
+    item = CarouselImage.objects.filter(pk=request.POST.get("carousel_id")).first()
+    key = request.POST.get("key", "")
+    spec = slot_registry.get(key)
+    if not item or spec is None:
+        messages.error(request, "搬迁失败：轮播图或目标槽位不存在。")
+        return redirect("dashboard:media_slots")
+
+    obj, _ = MediaSlot.objects.get_or_create(key=key, defaults={"alt": item.title})
+    with item.image.open("rb") as fh:
+        obj.image.save(Path(item.image.name).name, ContentFile(fh.read()), save=False)
+    obj.alt = obj.alt or item.title
+    obj.caption = obj.caption or item.caption
+    obj.is_active = True
+    obj.updated_by = request.user
+    obj.save()
+    messages.success(
+        request,
+        f"已把「{item.title}」搬进「{spec.label}」。确认首页显示正常后可以删掉旧轮播图记录。",
+    )
+    return back
+
+
+# ============================================================
+#  荣誉墙录入
+#  ------------------------------------------------------------
+#  为什么必须有这一页而不能让站务用 Django Admin：站务是等级 4，而
+#  `roles.sync_user_groups` 只在等级 5 才给 `is_staff` —— 站务打不开 Django Admin。
+#  录奖这件事恰好就是站务在做。
+# ============================================================
+
+
+@officer_required
+def honors_manage(request):
+    from news.forms import HonorForm
+    from news.models import Honor
+
+    editing = None
+    edit_pk = request.GET.get("edit")
+    if edit_pk and edit_pk.isdigit():
+        editing = get_object_or_404(Honor, pk=int(edit_pk))
+
+    if request.method == "POST":
+        action = request.POST.get("action", "save")
+
+        if action == "delete":
+            honor = get_object_or_404(Honor, pk=request.POST.get("id"))
+            title = str(honor)
+            if honor.certificate:
+                honor.certificate.delete(save=False)
+            honor.delete()
+            messages.success(request, f"已删除「{title}」。")
+            return redirect("dashboard:honors")
+
+        if action == "toggle_public":
+            honor = get_object_or_404(Honor, pk=request.POST.get("id"))
+            honor.is_public = not honor.is_public
+            # 撤回公开时连带撤掉首页展示，否则首页会指向一条已经不公开的记录
+            if not honor.is_public:
+                honor.is_featured = False
+            honor.save(update_fields=["is_public", "is_featured"])
+            messages.success(request, f"「{honor.title}」已{'公开' if honor.is_public else '撤回'}。")
+            return redirect("dashboard:honors")
+
+        if action == "toggle_featured":
+            honor = get_object_or_404(Honor, pk=request.POST.get("id"))
+            if not honor.is_public:
+                messages.error(request, "要先公开这条记录，才能放到首页。")
+            else:
+                honor.is_featured = not honor.is_featured
+                honor.save(update_fields=["is_featured"])
+                messages.success(request, f"「{honor.title}」已{'加入' if honor.is_featured else '移出'}首页。")
+            return redirect("dashboard:honors")
+
+        # 保存（新建或修改）。**必须接 request.FILES** —— 表单里有证书照片
+        target = None
+        pk = request.POST.get("id")
+        if pk and pk.isdigit():
+            target = get_object_or_404(Honor, pk=int(pk))
+        form = HonorForm(request.POST, request.FILES, instance=target)
+        if form.is_valid():
+            item = form.save()
+            messages.success(request, f"「{item.title}」已{'更新' if target else '录入'}。")
+            return redirect("dashboard:honors")
+        messages.error(request, "有字段没填对，请看下面的提示。")
+        editing = target
+    else:
+        form = HonorForm(instance=editing)
+
+    from news.models import Honor as H
+
+    context = {
+        "active_nav": "honors",
+        "form": form,
+        "editing": editing,
+        "items": H.objects.select_related("post").all(),
+        "summary": H.summary(),
+    }
+    return render(request, "dashboard/honors.html", context)

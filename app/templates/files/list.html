@@ -1,34 +1,45 @@
 {% extends "base.html" %}
-{% load humanize %}
 
 {% block title %}资料站 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}哈尔滨工程大学电子科技协会培训课件、竞赛资料与常用工具下载。{% endblock %}
+{% block body_class %}page-resources{% endblock %}
 
 {% block content %}
-<div class="container page-section">
-    <div class="page-head">
+<section class="page-hero nf-scope" style="--hero-accent: var(--copper-2)">
+    <div class="container">
         <p class="nf-eyebrow">// RESOURCES</p>
-        <h1>资料站</h1>
-        <p>培训课件、竞赛资料与常用工具。带等级标记的资料需达到相应会员等级才能下载。</p>
+        <h1>资料<span class="accent">站</span></h1>
+        <p class="page-hero-sub">
+            培训课件、竞赛资料与常用工具。带等级标记的资料需达到相应会员等级才能下载。
+        </p>
         <div class="page-stats">
             <span class="page-stat"><strong>{{ total_count }}</strong>份资料</span>
             <span class="page-stat-sep" aria-hidden="true"></span>
             <span class="page-stat"><strong>+{{ week_count }}</strong>本周新增</span>
         </div>
     </div>
+</section>
 
+<div class="container page-section">
     <div class="filter-bar">
-        <div class="filter-tabs">
-            <a href="{% url 'files:list' %}{% if query %}?q={{ query|urlencode }}{% endif %}"
-               class="{% if not category %}active{% endif %}">全部</a>
+        <div class="pill-row">
+            <a {% if not category %}class="pill is-current" aria-current="page"
+               {% else %}class="pill"{% endif %}
+               href="{% querystring category=None page=None %}">全部</a>
             {% for value, label in categories %}
-                <a href="?category={{ value }}{% if query %}&q={{ query|urlencode }}{% endif %}"
-                   class="{% if category == value %}active{% endif %}">{{ label }}</a>
+                <a {% if category == value %}class="pill is-current" aria-current="page"
+                   {% else %}class="pill"{% endif %}
+                   href="{% querystring category=value page=None %}">{{ label }}</a>
             {% endfor %}
         </div>
         <div class="filter-spacer"></div>
-        <form method="get" style="display:flex;gap:8px;">
+        {% comment %}
+        搜索是 GET 表单，所以当前的分类要作为隐藏域跟着走 —— 表单提交会用自己的
+        字段重建整个 querystring，`{% querystring %}` 在这里帮不上。
+        {% endcomment %}
+        <form method="get" class="filter-search">
             {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
-            <input class="input" type="search" name="q" value="{{ query }}" placeholder="搜索资料标题或说明…">
+            <input class="input" type="search" name="q" value="{{ query }}" placeholder="搜索资料标题或说明…" aria-label="搜索资料">
             <button type="submit" class="btn btn-outline">搜索</button>
         </form>
         {% if can_upload %}
@@ -37,54 +48,48 @@
     </div>
 
     {% if page.object_list %}
-        <div class="panel table-wrap" style="padding:8px 16px;">
-            <table class="table">
-                <thead>
-                <tr><th>资料</th><th>分类</th><th>可见范围</th><th>大小</th><th>下载</th><th>上传者</th><th>时间</th><th></th></tr>
-                </thead>
-                <tbody>
-                {% for r in page.object_list %}
-                    <tr>
-                        <td>
-                            <strong>{{ r.title }}</strong>
-                            {% if r.description %}<br><small style="color:var(--muted);">{{ r.description|truncatechars:60 }}</small>{% endif %}
-                        </td>
-                        <td><span class="badge badge-blue">{{ r.get_category_display }}</span></td>
-                        <td>
-                            {% if r.min_level == 0 %}
-                                <span class="badge badge-green">公开</span>
-                            {% else %}
-                                <span class="badge badge-amber">{{ r.get_min_level_display }}</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ r.size|filesizeformat }}</td>
-                        <td>{{ r.download_count }}</td>
-                        <td>{{ r.uploader.display_name|default:"—" }}</td>
-                        <td>{{ r.created_at|date:"Y-m-d" }}</td>
-                        <td><a class="btn btn-outline btn-sm" href="{% url 'files:download' r.pk %}">下载</a></td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+        <div class="panel table-panel">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                    <tr><th>资料</th><th>分类</th><th>可见范围</th><th>大小</th><th>下载</th><th>上传者</th><th>时间</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                    {% for r in page.object_list %}
+                        <tr>
+                            <td>
+                                <strong>{{ r.title }}</strong>
+                                {% if r.description %}<small class="table-sub">{{ r.description|truncatechars:60 }}</small>{% endif %}
+                            </td>
+                            <td><span class="badge badge-blue">{{ r.get_category_display }}</span></td>
+                            <td>
+                                {% if r.min_level == 0 %}
+                                    <span class="badge badge-green">公开</span>
+                                {% else %}
+                                    <span class="badge badge-amber">{{ r.get_min_level_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ r.size|filesizeformat }}</td>
+                            <td>{{ r.download_count }}</td>
+                            <td>{{ r.uploader.display_name|default:"—" }}</td>
+                            <td>{{ r.created_at|date:"Y-m-d" }}</td>
+                            <td><a class="btn btn-outline btn-sm" href="{% url 'files:download' r.pk %}">下载</a></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        {% if page.paginator.num_pages > 1 %}
-            <div class="pagination">
-                {% if page.has_previous %}
-                    <a href="?page={{ page.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if category %}&category={{ category }}{% endif %}">‹</a>
-                {% endif %}
-                <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
-                {% if page.has_next %}
-                    <a href="?page={{ page.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if category %}&category={{ category }}{% endif %}">›</a>
-                {% endif %}
-            </div>
-        {% endif %}
+        {% include "includes/pager.html" with page=page %}
     {% else %}
-        <div class="empty-hint">
-            <span class="empty-icon">{% include "includes/icon.html" with name="tray" cls="icon-lg" %}</span>
-            {% if query %}没有找到与「{{ query }}」相关的资料{% else %}这里还没有资料{% endif %}
-            {% if not user.is_authenticated %}<br><br><a href="{% url 'accounts:login' %}">登录</a>后可查看更多会员资料{% endif %}
-        </div>
+        {% if query %}
+            {% include "includes/empty_state.html" with icon="tray" title="没有找到相关资料" body="换个关键词，或者先按分类翻一遍 —— 资料标题多用课件原名，未必和你想的叫法一样。" cta="看全部资料" cta_url="/resources/" %}
+        {% elif not user.is_authenticated %}
+            {% include "includes/empty_state.html" with icon="tray" title="这里还没有公开资料" body="课件与竞赛资料大多只对会员开放。登录后能看到更多；协会自编的 27 章电子学教材是完全公开的，可以直接读。" cta="去学习中心" cta_url="/learn/electronics/" %}
+        {% else %}
+            {% include "includes/empty_state.html" with icon="tray" title="这个分类下还没有资料" body="换一个分类看看。协会自编的 27 章电子学教材在学习中心，不在这里。" cta="去学习中心" cta_url="/learn/electronics/" %}
+        {% endif %}
     {% endif %}
 </div>
 {% endblock %}

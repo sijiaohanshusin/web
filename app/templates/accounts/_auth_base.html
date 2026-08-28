@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% comment %}
+账号链路（注册 / 登录 / 验证码登录 / 找回密码 / 完成页）的共用外壳。
+
+为什么要有这一层：这五个页面之前各自复制了一遍 `.auth-card` 的结构和一句
+「// LOGIN」眉题，改一处就得改五处。更要紧的是它们原来都是一张卡片浮在纯黑
+空场里 —— 1440x900 下卡片下方有两百多像素的死黑，页面读起来像还没加载完。
+
+现在是「左栏讲清为什么要这一步、右栏是表单」的两栏，和招新落地页同一个句式。
+窄屏堆叠成单栏，说明在上、表单在下 —— 说明很短，先读理由再动手是对的顺序。
+
+**三个栅格项而不是两个**，位置由 grid-template-areas 指定、与 DOM 顺序无关：
+
+  .auth-head   眉题 + h1 + 一句话
+  .auth-panel  表单
+  .auth-extra  补充说明（等级阶梯、要点清单、备注）
+
+桌面是「head / extra 在左，panel 占右整列」；窄屏重排成「head → panel → extra」。
+为什么必须这么排：单栏下如果把整个左栏堆在表单上面，表单第一个输入框会被推到
+732px 处（844 高的视口里已经在首屏外）—— 而注册页的主要动作就是填表。截图断言
+抓到的正是这一条。标题和那一句话交代「这是什么页面」，剩下的解释放表单后面。
+
+子模板要填的块：
+  auth_kicker  眉题（大写英文，丝印语气）
+  auth_title   大标题（页面的 h1）
+  auth_lede    一句话
+  auth_aside   补充说明（可选）
+  auth_panel   面板内容（表单本体，自带 h2）
+{% endcomment %}
+
+{% block body_class %}page-auth{% endblock %}
+
+{% block content %}
+<section class="auth-stage nf-scope">
+    <div class="container auth-grid">
+        <div class="auth-head">
+            <p class="nf-eyebrow">// {% block auth_kicker %}ACCESS{% endblock %}</p>
+            <h1 class="auth-h1">{% block auth_title %}{% endblock %}</h1>
+            <p class="auth-lede">{% block auth_lede %}{% endblock %}</p>
+        </div>
+
+        <div class="auth-panel">
+            {% block auth_panel %}{% endblock %}
+        </div>
+
+        <div class="auth-extra">
+            {% block auth_aside %}{% endblock %}
+        </div>
+    </div>
+</section>
+{% endblock %}

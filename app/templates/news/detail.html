@@ -25,8 +25,11 @@
             </div>
         </header>
 
+        {% comment %}
+        `data-vt-part="cover"` 与公告列表卡片上那个配对（见 view-transitions.js）。
+        {% endcomment %}
         {% if post.cover %}
-            <figure class="news-article-cover"><img src="{{ post.cover.url }}" alt="{{ post.title }}"></figure>
+            <figure class="news-article-cover" data-vt-part="cover"><img src="{{ post.cover.url }}" alt="{{ post.title }}"></figure>
         {% endif %}
 
         <div class="news-article-body md-body">{{ post.body_html }}</div>

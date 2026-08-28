@@ -1,0 +1,310 @@
+/* ============================================================
+   HEU ESTA 官网 · 第 1 层：令牌与基座
+   ------------------------------------------------------------
+   本文件是全站唯一的设计令牌来源：字体、色板、节拍曲线、圆角、
+   以及 reset / 基础元素 / 焦点环 / 滚动条 / 跨页过渡。
+
+   加载顺序（base.html）：tokens.css → core.css →（仅首页）home.css
+   改这里会影响所有页面；只放"没有归属于某个组件"的东西。
+   无构建链：直接编辑即可生效。
+   ============================================================ */
+
+/* ---------- 自托管字体（scripts/build_fonts.py 产出） ----------
+   mono 数字是全站视觉主角，不依赖访客本机字体；
+   中文标题用真 Heavy 字重，告别微软雅黑伪加粗 */
+@font-face {
+    font-family: "JetBrains Mono";
+    src: url("../fonts/JetBrainsMono-subset.woff2") format("woff2");
+    font-weight: 100 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "ESTA Display";
+    src: url("../fonts/SourceHanSansCN-Heavy-subset.woff2") format("woff2");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --black: #050506;
+    --black-2: #0b0b0e;
+    --paper: #f7f8fa;
+    --white: #ffffff;
+    --ink: #0e1116;
+    --ink-muted: #5f6774;
+    --text: #e9edf4;
+    --muted: #97a1b3;
+    /* 第三档文字（页脚版权条、备案号）。比 --muted 更暗，但**实测对比度 5.05:1**
+       仍过 AA 的 4.5 门槛 —— 原来这一档直接写 #6b7280 字面值，只有 4.21:1，
+       是全站唯一不达标的正文色。改暗一档之前先拿 check_a11y.py 量一遍。 */
+    --muted-dim: #767f8f;
+    /* 品牌主色「信号青」：比通用天蓝更深更青，取自示波器荧光轨迹。
+       色板叙事 = 电路板：黑色基板 + 信号青走线 + 裸铜焊盘 */
+    --accent: #0da9cd;
+    --accent-2: #41d8e8;
+    /* 白区（`.nf-light`，底色 --paper）上的信号青。**同一个 --accent 放到浅底上
+       只有 2.61:1**，连大字要的 3:1 都不到 —— 而白区里恰好有 eyebrow 小字和大标题
+       里的强调词两处在用它。压暗到 4.68:1 过 AA，色相仍然是那条信号青。
+       暗底上继续用 --accent，那边是 11:1 以上。 */
+    --accent-ink: #0a7a94;
+    /* 第二记忆色「焊锡铜」：与论坛皮肤 --esta-copper 同源，
+       小面积用于编号、选区等工艺感细节，不承担交互语义 */
+    --copper: #c98a3d;
+    --copper-2: #e2ab63;
+    --line-d: rgba(255, 255, 255, 0.1);
+    --line-d-strong: rgba(255, 255, 255, 0.22);
+    --line-l: rgba(14, 17, 22, 0.1);
+    --ok: #3fd68f;
+    --warn: #f4b63f;
+    --danger: #f0716e;
+    --radius: 16px;
+    --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+    --font-display: "ESTA Display", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+    /* 兼容内页组件的旧变量名 */
+    --bg-0: var(--black);
+    --bg-1: #0a0c10;
+    --bg-2: #10131a;
+    --panel: rgba(16, 19, 26, 0.75);
+    --line: var(--line-d);
+    --line-strong: var(--line-d-strong);
+    --brand: var(--accent);
+    --brand-2: var(--accent-2);
+    --cyan: #63e2ef;
+    --glow: rgba(13, 169, 205, 0.35);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* `hidden` 属性必须真的隐藏。组件一旦设了 display: flex/grid，就会盖掉浏览器
+   给 [hidden] 的默认 display: none —— 于是 el.hidden = true 变成没有任何效果，
+   而 JS 那边看起来完全正确。全站有大量「脚本按能力放出/收起」的元素（倒计时
+   时钟、分步表单的段与按钮、视频手动播放按钮），这条兜住它们。
+   这是全站唯一该用 !important 的地方：hidden 的语义就是「无条件不渲染」。 */
+[hidden] { display: none !important; }
+
+/* ---------- 跨页过渡（MPA View Transitions，Chromium 渐进增强） ----------
+   同源页面跳转时旧页淡出、新页淡起，替代硬切白屏；
+   不支持的浏览器忽略此规则，行为不变。
+
+   在这之上有三层「连续」，让跳转读起来像同一块板子在换内容，而不是换了一页纸：
+     1. 固定导航条整段不参与淡入淡出（`site-nav`）—— 它在两页之间本来就没动，
+        跟着整页淡一下是最容易被察觉的假动作。
+     2. 页头横幅在页面之间形变（`page-hero`）—— 所有列表页与作品详情页都有一条
+        暗场横幅，认成同一个元素之后高度是长出来的。
+     3. 卡片封面 ↔ 详情页大图（`vt-cover`）—— 名字由 view-transitions.js 在导航
+        那一刻只给参与的那一张卡片，因为 `view-transition-name` 在一页里必须唯一。 */
+@view-transition { navigation: auto; }
+::view-transition-old(root) {
+    /* 纯不透明度的交叉淡入用 linear（UA 默认也是），加缓动只会让中段发灰 */
+    animation: vt-fade-out var(--t-fast) linear both;
+}
+::view-transition-new(root) {
+    animation: vt-fade-in var(--t-base) var(--ease-rise) both;
+}
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-fade-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* 固定导航条：不参与整页淡入淡出，跨页保持钉住 */
+.site-nav { view-transition-name: site-nav; }
+/* 页头横幅：列表 ↔ 列表 ↔ 作品详情之间形变。每一页最多一条，天然唯一 */
+.page-hero, .wk-detail-hero { view-transition-name: page-hero; }
+
+/* 由 view-transitions.js 指派。用属性映射而不是内联 style：收尾只要摘掉属性，
+   不用还原原值 */
+[data-vt-name="cover"] { view-transition-name: vt-cover; }
+
+/* 封面形变要比根级淡入明显长一档，眼睛才跟得住「它长大了」这件事。
+   `--ease-rise` 是 expo-out，动作极度前置：给 .35s 的话 140ms 就已经走完九成，
+   读起来是「啪」地换了一张图而不是长大。给 --t-slow 之后可辨的那一段有 250ms，
+   后面那截是亚像素的软着陆，不会让人觉得在等。 */
+::view-transition-group(vt-cover) {
+    animation-duration: var(--t-slow);
+    animation-timing-function: var(--ease-rise);
+}
+/* 两张图裁切比例不一定完全一样（卡片是 16/10，详情页大图更宽），默认的
+   `object-fit: fill` 会让中途那几帧被拉扁。铺满自己的组 + cover 裁切之后，形变
+   过程里只有取景框在变，画面本身不变形。
+   **不要在这里写 `animation: none`。** UA 给配上对的 old/new 一对交叉淡入淡出，
+   靠的是 `mix-blend-mode: plus-lighter` + 组上的 `isolation: isolate`：两张图的
+   不透明度相加恒为 1，中途不会透出底下的页面。关掉动画既丢了这层过渡，也让
+   `document.getAnimations()` 再也看不到这两个伪元素（check_transitions.py 就是
+   靠它判断有没有配上对的）。同理 `mix-blend-mode` 也不要改成 normal。 */
+::view-transition-old(vt-cover),
+::view-transition-new(vt-cover) {
+    height: 100%; width: 100%;
+    object-fit: cover;
+}
+/* 横幅只是高度长一截，比封面短一档：两条同时用 --t-slow 会显得整页都在慢慢胀 */
+::view-transition-group(page-hero) {
+    animation-duration: var(--t-base);
+    animation-timing-function: var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+    /* 命名元素这一侧：view-transitions.js 在减动效偏好下压根不指派名字，
+       所以只剩 site-nav / page-hero 两个静态名。把它们也停住，结果是干净的瞬切。 */
+    ::view-transition-group(site-nav), ::view-transition-group(page-hero) { animation: none; }
+}
+
+/* ---------- 线性图标（includes/icon.html） ---------- */
+.icon { width: 20px; height: 20px; display: inline-block; vertical-align: -0.24em; flex-shrink: 0; }
+.icon-sm { width: 16px; height: 16px; vertical-align: -0.18em; }
+.icon-lg { width: 42px; height: 42px; }
+
+html { scroll-behavior: smooth; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    background: var(--black);
+    color: var(--text);
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+a { color: var(--accent-2); text-decoration: none; transition: color .25s; }
+a:hover { color: var(--cyan); }
+img { max-width: 100%; display: block; }
+
+/* 懒加载图片淡入（site.js 给未完成加载的 lazy 图挂类） */
+img.img-fade { opacity: 0; transition: opacity .45s ease; }
+img.img-fade.img-loaded { opacity: 1; }
+
+/* 按钮成功反馈的小弹跳（复制群号等） */
+@keyframes btn-pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.07); }
+    100% { transform: scale(1); }
+}
+.btn.copied { animation: btn-pop .4s var(--ease-out); }
+
+/* ---------- 只给读屏软件的文字 ----------
+   不要用 `display: none` 或 `visibility: hidden` 藏这类文字 —— 那两种写法读屏
+   软件也读不到，等于什么都没写。这一份是「视觉上不占位、但留在无障碍树里」。
+   `clip-path` 之外还留着 1px 尺寸与 `overflow: hidden`：宽高直接给 0 时部分
+   读屏软件会跳过它。 */
+.sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ---------- 跳到主要内容 ----------
+   固定导航里有十几个可聚焦项（会标 + 5~6 条链接 + 两个折叠组 + 账号区 + 汉堡）。
+   没有这条链接，键盘与读屏用户在**每一页**都要先 Tab 穿过这一整排才能碰到正文。
+   平时用 .sr-only 藏起来，一被聚焦就现身 —— 所以它对鼠标用户完全不存在。
+   z-index 要压过导航（100），但**不要**压过加载动画（300）：开场遮罩盖着的时候
+   本来就不该有任何可交互的东西露出来。 */
+.skip-link:focus {
+    position: fixed;
+    top: 12px; left: 12px;
+    z-index: 101;
+    width: auto; height: auto;
+    margin: 0;
+    padding: 12px 20px;
+    clip-path: none;
+    background: var(--accent);
+    color: #04121a;
+    font-weight: 700;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+}
+
+/* 键盘焦点环：品牌信号青，只在键盘导航时出现 */
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+/* 跳转目标拿到的是编程式焦点（tabindex="-1"），不该画焦点环 —— 用户没有
+   「聚焦到正文」这个心理模型，画一个大框反而像出错了 */
+.site-main:focus, .site-main:focus-visible { outline: none; }
+.btn:focus-visible, .nav-links a:focus-visible, .pill:focus-visible,
+.pagination a:focus-visible, .nav-user:focus-visible,
+.nav-group > summary:focus-visible {
+    outline-offset: 2px;
+    border-radius: 999px;
+}
+.input:focus-visible { outline: none; } /* 输入框已有 box-shadow 焦点态 */
+
+.container { width: min(1240px, 92%); margin: 0 auto; }
+
+/* 选区用焊锡铜：划词像给文字镀上一层锡 */
+::selection { background: rgba(201, 138, 61, .5); color: #fff; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--black); }
+::-webkit-scrollbar-thumb { background: #23262e; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #33373f; }
+
+/* ============================================================
+   新增令牌（2026 招新版视觉升级）
+   ------------------------------------------------------------
+   下面这批是在原有色板之上的扩展，不改动任何既有取值。
+   命名沿用「电路板」这条叙事线：基板 / 阻焊 / 丝印 / 铜箔 / 焊盘。
+   ============================================================ */
+:root {
+    /* 第三色「阻焊墨绿」：真实 PCB 阻焊层的记忆色。只用于大面积基板质感
+       区块（3D 会标底板、素材槽背板），不参与文字与交互语义，避免与
+       信号青抢注意力。 */
+    --solder-mask: #0a2f2a;
+    --solder-mask-2: #0f4038;
+
+    /* 丝印白：PCB 上印刷元件编号的那层白墨。用于区块编号、标签、
+       占位槽的定位标记，比纯白柔和，不会在暗场里刺眼。 */
+    --silk: rgba(233, 237, 244, .82);
+    --silk-dim: rgba(233, 237, 244, .42);
+    --silk-line: rgba(233, 237, 244, .22);
+
+    /* 沉金焊盘：3D 会标的过孔与焊盘材质，比 --copper 更亮更黄。 */
+    --pad-gold: #e8bd6d;
+
+    /* 示波器网格（暗场版）。白区的坐标纸已在 core.css 的 .nf-light 内联，
+       这里给黑区区块用，格距与白区一致以保持同一套度量。 */
+    --scope-line: rgba(65, 216, 232, .055);
+    --scope-line-strong: rgba(65, 216, 232, .1);
+    --scope-cell: 50px;
+    --scope-cell-fine: 10px;
+
+    /* 节拍：全站动效只允许用这三条曲线，避免每个组件各自发明缓动。
+       - rise 上升沿：快起慢收，用于入场、位移、揭示
+       - damp 阻尼振荡：轻微 overshoot，用于点击/悬停等交互反馈
+       - ease-out 保留原值，是既有组件的默认曲线 */
+    --ease-rise: cubic-bezier(.16, 1, .3, 1);
+    --ease-damp: cubic-bezier(.34, 1.56, .64, 1);
+
+    /* 时长阶梯：从"察觉不到"到"电影感"四档，杜绝 .23s/.37s 这类随手数字 */
+    --t-fast: .18s;
+    --t-base: .35s;
+    --t-slow: .6s;
+    --t-cine: 1.1s;
+
+    /* 首屏遮罩层级：preloader 必须盖住导航栏（z-index 100）与反馈弹窗（200） */
+    --z-preloader: 300;
+}
+
+/* 暗场示波器网格：给需要"仪器屏幕"质感的黑区区块加 .scope-grid
+   两层网格（细格 10px + 粗格 50px），与白区坐标纸同度量。 */
+.scope-grid {
+    background-image:
+        linear-gradient(var(--scope-line-strong) 1px, transparent 1px),
+        linear-gradient(90deg, var(--scope-line-strong) 1px, transparent 1px),
+        linear-gradient(var(--scope-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--scope-line) 1px, transparent 1px);
+    background-size:
+        var(--scope-cell) var(--scope-cell),
+        var(--scope-cell) var(--scope-cell),
+        var(--scope-cell-fine) var(--scope-cell-fine),
+        var(--scope-cell-fine) var(--scope-cell-fine);
+}

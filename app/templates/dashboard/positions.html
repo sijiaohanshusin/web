@@ -4,11 +4,60 @@
 {% block page_title %}职位管理{% endblock %}
 
 {% block content %}
+{% comment %}
+职位管理。两件事：定义职位、任命成员。
+
+**任命不等于上墙**：公开团队页（/team/）只列出本人勾了「公开展示」的人。把自己的
+姓名和照片放到公开页面上是本人的同意，注册时那份隐私同意书里没有这一条，所以这一页
+不提供代勾的开关 —— 只显示谁还没勾，好去提醒一句。
+{% endcomment %}
+<div class="dash-panel">
+    <h2>职位与公开团队页</h2>
+    <p class="dash-muted">
+        主席、硬件主席、软件主席、硬件副主席、软件副主席是<strong>固定职位</strong>（老会员通道审核时按名字自动创建），
+        不能改名或删除，但可以改颜色、简介和排序。除此之外可以自建职位，比如「硬件部长」「宣传干事」。
+    </p>
+    <p class="dash-muted">
+        只有固定职位里的主席与两类主席自动获得驾驶舱权限。<strong>自建职位一律不授予</strong> ——
+        需要站务权限就在会员管理里把等级提到「站务管理」，那条路有日志、有通知。
+    </p>
+    <p class="dash-muted">
+        <a href="{% url 'team:wall' %}" target="_blank" rel="noopener">公开团队页 →</a>
+        只列出<strong>本人勾选了「在公开团队页展示我」</strong>的在任成员。
+        {% if awaiting_optin %}现在有 <strong>{{ awaiting_optin }}</strong> 位在任成员还没勾，需要去提醒本人。{% endif %}
+    </p>
+</div>
+
 <div class="dash-grid-2">
     <div class="dash-panel">
-        <h2>固定职位体系</h2>
-        <p class="dash-muted">正式版仅使用主席、硬件主席、软件主席、硬件副主席、软件副主席五类职位。</p>
-        <p class="dash-muted">主席及两类主席职位自动获得管理驾驶舱权限；副主席职位不自动获得站务权限。</p>
+        <h2>新建职位</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="create">
+            <div class="form-group">
+                <label>职位名称 <span class="req">*</span></label>
+                <input class="input" name="name" maxlength="30" required placeholder="如 硬件部长">
+            </div>
+            <div class="form-group">
+                <label>这个职位做什么</label>
+                <input class="input" name="blurb" maxlength="80" placeholder="会显示在公开团队页的分组标题下">
+            </div>
+            <div class="form-group">
+                <label>徽章颜色</label>
+                <input class="input" name="color" value="#0da9cd" pattern="#[0-9A-Fa-f]{6}" placeholder="#0da9cd">
+            </div>
+            <div class="form-group">
+                <label>排序</label>
+                <input class="input" name="sort_order" type="number" min="0" value="100">
+                <small class="form-help">数字小的排前面。固定职位用了 10-50，自建的建议从 60 起。</small>
+            </div>
+            {% comment %}
+            这一页有一堆小表单，各带一个提交按钮，其中还有带 confirm() 的删除表单
+            （Playwright 会自动 dismiss 掉）。所以自动化定位按钮一律走专用 data 钩子，
+            不要按 `button[type=submit]` 或者结构选择器点 —— 会静默点错东西。
+            {% endcomment %}
+            <button type="submit" class="btn btn-primary" data-position-create>创建</button>
+        </form>
     </div>
 
     <div class="dash-panel">
@@ -27,7 +76,7 @@
                 <label>成员 ID <span class="req">*</span></label>
                 <input class="input" name="user_id" required placeholder="输入用户ID（会员管理页可查）">
             </div>
-            <button type="submit" class="btn btn-primary">任命</button>
+            <button type="submit" class="btn btn-primary" data-position-assign>任命</button>
         </form>
     </div>
 </div>
@@ -36,16 +85,41 @@
     <h2>职位列表（{{ positions|length }}）</h2>
     <div class="dash-table-wrap">
         <table class="table">
-            <thead><tr><th>职位</th><th>管理权限</th><th>在任人数</th></tr></thead>
+            <thead>
+            <tr><th>职位</th><th>简介</th><th>管理权限</th><th>在任</th><th style="width:300px;">调整</th></tr>
+            </thead>
             <tbody>
             {% for p in positions %}
                 <tr>
-                    <td><span class="badge" style="color:#fff;background:{{ p.color }};border-color:{{ p.color }};">{{ p.name }}</span></td>
+                    <td>
+                        <span class="badge" style="color:#fff;background:{{ p.color }};border-color:{{ p.color }};">{{ p.name }}</span>
+                        {% if p.is_fixed %}<small class="table-sub">固定职位</small>{% endif %}
+                    </td>
+                    <td>{{ p.blurb|default:"—" }}</td>
                     <td>{% if p.grants_management %}<span class="badge badge-green">已授予</span>{% else %}<span class="badge">不授予</span>{% endif %}</td>
                     <td>{{ p.count }}</td>
+                    <td>
+                        <form method="post" class="dash-inline-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="form" value="update">
+                            <input type="hidden" name="position_id" value="{{ p.pk }}">
+                            <input class="input input-sm" name="blurb" value="{{ p.blurb }}" maxlength="80" placeholder="简介">
+                            <input class="input input-sm" name="color" value="{{ p.color }}" pattern="#[0-9A-Fa-f]{6}" style="width:96px;">
+                            <input class="input input-sm" name="sort_order" type="number" min="0" value="{{ p.sort_order }}" style="width:72px;">
+                            <button type="submit" class="btn btn-ghost btn-sm">保存</button>
+                        </form>
+                        {% if not p.is_fixed %}
+                        <form method="post" onsubmit="return confirm('删除职位「{{ p.name }}」？在任成员的职位会被清空。');">
+                            {% csrf_token %}
+                            <input type="hidden" name="form" value="delete">
+                            <input type="hidden" name="position_id" value="{{ p.pk }}">
+                            <button type="submit" class="btn btn-ghost btn-sm">删除</button>
+                        </form>
+                        {% endif %}
+                    </td>
                 </tr>
             {% empty %}
-                <tr><td colspan="3"><div class="dash-empty">固定职位将在部署迁移时自动创建</div></td></tr>
+                <tr><td colspan="5"><div class="dash-empty">固定职位将在部署迁移时自动创建</div></td></tr>
             {% endfor %}
             </tbody>
         </table>
@@ -56,13 +130,26 @@
     <h2>现任职成员</h2>
     <div class="dash-table-wrap">
         <table class="table">
-            <thead><tr><th>成员 (ID)</th><th>届别</th><th>职位</th><th></th></tr></thead>
+            <thead><tr><th>成员 (ID)</th><th>届别</th><th>职位</th><th>公开团队页</th><th></th></tr></thead>
             <tbody>
             {% for u in holders %}
                 <tr>
                     <td>{{ u.display_name }} <small style="color:var(--muted);">#{{ u.pk }}</small></td>
                     <td>{{ u.cohort_label|default:"—" }}</td>
                     <td><span class="badge" style="color:#fff;background:{{ u.position.color }};border-color:{{ u.position.color }};">{{ u.position.name }}</span></td>
+                    <td>
+                        {% comment %}
+                        账号停用的人无论勾没勾都不会上墙，显示「已公开」会误导。
+                        这一列只回答「这个人现在在团队页上吗、卡在哪一步」。
+                        {% endcomment %}
+                        {% if not u.is_active %}
+                            <span class="badge">账号已停用</span>
+                        {% elif u.show_on_team %}
+                            <span class="badge badge-green" data-optin="on">已公开</span>
+                        {% else %}
+                            <span class="badge" data-optin="off">本人未勾选</span>
+                        {% endif %}
+                    </td>
                     <td>
                         <form method="post">
                             {% csrf_token %}
@@ -73,7 +160,7 @@
                     </td>
                 </tr>
             {% empty %}
-                <tr><td colspan="4"><div class="dash-empty">暂无任职成员</div></td></tr>
+                <tr><td colspan="5"><div class="dash-empty">暂无任职成员</div></td></tr>
             {% endfor %}
             </tbody>
         </table>

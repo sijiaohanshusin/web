@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}作品墙 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}哈尔滨工程大学电子科技协会成员作品：硬件、软件与软硬结合的项目实物、原理与成果。{% endblock %}
+{% block body_class %}page-works{% endblock %}
+
+{% block content %}
+{% comment %}
+作品墙。给还没加入协会的人看的那一页 —— 它要回答一个问题：**这里的人到底做出了
+什么东西**。所以卡片上是实物照片 + 一句话，不是项目管理表格。
+
+和 /projects/（会员档案库）共用 Project 模型但只出 `is_public=True` 的，且一个
+字节的项目文件都不碰。口径统一走 `Project.public()`。
+{% endcomment %}
+
+<section class="page-hero nf-scope">
+    <div class="container">
+        <p class="nf-eyebrow">// OUR WORK</p>
+        <h1>做出来的<span class="accent">东西</span></h1>
+        <p class="page-hero-sub">
+            这些是协会成员真正做完并且能上电的东西 —— 从面包板到打样回来的 PCB，从点亮一颗灯到跑完一整套控制逻辑。
+            {% if total %}目前公开 <strong>{{ total }}</strong> 件。{% endif %}
+        </p>
+    </div>
+</section>
+
+<div class="container page-section">
+    {% if page.object_list %}
+        {% if dept_tabs %}
+        {% comment %}
+        只列出**真的有作品**的方向。点进去一片空白的筛选项比没有这个筛选项更糟，
+        所以计数为 0 的方向在视图里就被滤掉了。
+        {% endcomment %}
+        <nav class="pill-row wk-filter" aria-label="按方向筛选">
+            <a {% if not dept %}class="pill is-current" aria-current="page"
+               {% else %}class="pill"{% endif %}
+               href="{% querystring dept=None page=None %}">全部<b>{{ total }}</b></a>
+            {% for value, label, count in dept_tabs %}
+            <a {% if dept == value %}class="pill is-current" aria-current="page"
+               {% else %}class="pill"{% endif %}
+               href="{% querystring dept=value page=None %}">{{ label }}<b>{{ count }}</b></a>
+            {% endfor %}
+        </nav>
+        {% endif %}
+
+        {% comment %}
+        给作品网格一个标题。视觉上不需要（上面的药丸已经说清在看哪一批），但
+        没有它的话这一页的标题层级是 h1 → h3（卡片标题是 h3），中间空了一级；
+        而且读屏用户按标题跳转时，整页只有一个 h1 可跳，进不到列表这一段。
+        卡片标题保持 h3 —— work_card.html 还被首页分镜 07 与详情页底部复用，
+        那两处外面都是 h2，改成别的级别反而在那两处错。
+        {% endcomment %}
+        <h2 class="sr-only">作品列表</h2>
+        <div class="wk-grid">
+            {% for project in page.object_list %}
+                {% include "includes/work_card.html" with project=project eager=forloop.first %}
+            {% endfor %}
+        </div>
+
+        {% include "includes/pager.html" with page=page %}
+
+    {% else %}
+        {% comment %}
+        空态。全新部署时这就是站务和访客看到的第一屏，所以它必须是设计过的，
+        而且**要给出下一步**：访客去看新生指南，站务去驾驶舱把项目公开出来。
+        {% endcomment %}
+        <div class="panel empty-state">
+            <p class="nf-eyebrow">// NOTHING HERE YET</p>
+            <h2>作品墙还在搭</h2>
+            <p>
+                {% if dept %}
+                    这个方向还没有公开的作品。<a href="{% url 'works:wall' %}">看看全部</a>。
+                {% else %}
+                    协会的项目档案里东西不少，但整理成能对外展示的样子还要一点时间 ——
+                    照片要拍、说明要写。先去<a href="{% url 'core:recruit' %}">新生指南</a>看看我们平时在做什么。
+                {% endif %}
+            </p>
+            {% if user.is_authenticated and user.is_officer %}
+            <p class="empty-state-hint">
+                站务：在<a href="{% url 'dashboard:projects' %}">驾驶舱 · 项目</a>里给项目勾上「公开到作品墙」并传一张封面，这一页就有内容了。
+            </p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

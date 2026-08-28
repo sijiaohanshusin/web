@@ -15,6 +15,10 @@ class Position(models.Model):
     color = models.CharField("徽章颜色", max_length=20, default="#b8860b", help_text="十六进制色值，如 #b8860b")
     sort_order = models.PositiveIntegerField("排序", default=100, help_text="数字小的排前面")
     grants_management = models.BooleanField("授予管理驾驶舱权限", default=False)
+    blurb = models.CharField(
+        "这个职位做什么", max_length=80, blank=True,
+        help_text="会显示在公开团队页的职位分组下，例如「统筹整体方向与对外联络」",
+    )
 
     class Meta:
         verbose_name = "职位"
@@ -61,6 +65,16 @@ class User(AbstractUser):
         Position, verbose_name="职位", null=True, blank=True, on_delete=models.SET_NULL, related_name="holders"
     )
 
+    # ---- 公开团队页（/team/）----
+    # 默认关闭，且只能由本人在个人资料页打开。注册时的隐私同意书写的是「身份核验、
+    # 招新联系、账号安全」，**不含「公开展示在官网上」** —— 所以这是一次单独的、
+    # 明示的同意，站务代勾就等于替别人同意了一件他没同意的事。
+    show_on_team = models.BooleanField("在公开团队页展示我", default=False)
+    public_bio = models.CharField(
+        "一句话介绍", max_length=120, blank=True,
+        help_text="会显示在公开团队页上，例如「负责硬件培训，喜欢折腾电源」",
+    )
+
     class Meta(AbstractUser.Meta):
         verbose_name = "成员"
         verbose_name_plural = "成员"
@@ -85,6 +99,18 @@ class User(AbstractUser):
     @property
     def display_name(self) -> str:
         return self.real_name or self.username
+
+    @property
+    def initial(self) -> str:
+        """没有头像时显示的首字母牌内容（中文取姓，英文取首字母大写）。
+
+        缺头像在这个协会是常态，所以它得有一个**设计过的**样子，而不是一个
+        碎图图标。这里刻意不复用 `includes/empty_board.html` —— 那是「一格版面」
+        的占位框（虚线板框 + 四角定位标 + 拍摄要求），套在 88px 的圆形头像上
+        既放不下也不像一套设计。
+        """
+        name = (self.display_name or "?").strip()
+        return name[0].upper() if name else "?"
 
     @property
     def cohort_label(self) -> str:
@@ -134,6 +160,48 @@ class User(AbstractUser):
     @property
     def is_admin(self) -> bool:
         return roles.is_admin(self)
+
+    # ---- 公开团队页的唯一口径 ----
+
+    @classmethod
+    def team(cls):
+        """「谁会出现在公开团队页上」的唯一口径。
+
+        三个条件同时成立才上墙：账号已激活、本人勾了公开展示、且**当前担任职位**。
+        要求有职位不是偷懒 —— 这一页回答的是「带我的人是谁」，一份两百人的会员
+        名册对访客只是一串陌生名字，对协会则是一份没必要背的隐私负担。
+
+        `position` 是外键而不是历史记录，所以换届之后这一页自动变成新一届 ——
+        「现任团队」本来就该是这个行为。往届名录是另一件事（要按任期存），
+        现在不做。
+        """
+        return (
+            cls.objects.filter(is_active=True, show_on_team=True, position__isnull=False)
+            .select_related("position")
+            .prefetch_related("medals__medal")
+            .order_by("position__sort_order", "position_id", "-grade", "real_name", "username")
+        )
+
+    @classmethod
+    def team_summary(cls) -> dict:
+        """在册规模的聚合数字。一个人都没勾公开展示时，这一页靠它撑住。
+
+        聚合数不是个人信息，所以**不受 show_on_team 约束** —— 「在册 120 人」
+        既不指向任何人，也是这一页最有说服力的一句话。
+        """
+        row = cls.objects.filter(
+            is_active=True, member_level__gte=roles.LEVEL_PREPARATORY,
+        ).aggregate(
+            total=models.Count("id"),
+            colleges=models.Count("college", distinct=True, filter=~Q(college="")),
+            cohorts=models.Count("grade", distinct=True, filter=~Q(grade="")),
+        )
+        return {
+            "total": row["total"] or 0,
+            # 只有 2 个以上才有意义：「覆盖 1 个学院」不如不说
+            "colleges": row["colleges"] if (row["colleges"] or 0) >= 2 else 0,
+            "cohorts": row["cohorts"] if (row["cohorts"] or 0) >= 2 else 0,
+        }
 
     def set_level(self, level: int, actor=None, note: str = "") -> None:
         """变更等级：写日志 + 同步激活状态与 Django 组 + 站内通知本人。"""

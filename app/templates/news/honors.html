@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}荣誉墙 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}哈尔滨工程大学电子科技协会历年获奖记录：全国大学生电子设计竞赛等国家级、省级与校级奖项。{% endblock %}
+{% block body_class %}page-honors{% endblock %}
+
+{% block content %}
+{% comment %}
+荣誉墙。主体是**排版密实的清单**而不是证书照片墙：二十张红底证书扫描件堆在一起
+像档案柜，而且协会现在一张都没有。这一页在零张照片的情况下就该好看。
+
+三层：
+  1. 统计（国家级 N 项 / 省级 / 校级 + 年份跨度）—— 这一页最有说服力的东西，
+     而且是**数出来的**（Honor.summary()），不是手填的
+  2. 证书条带 —— 只放真的有照片的那几项；一张都没有时整段不渲染
+  3. 按年分组的完整清单 —— 每年一段，年份是丝印体的大号数字
+{% endcomment %}
+
+<section class="page-hero nf-scope" style="--hero-accent: var(--copper-2)">
+    <div class="container">
+        <p class="nf-eyebrow">// HONORS</p>
+        <h1>拿过的<span class="accent">奖</span></h1>
+        {% if summary.total %}
+        <p class="page-hero-sub">
+            {% if summary.year_from and summary.year_to %}
+                {% if summary.year_from == summary.year_to %}{{ summary.year_to }} 年{% else %}{{ summary.year_from }} 到 {{ summary.year_to }} 年{% endif %}，
+            {% endif %}
+            协会成员累计 <strong>{{ summary.total }}</strong> 项获奖记录。下面是全部，没有挑好看的写。
+        </p>
+        <div class="hn-stats">
+            {% if summary.national %}
+            <div class="hn-stat hn-lv-national">
+                <strong>{{ summary.national }}</strong><span>国家级</span>
+            </div>
+            {% endif %}
+            {% if summary.provincial %}
+            <div class="hn-stat hn-lv-provincial">
+                <strong>{{ summary.provincial }}</strong><span>省级</span>
+            </div>
+            {% endif %}
+            {% if summary.school %}
+            <div class="hn-stat hn-lv-school">
+                <strong>{{ summary.school }}</strong><span>校级</span>
+            </div>
+            {% endif %}
+            {% if summary.other %}
+            <div class="hn-stat hn-lv-other">
+                <strong>{{ summary.other }}</strong><span>其他</span>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <p class="page-hero-sub">这一页还在整理。协会的获奖记录不少，但要一条条录进来才算数。</p>
+        {% endif %}
+    </div>
+</section>
+
+<div class="container page-section">
+    {% if certificates %}
+    {% comment %}
+    证书条带。**只有真的有照片时才出现** —— 一张都没有时渲染一排空占位框，等于把
+    「我们连证书都没拍」放在这一页最显眼的位置。
+    {% endcomment %}
+    <h2 class="hn-sub">证书</h2>
+    <div class="hn-cert-strip">
+        {% for honor in certificates %}
+        <figure class="hn-cert">
+            <img src="{{ honor.certificate.url }}" alt="{{ honor.title }} 证书"
+                 {% if honor.cert_w %}width="{{ honor.cert_w }}" height="{{ honor.cert_h }}"{% endif %}
+                 loading="{% if forloop.first %}eager{% else %}lazy{% endif %}" decoding="async">
+            <figcaption>{{ honor.year }} · {{ honor.title }}</figcaption>
+        </figure>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if by_year %}
+    <h2 class="hn-sub">全部记录</h2>
+    <div class="hn-years">
+        {% for year, items in by_year %}
+        <section class="hn-year">
+            {% comment %}年份用丝印体大号数字，和首页分镜编号同一种语气{% endcomment %}
+            <h3 class="hn-year-no">{{ year }}</h3>
+            <div class="hn-year-list">
+                {% for honor in items %}
+                    {% include "includes/honor_row.html" with honor=honor %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="panel empty-state">
+        <p class="nf-eyebrow">// NOTHING HERE YET</p>
+        <h2>还没有录入的获奖记录</h2>
+        <p>
+            协会拿过的奖不少，但要一条条录成结构化的记录才能在这里排出来。
+            先去<a href="{% url 'news:list' %}">公告</a>看看历年的获奖喜报。
+        </p>
+        {% if user.is_authenticated and user.is_officer %}
+        <p class="empty-state-hint">
+            站务：在<a href="{% url 'dashboard:honors' %}">驾驶舱 · 荣誉</a>里录入，这一页立刻就有内容。
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

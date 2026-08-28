@@ -5,6 +5,8 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
+from django.core.paginator import Paginator
+from django.db.models import Count
 from django.http import FileResponse, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -17,13 +19,86 @@ from .models import Project, ProjectFile, ProjectFolder, ProjectMember
 User = get_user_model()
 
 
+# ============================================================
+#  作品墙（公开）
+#  ------------------------------------------------------------
+#  和下面的项目档案库共用 Project 模型，但**受众完全不同**：这里是给还没加入
+#  协会的人看的，只出 is_public=True 的项目，且一个字节的项目文件都不碰。
+#  URL 挂在 /works/（projects/public_urls.py），命名空间 works。
+# ============================================================
+
+WALL_PAGE_SIZE = 12
+
+
+def works_wall(request):
+    """作品墙：公开作品的网格 + 按方向筛选。"""
+    items = Project.public().prefetch_related("members__user")
+
+    dept = request.GET.get("dept", "")
+    if dept in Project.Department.values:
+        items = items.filter(department=dept)
+
+    # 每个方向各有多少件，用来在筛选条上显示真实数字并且**隐藏空分类** ——
+    # 点进去一片空白的筛选项比没有这个筛选项更糟。
+    counts = dict(
+        Project.public().values_list("department").annotate(n=Count("id"))
+    )
+
+    paginator = Paginator(items, WALL_PAGE_SIZE)
+    page = paginator.get_page(request.GET.get("page"))
+
+    context = {
+        "page": page,
+        "dept": dept,
+        "total": sum(counts.values()),
+        "dept_tabs": [
+            (value, label, counts.get(value, 0))
+            for value, label in Project.Department.choices
+            if counts.get(value, 0)
+        ],
+    }
+    return render(request, "projects/works_wall.html", context)
+
+
+def works_detail(request, pk: int):
+    """作品详情：封面 + 图集 + 简介 + 做的人。
+
+    只认公开作品 —— 用 `Project.public()` 而不是 `Project.objects`，否则外人拿到
+    一个 id 就能看到还没准备好公开的项目简介。
+    """
+    project = get_object_or_404(Project.public(), pk=pk)
+    shots = project.shots.all()
+    context = {
+        "project": project,
+        "shots": shots,
+        "team": project.members.select_related("user", "user__position"),
+        # 会员可以从展示页直接进档案库看文件；外人看不到这个入口
+        "can_open_archive": permissions.can_view_files(request.user, project),
+        "more": Project.public().exclude(pk=project.pk)[:3],
+    }
+    return render(request, "projects/works_detail.html", context)
+
+
+# ============================================================
+#  项目档案库（会员）
+# ============================================================
+
+
 def project_list(request):
     if not request.user.is_authenticated:
         return redirect_to_login(request.get_full_path())
     if not permissions.can_view_list(request.user):
         return HttpResponseForbidden("项目档案库仅对会员开放。")
 
-    projects = Project.objects.select_related("created_by").prefetch_related("members")
+    # 成员数用 annotate 数出来：模板里 `p.members.count` 每张卡片一条查询，
+    # prefetch 也救不了（`.count()` 不走预取缓存，它自己发 COUNT）。
+    # **`annotate()` 会建 GROUP BY，带 GROUP BY 的查询不再套用 Meta.ordering**
+    # （SQL 里压根没有 ORDER BY），所以排序必须显式写出来。
+    projects = (
+        Project.objects.select_related("created_by")
+        .annotate(member_total=Count("members", distinct=True))
+        .order_by("status", "-updated_at")
+    )
     dept = request.GET.get("dept", "")
     if dept in Project.Department.values:
         projects = projects.filter(department=dept)

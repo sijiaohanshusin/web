@@ -65,6 +65,15 @@ class BaseRegisterForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["username"].help_text = "登录使用，4-20 位字母、数字或下划线"
+        # Django 的 UserCreationForm.__init__ 会给 USERNAME_FIELD 挂 autofocus。
+        # 必须摘掉：分步之后 username 在第三段里，而 autofocus 在 HTML 解析时就
+        # 生效、比 defer 的 form-enhance.js 早 —— 浏览器把它滚进视口，脚本随后
+        # 收起后两段，滚动位置留在原地，结果**页面一进来就停在底部**（标题和
+        # 前几个字段都在视口外）。截图才看得出来，控制台一声不响。
+        #
+        # 也不改成给第一段第一个字段加 autofocus：移动端自动弹键盘会把标题和
+        # 进度条全挤出屏幕，而这一页不止表单一样东西。
+        self.fields["username"].widget.attrs.pop("autofocus", None)
         _style(self.fields, skip=("privacy_consent", "website"))
 
     def clean_student_id(self):
@@ -185,6 +194,16 @@ class ForgotPasswordForm(forms.Form):
         return cleaned
 
 
+# 个人资料的两组字段。**放模块级**：`class Meta` 的类体看不见外层类的类属性
+# （Python 的类作用域不参与嵌套查找），写成 ProfileForm 的属性会直接 NameError。
+PROFILE_BASIC_FIELDS = (
+    "real_name", "college", "grade", "specialty", "specialty_custom",
+    "qq", "phone", "avatar",
+)
+# 公开团队页那一组。只对**当前担任职位**的人显示（见 ProfileForm.__init__）。
+PROFILE_TEAM_FIELDS = ("show_on_team", "public_bio")
+
+
 class ProfileForm(forms.ModelForm):
     college = forms.ChoiceField(label="学院", choices=COLLEGE_CHOICES)
     grade = forms.ChoiceField(label="届别", choices=cohort_choices)
@@ -193,14 +212,33 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = (
-            "real_name", "college", "grade", "specialty", "specialty_custom",
-            "qq", "phone", "avatar",
-        )
+        fields = PROFILE_BASIC_FIELDS + PROFILE_TEAM_FIELDS
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        _style(self.fields, skip=("avatar",))
+        # 没有职位的人根本不会出现在团队页上（口径见 User.team()），给他们看这个
+        # 开关就是一格「勾了也没反应」的死界面。有职位的人下次打开这一页就看到了。
+        #
+        # 顺带这也是**唯一**能改 show_on_team 的入口 —— 公开自己的姓名和照片是
+        # 本人的同意，注册时那份隐私同意书里没有这一条，站务不能代勾。
+        if not getattr(self.instance, "position_id", None):
+            for name in PROFILE_TEAM_FIELDS:
+                self.fields.pop(name, None)
+        else:
+            self.fields["show_on_team"].label = "在公开团队页展示我"
+            self.fields["show_on_team"].help_text = (
+                "勾选后，你的姓名、头像、届别、擅长方向和下面这句介绍会出现在官网"
+                "的公开团队页上。手机号、邮箱、学号一律不展示。随时可以取消。"
+            )
+        _style(self.fields, skip=("avatar", "show_on_team"))
+
+    @property
+    def basic_fields(self):
+        return [self[name] for name in PROFILE_BASIC_FIELDS if name in self.fields]
+
+    @property
+    def team_fields(self):
+        return [self[name] for name in PROFILE_TEAM_FIELDS if name in self.fields]
 
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()

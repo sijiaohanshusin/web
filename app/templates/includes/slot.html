@@ -1,0 +1,53 @@
+{% comment %}
+素材槽的两种状态。由 {% slot "key" %} 渲染，上下文见 core/templatetags/slots.py。
+
+aspect-ratio 写成内联 style 是有意的：比例来自登记表，每个槽位都不一样，做成
+类名要为每种比例各写一条规则。它的职责是在图片下载完成前先把高度占住，别删。
+{% endcomment %}
+{% if sources %}
+{% comment %}
+刻意没有 autoplay：省流模式和 prefers-reduced-motion 下不该自动播，而这两件事
+CSS 拦不住、HTML 属性也没法条件化。改由 video-slots.js 决定，并且只在进入视口时
+播、离开就暂停。JS 没跑起来就停在封面帧上 —— 是个能看的状态，不是白屏。
+{% endcomment %}
+<figure class="slot is-filled is-video {{ css_class }}" style="aspect-ratio: {{ ratio }}"
+        data-slot-video>
+    <video muted loop playsinline preload="metadata"
+           {% if src %}poster="{{ src }}"{% endif %}
+           aria-label="{{ alt }}"
+           style="object-position: {{ object_position }}">
+        {% for url, mime in sources %}<source src="{{ url }}" type="{{ mime }}">{% endfor %}
+    </video>
+    <button class="slot-video-play" type="button" hidden
+            aria-label="播放这段循环片段">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+            <path fill="currentColor" d="M8 5.14v13.72L19 12z"/>
+        </svg>
+    </button>
+    {% if caption or credit %}
+    <figcaption class="slot-cap">
+        {% if caption %}<span class="slot-cap-text">{{ caption }}</span>{% endif %}
+        {% if credit %}<span class="slot-cap-credit">摄 / {{ credit }}</span>{% endif %}
+    </figcaption>
+    {% endif %}
+</figure>
+{% elif src %}
+<figure class="slot is-filled {{ css_class }}" style="aspect-ratio: {{ ratio }}">
+    <img src="{{ src }}" alt="{{ alt }}"
+         {% if width %}width="{{ width }}" height="{{ height }}"{% endif %}
+         loading="{{ loading }}" decoding="async" draggable="false"
+         style="object-position: {{ object_position }}">
+    {% if caption or credit %}
+    <figcaption class="slot-cap">
+        {% if caption %}<span class="slot-cap-text">{{ caption }}</span>{% endif %}
+        {% if credit %}<span class="slot-cap-credit">摄 / {{ credit }}</span>{% endif %}
+    </figcaption>
+    {% endif %}
+</figure>
+{% else %}
+{% comment %}
+空状态的标记抽到 includes/empty_board.html —— 作品墙上还没传封面的作品用的是
+同一份，「缺图长什么样」只有一处定义。
+{% endcomment %}
+{% include "includes/empty_board.html" with label=spec.label brief=spec.brief slot_key=spec.key %}
+{% endif %}

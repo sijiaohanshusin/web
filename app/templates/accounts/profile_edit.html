@@ -10,10 +10,40 @@
         <p class="auth-sub">完善信息，便于招新联络与身份核验</p>
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            {% for field in form %}
+            {% for field in form.basic_fields %}
                 {% include "includes/field.html" %}
             {% endfor %}
-            <button type="submit" class="btn btn-primary btn-block">保存</button>
+
+            {% comment %}
+            公开团队页那一组。**只有当前担任职位的人才有这一段**（表单在 __init__
+            里把字段摘掉了），因为没有职位的人不会出现在团队页上，给他看一个勾了
+            也没反应的开关只会让人以为坏了。
+
+            这是全站唯一能改 show_on_team 的地方：把自己的姓名和照片放到公开页面
+            上是本人的同意，注册时那份隐私同意书里没有这一条，站务代勾不了。
+            {% endcomment %}
+            {% if form.team_fields %}
+            <fieldset class="pf-team">
+                <legend>公开团队页</legend>
+                <p class="pf-team-lede">
+                    你现在担任<strong>{{ user.position.name }}</strong>。
+                    要不要把名字放到官网的<a href="{% url 'team:wall' %}" target="_blank" rel="noopener">公开团队页</a>上，
+                    由你自己决定 —— 默认是不放。
+                </p>
+                <div class="form-group consent-row {% if form.show_on_team.errors %}has-error{% endif %}">
+                    <label>
+                        {{ form.show_on_team }}
+                        <span>{{ form.show_on_team.help_text }}</span>
+                    </label>
+                    {% for error in form.show_on_team.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
+                </div>
+                {% with field=form.public_bio %}
+                    {% include "includes/field.html" %}
+                {% endwith %}
+            </fieldset>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary btn-block" data-profile-save>保存</button>
         </form>
         <p class="auth-alt"><a href="{% url 'accounts:profile' %}">← 返回个人中心</a></p>
     </div>

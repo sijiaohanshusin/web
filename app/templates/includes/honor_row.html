@@ -1,0 +1,26 @@
+{% comment %}
+荣誉墙上的一行。两处复用：荣誉墙的按年清单、首页分镜 08。
+
+参数：
+  honor     Honor 实例
+  show_year 是否显示年份（荣誉墙按年分组，年份在组标题上，行里就不重复；
+            首页 08 不分组，需要每行带年份）
+
+等级徽章的类名走 `honor.level_slug`（national / provincial / school / other）而不是
+`get_level_display`：后者是中文，改一个字样式就没了。
+
+有对应喜报时整行是链接，没有就是一行静态文本 —— 不做「点了没反应」的假链接。
+{% endcomment %}
+{% if honor.story_url %}<a class="hn-row hn-lv-{{ honor.level_slug }} is-link" href="{{ honor.story_url }}">{% else %}<div class="hn-row hn-lv-{{ honor.level_slug }}">{% endif %}
+    <span class="hn-badge">{{ honor.get_level_display }}</span>
+    {% if show_year %}<span class="hn-year-tag">{{ honor.year }}</span>{% endif %}
+    <span class="hn-body">
+        <strong class="hn-title">{{ honor.title }}</strong>
+        <span class="hn-meta">
+            {% if honor.contest %}<span class="hn-contest">{{ honor.contest }}</span>{% endif %}
+            {% if honor.awardee %}<span class="hn-awardee">{{ honor.awardee }}</span>{% endif %}
+            {% if honor.note %}<span class="hn-note">{{ honor.note }}</span>{% endif %}
+        </span>
+    </span>
+    {% if honor.story_url %}<span class="hn-go" aria-hidden="true">看喜报 →</span>{% endif %}
+{% if honor.story_url %}</a>{% else %}</div>{% endif %}

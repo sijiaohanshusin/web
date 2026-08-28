@@ -1,52 +1,138 @@
-{% extends "base.html" %}
+{% extends "accounts/_auth_base.html" %}
 {% load static %}
 
 {% block title %}{% if channel == 'new' %}新会员注册{% else %}老会员身份恢复{% endif %} | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}填写哈尔滨工程大学电子科技协会注册信息：{% if channel == 'new' %}注册完成即成为招新成员。{% else %}申报原协会身份，由管理组核验。{% endif %}{% endblock %}
 
-{% block content %}
-<div class="container page-section register-shell">
-    <div class="register-stepbar" aria-label="注册步骤">
-        <span class="done">选择通道</span><i></i><span class="active">填写信息</span><i></i><span>{% if channel == 'new' %}完成并报名{% else %}等待审核{% endif %}</span>
-    </div>
-    <div class="register-form-card">
-        <div class="register-form-head">
-            <div>
-                <p class="nf-eyebrow">// {% if channel == 'new' %}NEW MEMBER{% else %}RETURNING MEMBER{% endif %}</p>
-                <h1>{% if channel == 'new' %}新会员注册{% else %}老会员身份恢复{% endif %}</h1>
-                <p>{% if channel == 'new' %}注册成功后立即登录，并进入 2026 秋季招新报名。{% else %}请如实填写原协会身份，管理组核验通过后会邮件通知。{% endif %}</p>
+{% block auth_kicker %}{% if channel == 'new' %}NEW MEMBER{% else %}RETURNING MEMBER{% endif %}{% endblock %}
+{% block auth_title %}{% if channel == 'new' %}新会员注册{% else %}老会员身份恢复{% endif %}{% endblock %}
+{% block auth_lede %}{% if channel == 'new' %}三段填完就行，最后一步会让你核对一遍。{% else %}如实申报原身份，管理组核验通过后账号才能登录。{% endif %}{% endblock %}
+
+{% block auth_aside %}
+{% if channel == 'new' %}
+    {% include "includes/level_ladder.html" with reached=0 %}
+    <p class="auth-note">注册只是拿到账号。会员资料站、活动报名、论坛这些要面试之后才开放 —— 这一步不承诺任何权限。</p>
+{% else %}
+    <ul class="auth-points">
+        <li>申报的身份会和历史记录核对，写实际担任过的</li>
+        <li>核验期间账号处于「待审核」，登录会被拦住</li>
+        <li>结果发到你填的注册邮箱</li>
+    </ul>
+    <p class="auth-note">拒绝记录会保留，方便补材料后重新核验，不用重新注册。</p>
+{% endif %}
+<p class="auth-alt"><a href="{% url 'accounts:register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">← 选错了？回去重选通道</a></p>
+{% endblock %}
+
+{% block auth_panel %}
+<div class="panel auth-box auth-box-wide">
+    {% comment %}
+    分步表单。**渐进增强**：这是一张完整的表单、一次 POST；三个 fieldset 默认
+    全部展开，没有 JS 也能填完交上去。form-enhance.js 加 .is-stepped 之后才一次
+    只显示一段。标记契约见那个文件的文件头，招新报名表用的是同一份实现。
+
+    为什么值得分步：这张表有 13 个可见字段，一次全铺开在手机上是一堵墙，而且
+    「学号」和「设个密码」根本不是同一类决定。按「你是谁 / 怎么联系你 / 怎么登录」
+    切成三段，每段都是一个能一口气答完的问题。
+    {% endcomment %}
+    {% comment %}
+    刻意**不写 `novalidate`**：没有 JS 时三段全部展开，浏览器原生校验是可用且
+    有用的。接管之后由 form-enhance.js 自己把 noValidate 打开 —— 那时字段会被
+    藏起来，原生校验反而会报「An invalid form control is not focusable」。
+    {% endcomment %}
+    <form method="post" class="reg-form" id="reg-form" data-stepped-form>
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        {{ form.website }}
+
+        <ol class="rec-progress" data-step-dots aria-hidden="true">
+            <li class="is-current"><span></span>你是谁</li>
+            <li><span></span>联系方式</li>
+            <li><span></span>登录方式</li>
+        </ol>
+
+        {% if form.non_field_errors %}
+            <div class="form-nonfield-errors">
+                {% for error in form.non_field_errors %}<div class="alert alert-error">{{ error }}</div>{% endfor %}
             </div>
-            <a class="btn btn-ghost btn-sm" href="{% url 'accounts:register' %}">重新选择</a>
-        </div>
-        <form method="post" class="formal-register-form" novalidate>
-            {% csrf_token %}
-            {% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors }}</div>{% endif %}
+        {% endif %}
+
+        <fieldset class="rec-step" data-step>
+            <legend>你是谁</legend>
+            <p class="rec-step-hint">姓名和学号只给管理组看，用于核对身份与面试签到。</p>
             <div class="form-grid">
-            {% for field in form %}
-                {% if field.name == 'website' %}
-                    {{ field }}
-                {% elif field.name == 'privacy_consent' %}
-                    <div class="form-group form-span-2 consent-row {% if field.errors %}has-error{% endif %}">
-                        <label>{{ field }} <span>我已阅读并同意<a href="{% url 'core:privacy' %}" target="_blank">《隐私说明》</a></span></label>
-                        {% for error in field.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
-                    </div>
-                {% elif field.name == 'code' %}
-                    <div class="form-group {% if field.errors %}has-error{% endif %}">
-                        <label for="{{ field.id_for_label }}">{{ field.label }} <span class="req">*</span></label>
-                        <div class="input-action-row">{{ field }}<button type="button" class="btn btn-outline" data-send-code="register" data-email="#id_email">获取验证码</button></div>
-                        {% for error in field.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
-                    </div>
-                {% else %}
-                    {% include "includes/field.html" %}
+                {% include "includes/field.html" with field=form.real_name %}
+                {% include "includes/field.html" with field=form.student_id %}
+                {% include "includes/field.html" with field=form.college %}
+                {% include "includes/field.html" with field=form.grade %}
+                {% if channel == 'returning' %}
+                    <div class="form-span-2">{% include "includes/field.html" with field=form.requested_role %}</div>
                 {% endif %}
-            {% endfor %}
+                {% include "includes/field.html" with field=form.specialty %}
+                {% comment %}
+                「自定义方向」原来永远显示，选了硬件/软件的人也得看着一个空框发愣。
+                data-show-when 由 form-enhance.js 按 #id_specialty 的值决定显隐，
+                **默认可见**（没有 JS 时信息不丢），藏起来时顺手摘掉 required。
+                {% endcomment %}
+                <div data-show-when="id_specialty=custom">
+                    {% include "includes/field.html" with field=form.specialty_custom %}
+                </div>
             </div>
-            <div class="register-submit-row">
-                <p>{% if channel == 'new' %}注册不会自动开放会员资料、活动报名或论坛权限。{% else %}审核前账号不可登录，拒绝记录会保留以便重新核验。{% endif %}</p>
-                <button type="submit" class="btn btn-primary btn-lg">{% if channel == 'new' %}完成注册并继续报名{% else %}提交身份恢复申请{% endif %}</button>
+        </fieldset>
+
+        <fieldset class="rec-step" data-step>
+            <legend>怎么联系你</legend>
+            <p class="rec-step-hint">面试安排、审核结果都走邮箱和站内通知，填能收到的那个。</p>
+            <div class="form-grid">
+                <div class="form-span-2">{% include "includes/field.html" with field=form.email %}</div>
+                <div class="form-span-2">{% include "includes/field_code.html" with field=form.code purpose="register" %}</div>
+                {% include "includes/field.html" with field=form.phone %}
+                {% include "includes/field.html" with field=form.qq %}
             </div>
-        </form>
-    </div>
+        </fieldset>
+
+        <fieldset class="rec-step" data-step>
+            <legend>怎么登录</legend>
+            <div class="form-grid">
+                <div class="form-span-2">{% include "includes/field.html" with field=form.username %}</div>
+                {% include "includes/field.html" with field=form.password1 %}
+                {% include "includes/field.html" with field=form.password2 %}
+            </div>
+
+            {% comment %}
+            提交前回显前两段。值由 form-enhance.js 从表单现场读，不需要后端参与；
+            密码只显示「已设置」而不是原文。
+            {% endcomment %}
+            <dl class="reg-review">
+                <dt>姓名</dt><dd data-review-for="real_name">—</dd>
+                <dt>学号</dt><dd data-review-for="student_id">—</dd>
+                <dt>学院</dt><dd data-review-for="college">—</dd>
+                <dt>届别</dt><dd data-review-for="grade">—</dd>
+                {% if channel == 'returning' %}<dt>申报身份</dt><dd data-review-for="requested_role">—</dd>{% endif %}
+                <dt>邮箱</dt><dd data-review-for="email">—</dd>
+                <dt>手机号</dt><dd data-review-for="phone">—</dd>
+            </dl>
+
+            <div class="form-group consent-row {% if form.privacy_consent.errors %}has-error{% endif %}">
+                <label>
+                    {{ form.privacy_consent }}
+                    <span>我已阅读并同意<a href="{% url 'core:privacy' %}" target="_blank" rel="noopener">《隐私说明》</a>。信息仅用于身份核验、招新联系与账号安全。</span>
+                </label>
+                {% for error in form.privacy_consent.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
+            </div>
+        </fieldset>
+
+        <div class="rec-nav">
+            <button type="button" class="btn btn-ghost" data-step-prev hidden>← 上一步</button>
+            <button type="button" class="btn btn-primary" data-step-next hidden>下一步 →</button>
+            <button type="submit" class="btn btn-primary btn-block" data-step-submit>
+                {% if channel == 'new' %}完成注册{% else %}提交身份恢复申请{% endif %}
+            </button>
+        </div>
+    </form>
 </div>
 {% endblock %}
 
-{% block extra_js %}<script src="{% static 'js/auth-code.js' %}" defer></script>{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/auth-code.js' %}" defer></script>
+<script src="{% static 'js/form-enhance.js' %}" defer></script>
+{% endblock %}

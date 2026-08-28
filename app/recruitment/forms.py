@@ -4,6 +4,21 @@ from .models import Application, Campaign
 
 
 class ApplicationForm(forms.ModelForm):
+    """报名表。
+
+    分步是**前端**的事：这里仍然是一张完整的表单，一次 POST 提交。模板把字段分到
+    三个 fieldset 里，JS 一次只显示一个 —— 没有 JS 时三段全部展开，照样能填能交。
+    分步做成多次请求会引入草稿存储、会话状态、回退处理一堆东西，而这张表只有三个
+    字段，不值得。
+    """
+
+    # 意向部门改成单选卡片：三个选项，卡片比下拉更适合「选方向」这种带图像感的决定，
+    # 而且移动端不用弹系统选择器。
+    department = forms.ChoiceField(
+        label="想去哪个方向", choices=Application.Department.choices,
+        widget=forms.RadioSelect, initial=Application.Department.UNDECIDED,
+    )
+
     class Meta:
         model = Application
         fields = ("department", "skills", "self_intro")
@@ -14,7 +29,10 @@ class ApplicationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
+        for name, field in self.fields.items():
+            # 单选卡片自己有一套样式，不要套 .input（那是文本框的外观）
+            if name == "department":
+                continue
             existing = field.widget.attrs.get("class", "")
             field.widget.attrs["class"] = f"{existing} input".strip()
 

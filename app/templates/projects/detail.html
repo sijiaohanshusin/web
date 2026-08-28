@@ -44,7 +44,14 @@
             {% endif %}
 
             {# ---- 目录树当前层 ---- #}
-            <div class="dash-table-wrap">
+            {% comment %}
+            这里原来写的是 `.dash-table-wrap` / `.dash-row-actions` / `.dash-empty`
+            —— 那三个类只定义在 `dashboard.css` 里，而这一页是前台页面、只加载
+            `tokens.css` + `core.css`，所以它们**一点样式都没有**：表格不能横向
+            滚动（窄屏直接撑破版面）、行内按钮不排成一行、空态是一行裸文本。
+            页面照常渲染、控制台干净，所以一直没人发现。已换成 core.css 里的通用类。
+            {% endcomment %}
+            <div class="table-wrap">
                 <table class="table proj-file-table">
                     <thead><tr><th>名称</th><th>大小</th><th>上传者</th><th>时间</th><th></th></tr></thead>
                     <tbody>
@@ -52,7 +59,7 @@
                         <tr>
                             <td><a href="{% url 'projects:folder' project.pk sf.pk %}" class="proj-folder-link">📁 {{ sf.name }}</a></td>
                             <td>—</td><td>{{ sf.created_by.display_name|default:"—" }}</td><td>{{ sf.created_at|date:"m-d H:i" }}</td>
-                            <td class="dash-row-actions">
+                            <td class="row-actions">
                                 {% if can_edit %}
                                 <form method="post" action="{% url 'projects:delete_folder' project.pk sf.pk %}" class="inline-form"
                                       onsubmit="return confirm('删除目录「{{ sf.name }}」及其中所有文件？');">
@@ -69,7 +76,7 @@
                             <td>{{ f.size|filesizeformat }}</td>
                             <td>{{ f.uploader.display_name|default:"—" }}</td>
                             <td>{{ f.created_at|date:"m-d H:i" }}</td>
-                            <td class="dash-row-actions">
+                            <td class="row-actions">
                                 <a class="btn btn-ghost btn-sm" href="{% url 'projects:download' project.pk f.pk %}">下载</a>
                                 {% if can_edit %}
                                 <form method="post" action="{% url 'projects:delete_file' project.pk f.pk %}" class="inline-form"
@@ -82,14 +89,14 @@
                         </tr>
                     {% empty %}
                         {% if not subfolders %}
-                        <tr><td colspan="5"><div class="dash-empty">这个目录还是空的{% if can_edit %}，上传文件或新建子目录吧{% endif %}。</div></td></tr>
+                        <tr><td colspan="5"><div class="inset-empty">这个目录还是空的{% if can_edit %}，上传文件或新建子目录吧{% endif %}。</div></td></tr>
                         {% endif %}
                     {% endfor %}
                     </tbody>
                 </table>
             </div>
 
-            <p style="margin-top:20px;"><a class="btn btn-ghost" href="{% url 'projects:list' %}">← 返回项目列表</a></p>
+            <p class="proj-back"><a class="btn btn-ghost" href="{% url 'projects:list' %}">← 返回项目列表</a></p>
         </div>
 
         {# ---- 成员侧栏 ---- #}

@@ -69,7 +69,7 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="empty-hint"><span class="empty-icon">{% include "includes/icon.html" with name="medal" cls="icon-lg" %}</span>还没有勋章，参与活动、做出贡献即可获得</div>
+                    <div class="inset-empty">{% include "includes/icon.html" with name="medal" %}还没有勋章，参与活动、做出贡献即可获得</div>
                 {% endif %}
             </div>
             {% if my_application %}
@@ -111,8 +111,8 @@
                         </table>
                     </div>
                 {% else %}
-                    <div class="empty-hint">
-                        <span class="empty-icon">{% include "includes/icon.html" with name="cal" cls="icon-lg" %}</span>
+                    <div class="inset-empty">
+                        {% include "includes/icon.html" with name="cal" %}
                         还没有参加过活动，<a href="{% url 'events:list' %}">去看看近期安排</a>
                     </div>
                 {% endif %}
@@ -139,8 +139,8 @@
                         </table>
                     </div>
                 {% else %}
-                    <div class="empty-hint">
-                        <span class="empty-icon">{% include "includes/icon.html" with name="folder" cls="icon-lg" %}</span>
+                    <div class="inset-empty">
+                        {% include "includes/icon.html" with name="folder" %}
                         还没有上传过资料{% if user.is_officer %}，<a href="{% url 'files:upload' %}">去上传第一份</a>{% endif %}
                     </div>
                 {% endif %}

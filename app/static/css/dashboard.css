@@ -1,5 +1,5 @@
 /* ============================================================
-   管理驾驶舱样式（依赖 site.css 的设计变量与组件）
+   管理驾驶舱样式（依赖 tokens.css 的令牌与 core.css 的组件）
    ============================================================ */
 
 .dash-body { display: flex; min-height: 100vh; background: var(--black); }
@@ -132,6 +132,107 @@
 .dash-carousel-ops .input { width: 64px; padding: 5px 8px; font-size: 13px; }
 .dash-carousel-ops .btn { padding: 5px 12px; font-size: 12.5px; }
 
+/* ---------- 素材中心 ----------
+   页面主体是「槽位」而不是「文件」。每张卡片上半部分是官网真实效果的预览
+   （直接用 {% slot %} 渲染），下半部分是上传表单，中间夹着拍摄要求 ——
+   站务在同一屏里就能对照「要求」和「现在长什么样」。 */
+.ms-summary { display: flex; gap: 26px; align-items: flex-start; flex-wrap: wrap; }
+.ms-stat { display: flex; flex-direction: column; gap: 2px; min-width: 74px; }
+.ms-stat strong { font: 700 30px/1 var(--font-mono); color: var(--accent-2); }
+.ms-stat span { color: var(--muted); font-size: 12.5px; }
+.ms-stat.is-warn strong { color: var(--warn); }
+.ms-summary-note { flex: 1; min-width: 260px; color: var(--muted); font-size: 12.5px; line-height: 1.7; }
+.ms-summary-note code { font-family: var(--font-mono); color: var(--copper-2); font-size: 12px; }
+
+.ms-hint { color: var(--muted); font-size: 12.5px; line-height: 1.7; margin-bottom: 14px; }
+
+/* 缺图清单：编号用铜色，延续全站「编号 = 铜色」的语义 */
+.ms-todo { list-style: none; counter-reset: todo; margin: 0; padding: 0; }
+.ms-todo-item {
+    counter-increment: todo; display: flex; align-items: baseline; gap: 12px;
+    padding: 9px 0; border-bottom: 1px solid var(--line-d); flex-wrap: wrap;
+}
+.ms-todo-item:last-child { border-bottom: 0; }
+.ms-todo-item::before {
+    content: "0" counter(todo); flex: none;
+    font: 700 12px/1.5 var(--font-mono); color: var(--copper); min-width: 26px;
+}
+.ms-todo-item a { display: inline-flex; align-items: center; gap: 8px; color: var(--text); }
+.ms-todo-item a:hover strong { color: var(--accent-2); }
+.ms-todo-item strong { font-size: 14.5px; }
+.ms-todo-brief { flex: 1; min-width: 220px; color: var(--muted); font-size: 12.5px; }
+
+.ms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.ms-card {
+    border: 1px solid var(--line-d); border-radius: 14px; padding: 15px 16px 16px;
+    background: rgba(255, 255, 255, .02); display: flex; flex-direction: column; gap: 9px;
+}
+.ms-card.is-missing { border-color: rgba(244, 182, 63, .32); }
+/* 从官网占位框点进来时高亮，否则一页十几张卡片找不到是哪一张 */
+.ms-card.is-focused {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px rgba(65, 216, 232, .16);
+}
+.ms-card-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.ms-card-head strong { color: #fff; font-size: 15px; }
+.ms-key { font: 400 11px/1 var(--font-mono); color: var(--silk-dim); }
+
+.ms-preview { border-radius: 12px; overflow: hidden; }
+.ms-preview .slot { border-radius: 12px; }
+.ms-preview.is-pickable .slot.is-filled { cursor: crosshair; }
+/* 预览里的占位框本来就会显示拍摄要求，而卡片下面还有一行专门写它 ——
+   同一句话在一张卡片上出现两次。预览里那份藏掉，保持卡片布局统一。 */
+.ms-preview .slot-empty-brief { display: none; }
+
+.ms-brief { color: var(--muted); font-size: 12.5px; line-height: 1.65; }
+.ms-brief span {
+    display: inline-block; margin-right: 7px;
+    font: 700 10.5px/1.6 var(--font-mono); letter-spacing: 1px;
+    color: var(--copper); text-transform: uppercase;
+}
+.ms-meta { font: 400 11.5px/1.5 var(--font-mono); color: var(--silk-dim); }
+
+/* 表单折叠：默认收起，只留一行标题栏 */
+.ms-form-wrap { border-top: 1px solid var(--line-d); padding-top: 10px; margin-top: 2px; }
+.ms-form-wrap > summary {
+    cursor: pointer; list-style: none;
+    font: 700 12.5px/1.6 var(--font-mono); letter-spacing: .5px;
+    color: var(--accent-2); user-select: none;
+}
+.ms-form-wrap > summary::-webkit-details-marker { display: none; }
+.ms-form-wrap > summary::before { content: "+ "; }
+.ms-form-wrap[open] > summary::before { content: "− "; }
+.ms-form-wrap > summary:hover { color: #fff; }
+
+.ms-form { margin-top: 10px; }
+.ms-form .form-group { margin-bottom: 9px; }
+.ms-form label { font-size: 12px; }
+.ms-form .input { padding: 6px 9px; font-size: 13px; }
+/* 焦点是一对坐标，用 flex 并排。曾经试过给两个 .form-group 各 48% 宽 +
+   inline-block，但它们之间的空白节点会占掉几个像素，48+3+48 加上空白超过
+   100% 直接换行 —— flex 没有这个问题。 */
+.ms-focal { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+.ms-focal .form-group { flex: 1; min-width: 92px; margin-bottom: 6px; }
+.ms-focal-hint { flex-basis: 100%; color: var(--muted); font-size: 11.5px; line-height: 1.6; }
+.ms-form-ops { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 8px; }
+
+/* ---------- 旧轮播图搬迁 ---------- */
+.ms-legacy { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.ms-legacy-item {
+    border: 1px solid var(--line-d); border-radius: 12px; overflow: hidden;
+    background: rgba(255, 255, 255, .02);
+}
+.ms-legacy-item img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; }
+.ms-legacy-body { padding: 11px 13px 13px; display: flex; flex-direction: column; gap: 3px; }
+.ms-legacy-body strong { color: #fff; font-size: 13.5px; }
+.ms-legacy-body small { color: var(--muted); font-size: 12px; margin-bottom: 7px; }
+.ms-legacy-form { display: flex; gap: 6px; flex-wrap: wrap; }
+.ms-legacy-form .input { flex: 1; min-width: 130px; padding: 5px 8px; font-size: 12.5px; }
+
+@media (max-width: 900px) {
+    .ms-grid { grid-template-columns: 1fr; }
+}
+
 .dash-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 
 /* ---------- 响应式 ---------- */
@@ -175,3 +276,12 @@
 .returning-table td:last-child { min-width: 280px; }
 .review-form { display: grid; gap: 8px; }
 .review-form .input { width: 100%; }
+
+/* 职位管理：表格里的行内编辑表单（简介 / 颜色 / 排序 一行改完）。
+   同一格里有两张表单（保存、删除），所以要能横向排下来又不撑破单元格。 */
+.dash-inline-form {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+}
+.dash-inline-form .input-sm { flex: 1 1 120px; min-width: 0; }
+.input-sm { padding: 6px 9px; font-size: 12.5px; }

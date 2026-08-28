@@ -1,0 +1,32 @@
+{% comment %}
+分页控件。全站唯一一份。
+
+参数：
+  page  Django Paginator 的 Page 对象（`page.has_previous` / `page.number` /
+        `page.paginator.num_pages`）
+
+用法：
+  {% include "includes/pager.html" with page=page %}
+
+**当前的筛选条件由 `{% querystring %}` 自动带过去**（Django 5.1+ 的内置标签，
+从 `request.GET` 出发只覆盖 `page`）。原来这份标记在 11 个模板里各抄一遍，每份
+自己手拼 `?page=N&category=...&q=...`，抄漏一个参数的后果是「翻到第二页筛选就
+没了」—— 页面照常渲染，没有任何报错。现在没人再需要知道自己那一页有哪些参数。
+
+只有一页时整块不渲染，所以调用方不用自己包 `{% if %}`。
+{% endcomment %}
+{% if page.paginator.num_pages > 1 %}
+<nav class="pagination" aria-label="分页">
+    {% if page.has_previous %}
+        <a href="{% querystring page=page.previous_page_number %}" rel="prev" aria-label="上一页">‹</a>
+    {% else %}
+        <span class="is-disabled" aria-hidden="true">‹</span>
+    {% endif %}
+    <span class="current" aria-current="page">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}
+        <a href="{% querystring page=page.next_page_number %}" rel="next" aria-label="下一页">›</a>
+    {% else %}
+        <span class="is-disabled" aria-hidden="true">›</span>
+    {% endif %}
+</nav>
+{% endif %}

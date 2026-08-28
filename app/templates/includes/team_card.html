@@ -1,0 +1,51 @@
+{% comment %}
+团队页上的一个人。
+
+参数：
+  member  User 实例（务必来自 User.team()，它已经 select_related/prefetch 好）
+
+**职位是卡片上的一枚彩色徽章，不是分节标题。** 协会的职位大多一人一个（一个主席、
+一个硬件主席……），按职位分节的话五个人就变成五个只装一张卡的分节，整页又空又长。
+颜色只染徽章，名字和介绍一律中性色 —— 五张卡五种颜色会读成彩虹。
+
+头像缺位是常态，所以「没有头像」有一个设计过的样子：**丝印首字母牌**（mono 字体、
+铜色描边、方形焊盘的圆角）。这里刻意不用 `includes/empty_board.html` —— 那份是
+「一格版面」的占位框（虚线板框 + 四角定位标 + 拍摄要求），套在头像位上既放不下、
+也不像一套设计。缺图要有设计过的样子，但不是所有缺图都长成同一个框。
+
+介绍那一行有兜底：本人写了 `public_bio` 就用他自己的话；没写就退回职位的
+`blurb`（「这个职位做什么」）。所以卡片永远不会只剩一个名字。
+
+头像的 alt 刻意留空：名字就在紧挨着的文本里，给图再写一遍只会让读屏连报两次。
+{% endcomment %}
+<article class="tm-card" style="--tm-accent: {{ member.position.color }}">
+    <div class="tm-face">
+        {% if member.avatar %}
+        <img class="tm-avatar" src="{{ member.avatar.url }}" alt="" loading="lazy" decoding="async">
+        {% else %}
+        <span class="tm-initial" aria-hidden="true">{{ member.initial }}</span>
+        {% endif %}
+    </div>
+    <div class="tm-body">
+        <strong class="tm-name">{{ member.display_name }}</strong>
+        <span class="tm-pos">{{ member.position.name }}</span>
+        <span class="tm-meta">
+            {% if member.cohort_label %}<span class="tm-cohort">{{ member.cohort_label }}</span>{% endif %}
+            <span class="tm-spec">{{ member.specialty_label }}</span>
+        </span>
+        {% if member.public_bio %}
+        <p class="tm-bio">{{ member.public_bio }}</p>
+        {% elif member.position.blurb %}
+        <p class="tm-bio tm-bio-role">{{ member.position.blurb }}</p>
+        {% endif %}
+        {% with awards=member.medals.all %}
+        {% if awards %}
+        <ul class="tm-medals">
+            {% for item in awards|slice:":3" %}
+            <li><span class="tm-medal-icon" aria-hidden="true">{{ item.medal.icon }}</span>{{ item.medal.name }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+    </div>
+</article>

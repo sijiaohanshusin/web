@@ -1,0 +1,34 @@
+{% comment %}
+「这个列表还没有内容」的唯一写法。
+
+参数：
+  icon   includes/icon.html 里的图标名（可选）
+  title  一句话说清是什么没有（必填）
+  body   为什么没有 / 现在能看什么（可选，允许简单 HTML，调用方自己保证安全）
+  cta    下一步的链接文字（可选，配 cta_url）
+  cta_url
+  hint   只给站务看的操作提示（可选，会压一条分隔线）
+
+用法：
+  {% include "includes/empty_state.html" with icon="tray" title="这里还没有资料" body="..." cta="读新生指南" cta_url="/recruit/" %}
+
+内容更复杂时（要分好几段、要条件分支）直接写 `<div class="panel empty-state">`
+自己排，类是共用的。
+
+两条约定：
+  1. **必须给下一步。** 「暂无内容」是死胡同，读者到这里就走了。所以 title 之外
+     至少要有 body 或 cta 之一。
+  2. 和 `includes/empty_board.html` 是两件事，别混：那份是**图片**缺位的占位框
+     （虚线板框 + 四角定位标 + 拍摄要求 + 站务上传入口），这份是列表没条目。
+{% endcomment %}
+<div class="panel empty-state">
+    {% if icon %}
+    <span class="empty-icon" aria-hidden="true">{% include "includes/icon.html" with name=icon %}</span>
+    {% endif %}
+    <h2>{{ title }}</h2>
+    {% if body %}<p>{{ body }}</p>{% endif %}
+    {% if cta and cta_url %}
+    <p><a class="nf-link-more" href="{{ cta_url }}"><span>{{ cta }} →</span></a></p>
+    {% endif %}
+    {% if hint %}<p class="empty-state-hint">{{ hint }}</p>{% endif %}
+</div>

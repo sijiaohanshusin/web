@@ -1,31 +1,45 @@
-{% extends "base.html" %}
+{% extends "accounts/_auth_base.html" %}
 
 {% block title %}登录 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}登录哈尔滨工程大学电子科技协会账号，查看招新报名进度、站内通知与会员资料。{% endblock %}
 
-{% block content %}
-<div class="container">
-    <div class="auth-card">
-        <p class="nf-eyebrow">// LOGIN</p>
-        <h1>登录</h1>
-        <p class="auth-sub">欢迎回来，继续你的电子之旅</p>
-        {% if form.non_field_errors %}
-            <div class="form-nonfield-errors">
-                {% for error in form.non_field_errors %}<div class="alert alert-error">{{ error }}</div>{% endfor %}
-            </div>
-        {% endif %}
-        <form method="post">
-            {% csrf_token %}
-            {% for field in form %}
-                {% include "includes/field.html" %}
-            {% endfor %}
-            <input type="hidden" name="next" value="{{ next }}">
-            <button type="submit" class="btn btn-primary btn-block">登录</button>
-        </form>
-        <div class="auth-links">
-            <a href="{% url 'accounts:code_login' %}">验证码登录</a>
-            <a href="{% url 'accounts:forgot_password' %}">忘记密码？</a>
+{% block auth_kicker %}LOGIN{% endblock %}
+{% block auth_title %}登录{% endblock %}
+{% block auth_lede %}报名进度、面试通知、会员资料都在账号里。{% endblock %}
+
+{% block auth_aside %}
+<ul class="auth-points">
+    <li>查看自己的招新报名走到哪一步</li>
+    <li>接收面试安排与结果的站内通知</li>
+    <li>预备会员起可进会员资料站与论坛</li>
+</ul>
+<p class="auth-alt">还没有账号？<a href="{% url 'accounts:register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">注册一个</a></p>
+{% endblock %}
+
+{% block auth_panel %}
+<div class="panel auth-box">
+    {% comment %}
+    两种登录方式做成分段控件。它们本来是两条藏在页脚位置的小链接，没人会发现
+    「忘了密码也能用验证码进来」。这里就是两个 <a>，不需要一行 JS。
+    {% endcomment %}
+    <nav class="auth-seg" aria-label="登录方式">
+        <a class="is-current" aria-current="page" href="{% url 'accounts:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">密码登录</a>
+        <a href="{% url 'accounts:code_login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">验证码登录</a>
+    </nav>
+
+    {% if form.non_field_errors %}
+        <div class="form-nonfield-errors">
+            {% for error in form.non_field_errors %}<div class="alert alert-error">{{ error }}</div>{% endfor %}
         </div>
-        <p class="auth-alt">还没有账号？<a href="{% url 'accounts:register' %}">注册成为会员</a></p>
-    </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}{% include "includes/field.html" %}{% endfor %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="btn btn-primary btn-block">登录</button>
+    </form>
+
+    <p class="auth-foot"><a href="{% url 'accounts:forgot_password' %}">忘记密码？用邮箱重置</a></p>
 </div>
 {% endblock %}

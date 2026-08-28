@@ -7,6 +7,7 @@ from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
@@ -29,6 +30,24 @@ VALID_PURPOSES = {"register", "reset", "login"}
 def _client_ip(request) -> str:
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
     return (forwarded.split(",")[0].strip() if forwarded else request.META.get("REMOTE_ADDR", "unknown"))
+
+
+def _safe_next(request) -> str:
+    """取 ?next= / POST next，只放行站内地址。
+
+    整条注册链路都要带着它走：从招新页点「注册」的人，注册完应该回到招新页而
+    不是首页。这个参数会经过「选通道 → 填表 → POST 回来重渲染」三跳，中间任何
+    一跳丢了，用户就落到一个自己没要求去的地方。
+
+    开放重定向是个真实漏洞（`?next=//evil.example`），所以一律过
+    `url_has_allowed_host_and_scheme`，不合法就当没传。
+    """
+    target = request.POST.get("next") or request.GET.get("next") or ""
+    if target and url_has_allowed_host_and_scheme(
+        target, allowed_hosts={request.get_host()}, require_https=request.is_secure(),
+    ):
+        return target
+    return ""
 
 
 def _registration_rate_allowed(request) -> bool:
@@ -81,8 +100,10 @@ def send_code(request):
 def register(request):
     """注册入口：明确区分新会员与老会员身份恢复。"""
     if request.user.is_authenticated:
-        return redirect("core:home")
-    return render(request, "accounts/register_choice.html")
+        return redirect(_safe_next(request) or "core:home")
+    return render(request, "accounts/register_choice.html", {
+        "next": _safe_next(request),
+    })
 
 
 def _verify_registration_form(form, request) -> bool:
@@ -99,10 +120,21 @@ def _verify_registration_form(form, request) -> bool:
     return True
 
 
+def _recruitment_is_open() -> bool:
+    """当前有没有能报名的批次。决定新会员注册完该去哪。
+
+    运行时导入：accounts 是最底层的 app，不在模块级依赖 recruitment。
+    """
+    from recruitment.models import Campaign
+
+    campaign = Campaign.current()
+    return bool(campaign and campaign.is_open)
+
+
 @never_cache
 def register_new(request):
     if request.user.is_authenticated:
-        return redirect("core:home")
+        return redirect(_safe_next(request) or "core:home")
 
     form = NewMemberRegisterForm(request.POST or None)
     if request.method == "POST" and _verify_registration_form(form, request):
@@ -117,15 +149,28 @@ def register_new(request):
             form.add_error(None, "邮箱、学号或手机号已被注册，请核对后重试。")
         else:
             login(request, user)
-            messages.success(request, "注册成功！你已成为招新成员，请继续完成招新报名。")
-            return redirect("recruitment:index")
-    return render(request, "accounts/register_form.html", {"form": form, "channel": "new"})
+            # 有报名可填就直接送过去（注册的动机通常就是它）；没有的话不要把人
+            # 丢到一个写着「招新通道暂时关闭」的页面上 —— 那是个死胡同。改成
+            # 完成页，明确说账号已经能用、现在能做什么。
+            target = _safe_next(request)
+            if target:
+                messages.success(request, "注册成功！你已成为招新成员。")
+                return redirect(target)
+            if _recruitment_is_open():
+                messages.success(request, "注册成功！你已成为招新成员，请继续完成招新报名。")
+                return redirect("recruitment:index")
+            return render(request, "accounts/register_done.html", {
+                "channel": "new", "user_obj": user,
+            })
+    return render(request, "accounts/register_form.html", {
+        "form": form, "channel": "new", "next": _safe_next(request),
+    })
 
 
 @never_cache
 def register_returning(request):
     if request.user.is_authenticated:
-        return redirect("core:home")
+        return redirect(_safe_next(request) or "core:home")
 
     form = ReturningMemberRegisterForm(request.POST or None)
     if request.method == "POST" and _verify_registration_form(form, request):
@@ -142,8 +187,13 @@ def register_returning(request):
         except IntegrityError:
             form.add_error(None, "邮箱、学号或手机号已被注册，请核对后重试。")
         else:
-            return render(request, "accounts/register_done.html", {"returning": True})
-    return render(request, "accounts/register_form.html", {"form": form, "channel": "returning"})
+            # 老会员这条路不接 next：账号还没激活，去哪儿都是登录页
+            return render(request, "accounts/register_done.html", {
+                "channel": "returning", "returning": True, "user_obj": user,
+            })
+    return render(request, "accounts/register_form.html", {
+        "form": form, "channel": "returning", "next": _safe_next(request),
+    })
 
 
 class LoginView(auth_views.LoginView):
@@ -156,10 +206,17 @@ class LogoutView(auth_views.LogoutView):
     pass
 
 
+@never_cache
 def code_login(request):
-    """验证码登录。"""
+    """验证码登录。
+
+    `@never_cache`：表单里过的是一次性验证码，而 `DynamicPagesNoCacheMiddleware`
+    只给 `private, no-cache`（可存、需回源校验）。登录态页面要的是 `no-store`。
+    Django 自带的 LoginView 本身就带 never_cache，这一支是我们自己写的，得自己加。
+    """
     if request.user.is_authenticated:
-        return redirect("core:home")
+        return redirect(_safe_next(request) or "core:home")
+    target = _safe_next(request)
     if request.method == "POST":
         form = CodeLoginForm(request.POST)
         if form.is_valid():
@@ -175,12 +232,13 @@ def code_login(request):
                 else:
                     login(request, user)
                     messages.success(request, "登录成功。")
-                    return redirect("core:home")
+                    return redirect(target or "core:home")
     else:
         form = CodeLoginForm()
-    return render(request, "accounts/code_login.html", {"form": form})
+    return render(request, "accounts/code_login.html", {"form": form, "next": target})
 
 
+@never_cache
 def forgot_password(request):
     """找回密码：邮箱 + 验证码 + 新密码。"""
     if request.method == "POST":
@@ -250,3 +308,35 @@ class PasswordChangeView(auth_views.PasswordChangeView):
 
 class PasswordChangeDoneView(auth_views.PasswordChangeDoneView):
     template_name = "accounts/password_change_done.html"
+
+
+# ---------------------------------------------------------------- 公开团队页
+
+def team_wall(request):
+    """`/team/` —— 现任团队。公开页面，路由在 `accounts/team_urls.py`。
+
+    上墙口径只有 `User.team()` 一处（激活 + 本人勾了公开展示 + 当前有职位）。
+
+    **一栏网格，职位画在卡片上，不按职位分节。** 最初是按职位分组的，截图之后
+    推翻了：协会的职位大多一人一个（一个主席、一个硬件主席……），于是五个人变成
+    五个只装一张卡的分节，每张卡缩在 1240px 容器的左上角，整页读起来又空又长。
+    职位改成卡片上的一枚彩色徽章，密度和信息量都对了，而且不管 3 个人还是 30 个
+    人都成立。
+    """
+    members = list(User.team())
+
+    # 站务才看的那句提示：有几个人已任命但还没勾公开展示。任命和上墙是两件事，
+    # 没有这个数字的话，站务任命完只会以为页面坏了。多出来的这条查询只对站务跑。
+    pending_optin = 0
+    if roles.is_officer(request.user):
+        pending_optin = User.objects.filter(
+            is_active=True, position__isnull=False, show_on_team=False,
+        ).count()
+
+    context = {
+        "members": members,
+        "member_count": len(members),
+        "summary": User.team_summary(),
+        "pending_optin": pending_optin,
+    }
+    return render(request, "accounts/team.html", context)

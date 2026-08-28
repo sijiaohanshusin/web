@@ -2,20 +2,38 @@
 
 {% block title %}公告 | {{ site_config.site_name_en }}{% endblock %}
 {% block description %}哈尔滨工程大学电子科技协会通知公告、协会动态与获奖喜报。{% endblock %}
+{% block body_class %}page-news{% endblock %}
 
 {% block content %}
-<div class="container page-section">
-    <div class="page-head">
+{% comment %}
+公告列表。页头横幅、卡片、筛选药丸、分页、空态全部走 core.css 的「内页通用」
+那一段和 includes/ 里的共用件 —— 这一页自己不定义任何一样东西。
+{% endcomment %}
+<section class="page-hero nf-scope">
+    <div class="container">
         <p class="nf-eyebrow">// NEWS</p>
-        <h1>公告</h1>
-        <p>协会的通知公告、最新动态与获奖喜报。</p>
+        <h1>公告与<span class="accent">动态</span></h1>
+        <p class="page-hero-sub">
+            协会的通知公告、最新动态与获奖喜报。带等级标记的公告需要相应会员等级才能打开。
+        </p>
     </div>
+</section>
 
+<div class="container page-section">
     <div class="filter-bar">
-        <div class="filter-tabs">
-            <a href="{% url 'news:list' %}" class="{% if not category %}active{% endif %}">全部</a>
+        <div class="pill-row">
+            {% comment %}
+            当前态一起给出 `is-current` 与 `aria-current="page"`：`.pill.is-current`
+            改的只有三个颜色，光靠颜色的话读屏软件读不出「现在筛的是哪一个」，
+            十几个药丸听上去一模一样。用 if/else 而不是在两个属性里各写一遍条件 ——
+            条件抄两遍迟早只改一处。全站 14 处药丸都是这个写法。
+            {% endcomment %}
+            <a {% if not category %}class="pill is-current" aria-current="page"
+               {% else %}class="pill"{% endif %} href="{% url 'news:list' %}">全部</a>
             {% for value, label in categories %}
-                <a href="?category={{ value }}" class="{% if category == value %}active{% endif %}">{{ label }}</a>
+                <a {% if category == value %}class="pill is-current" aria-current="page"
+                   {% else %}class="pill"{% endif %}
+                   href="{% querystring category=value page=None %}">{{ label }}</a>
             {% endfor %}
         </div>
     </div>
@@ -23,9 +41,9 @@
     {% if page.object_list %}
         <div class="news-grid">
             {% for p in page.object_list %}
-            <a class="news-card" href="{% url 'news:detail' p.pk %}">
+            <a class="card card-link news-card" href="{% url 'news:detail' p.pk %}" data-vt-card>
                 {% if p.cover %}
-                    <span class="news-card-cover"><img src="{{ p.cover.url }}" alt="{{ p.title }}" loading="lazy"></span>
+                    <span class="news-card-cover" data-vt-part="cover"><img src="{{ p.cover.url }}" alt="" loading="lazy" decoding="async"></span>
                 {% endif %}
                 <span class="news-card-body">
                     <span class="news-card-meta">
@@ -41,23 +59,13 @@
             {% endfor %}
         </div>
 
-        {% if page.paginator.num_pages > 1 %}
-            <div class="pagination">
-                {% if page.has_previous %}
-                    <a href="?page={{ page.previous_page_number }}{% if category %}&category={{ category }}{% endif %}">‹</a>
-                {% endif %}
-                <span class="current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
-                {% if page.has_next %}
-                    <a href="?page={{ page.next_page_number }}{% if category %}&category={{ category }}{% endif %}">›</a>
-                {% endif %}
-            </div>
-        {% endif %}
+        {% include "includes/pager.html" with page=page %}
     {% else %}
-        <div class="empty-hint">
-            <span class="empty-icon">{% include "includes/icon.html" with name="news" cls="icon-lg" %}</span>
-            这里还没有公告
-            {% if not user.is_authenticated %}<br><br><a href="{% url 'accounts:login' %}">登录</a>后可查看更多会员公告{% endif %}
-        </div>
+        {% if user.is_authenticated %}
+            {% include "includes/empty_state.html" with icon="news" title="这个分类下还没有公告" body="换一个分类看看，或者去活动页看看最近有什么安排。" cta="看活动" cta_url="/events/" %}
+        {% else %}
+            {% include "includes/empty_state.html" with icon="news" title="这里还没有公开的公告" body="一部分公告只对会员可见。登录后能看到更多，也可以先读新生指南了解协会一年在做什么。" cta="读新生指南" cta_url="/recruit/" %}
+        {% endif %}
     {% endif %}
 </div>
 {% endblock %}

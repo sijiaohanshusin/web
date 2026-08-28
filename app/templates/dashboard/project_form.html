@@ -6,11 +6,43 @@
 {% block content %}
 
 <div class="dash-panel news-form-panel">
-    <form method="post">
+    {% comment %}
+    **必须有 enctype**：表单里有展示封面。漏了它不会报错，只是文件永远传不上来 ——
+    保存成功、页面正常、图没了。视图那边同样要接 request.FILES。
+    {% endcomment %}
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        {% for field in form %}
-            {% include "includes/field.html" %}
-        {% endfor %}
+
+        <fieldset class="form-section">
+            <legend class="form-section-title"><span>01</span> 项目档案</legend>
+            {% for field in form.archive_fields %}
+                {% include "includes/field.html" %}
+            {% endfor %}
+        </fieldset>
+
+        {% comment %}
+        展示设置单独成组、排在后面：建项目时多数人只填上面四项，「对外展示」是
+        作品做完之后才有的事。
+        {% endcomment %}
+        <fieldset class="form-section">
+            <legend class="form-section-title"><span>02</span> 对外展示（作品墙）</legend>
+            <p class="form-help">
+                勾上「公开到作品墙」这个项目才会出现在
+                <a href="{% url 'works:wall' %}" target="_blank" rel="noopener">/works/</a> 上。
+                图集（过程与细节照片）在 Django Admin 的项目页里加。
+            </p>
+            {% if project.cover %}
+            <div class="form-group">
+                <label>当前封面</label>
+                <img src="{{ project.cover.url }}" alt="当前封面"
+                     style="max-width:280px;border-radius:10px;border:1px solid var(--line-d);">
+            </div>
+            {% endif %}
+            {% for field in form.showcase_fields %}
+                {% include "includes/field.html" %}
+            {% endfor %}
+        </fieldset>
+
         {% if not project %}
         <div class="form-group">
             <label for="lead-input">负责人（可选）</label>
@@ -18,11 +50,15 @@
             <small class="form-help">留空则稍后在项目页添加成员并指派负责人。</small>
         </div>
         {% endif %}
+
         <div class="news-form-actions">
             <button type="submit" class="btn btn-primary">{% if project %}保存修改{% else %}创建项目{% endif %}</button>
             <a class="btn btn-ghost" href="{% url 'dashboard:projects' %}">取消</a>
             {% if project %}
-                <a class="btn btn-outline" href="{% url 'projects:detail' project.pk %}" target="_blank" rel="noopener">打开项目 ↗</a>
+                <a class="btn btn-outline" href="{% url 'projects:detail' project.pk %}" target="_blank" rel="noopener">打开档案 ↗</a>
+                {% if project.is_public %}
+                <a class="btn btn-outline" href="{% url 'works:detail' project.pk %}" target="_blank" rel="noopener">看展示页 ↗</a>
+                {% endif %}
             {% endif %}
         </div>
     </form>

@@ -11,25 +11,45 @@ B 站开放接口集成（只读、带缓存、失败优雅降级）。
 import logging
 
 import requests
+from django.conf import settings
 from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
 API_TIMEOUT = 6
 CACHE_TTL = 3600  # 1 小时
+NEGATIVE_TTL = 300  # 失败短缓存，避免每次请求都打 API
 
+# 请求头是这几个接口能不能通的唯一变量，改动前先看下面的实测记录。
+#
+# 2026-08-26 在生产服务器与本地同时验证 /x/web-interface/view：
+#   Chrome UA + Referer: https://www.bilibili.com/   -> 412 风控拦截
+#   requests 默认 UA（python-requests/2.x）           -> 412 风控拦截
+#   Chrome UA、不发 Referer                           -> 200
+#   自报身份 UA、不发 Referer                          -> 200
+#
+# 结论：Referer 是触发风控的开关（浏览器 UA + 站内 Referer 但没有 buvid/WBI
+# 签名，正是"伪装浏览器"的特征），而默认 UA 在黑名单里。所以这里用一个自报
+# 身份的 UA 且不发任何 Referer——既能通，也不假装自己是浏览器。
+#
+# 注意：模板里引用 B 站图片时仍需 referrerpolicy="no-referrer"，那是浏览器
+# 侧的防盗链，与本文件无关。
 HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-    ),
-    "Referer": "https://www.bilibili.com/",
+    "User-Agent": "HEU-ESTA-Site/1.0 (+https://heuesta.cn)",
+    "Accept": "application/json",
 }
 
 
 def _get_json(url: str, params: dict) -> dict | None:
+    if not getattr(settings, "BILIBILI_API_ENABLED", True):
+        return None
     try:
         resp = requests.get(url, params=params, headers=HEADERS, timeout=API_TIMEOUT)
+        if resp.status_code == 412:
+            # 风控拦截。不打 traceback：这是可预期的外部状态，堆栈只会淹没日志。
+            # 再次出现说明 B 站又收紧了策略，回到本文件顶部的实测表重新校准请求头。
+            logger.warning("bilibili api %s 被风控拦截（412），本次降级展示", url)
+            return None
         resp.raise_for_status()
         data = resp.json()
         if data.get("code") != 0:
@@ -68,7 +88,7 @@ def get_stats(mid: str) -> dict | None:
 
     data = _get_json("https://api.bilibili.com/x/web-interface/card", {"mid": mid})
     if data is None:
-        cache.set(cache_key, {}, 300)  # 失败短缓存，避免每次请求都打 API
+        cache.set(cache_key, {}, NEGATIVE_TTL)
         return None
 
     stats = {
@@ -94,7 +114,7 @@ def get_latest_videos(mid: str, limit: int = 6) -> list[dict]:
         {"mid": mid, "keywords": "", "ps": limit, "pn": 1},
     )
     if data is None:
-        cache.set(cache_key, [], 300)
+        cache.set(cache_key, [], NEGATIVE_TTL)
         return []
 
     videos = [
@@ -123,7 +143,7 @@ def get_video_info(bvid: str) -> dict | None:
 
     data = _get_json("https://api.bilibili.com/x/web-interface/view", {"bvid": bvid})
     if data is None:
-        cache.set(cache_key, {}, 300)
+        cache.set(cache_key, {}, NEGATIVE_TTL)
         return None
 
     info = {
