@@ -36,6 +36,43 @@ class MarkdownTests(TestCase):
     def test_empty(self):
         self.assertEqual(render_markdown(""), "")
 
+    def test_footnote_anchors_survive_sanitising(self):
+        """脚注的锚点 id 不能被消毒器剥掉，否则**点了跳不动**。
+
+        nh3 默认白名单不放 id，于是正文里的 `<sup><a href="#fn:1">` 还在，
+        而它要跳的 `<li id="fn:1">` 上的 id 没了 —— 页面照常渲染、控制台干净，
+        只有真去点一下才发现是死链接。
+        """
+        html = render_markdown("正文[^1]\n\n[^1]: 脚注内容\n")
+        self.assertIn('href="#fn:1"', html)
+        self.assertIn('id="fn:1"', html, "脚注落点的 id 被剥掉了，链接跳不动")
+        self.assertIn('id="fnref:1"', html, "返回链接的落点 id 被剥掉了")
+        # 危险属性仍然要剥掉 —— 放开 id 不等于放开一切
+        danger = render_markdown('<a href="#x" onclick="alert(1)" style="color:red">x</a>')
+        self.assertNotIn("onclick", danger)
+        self.assertNotIn("style", danger)
+
+    def test_lone_image_paragraph_becomes_figure_with_caption(self):
+        """`![说明](图)` 里那句说明原来一个字都不显示 —— 它只在 alt 里。
+
+        图注是长文里独立的一层信息（这张图在讲什么），所以「整段只有一张图」的
+        段落升级成 figure + figcaption。
+        """
+        html = render_markdown("![上升沿约 12ns](/static/img/logo.png)")
+        self.assertIn("<figure>", html)
+        self.assertIn("<figcaption>上升沿约 12ns</figcaption>", html)
+
+    def test_image_with_surrounding_text_is_not_turned_into_a_figure(self):
+        """段落里还有别的文字时不加图注 —— 否则同一句话会被说两遍。"""
+        html = render_markdown("看这张 ![说明](/static/img/logo.png) 图")
+        self.assertNotIn("<figure>", html)
+        self.assertNotIn("<figcaption>", html)
+
+    def test_image_without_alt_gets_figure_but_no_empty_caption(self):
+        html = render_markdown("![](/static/img/logo.png)")
+        self.assertIn("<figure>", html)
+        self.assertNotIn("<figcaption>", html)
+
 
 class NewsListTests(TestCase):
     def test_public_sees_only_public_published(self):

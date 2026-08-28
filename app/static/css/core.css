@@ -1519,8 +1519,29 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 .news-related li a:hover { color: var(--accent-2); }
 .news-related li small { color: var(--muted); font-family: var(--font-mono); font-size: var(--fs-2xs); flex: none; }
 
-/* Markdown 正文排版（公告/活动详情共用） */
+/* ============================================================
+   Markdown 正文排版（公告 / 活动详情共用）
+   ------------------------------------------------------------
+   这一份是**读者真正花时间的地方**，而它原来只有 18 条平铺规则：一个字号、
+   三级标题、一个引用块、一个代码块、一个表格。改版把首屏做得很足，长文却还是
+   「一个标题 + 一片正文」。
+
+   正文内容是站务写的 Markdown，`nh3` 会把 class 属性剥掉（见
+   `news/markdown.py`），所以**这里的样式只能挂在元素选择器上** ——
+   作者没有办法给某一段加类名，也就没法自己发明版式。这个限制是好的：
+   版式由这一份决定，内容只管写。
+
+   同理，这里**不能用宋体**（`--font-serif` 是按模板取字的子集，正文里的生僻字
+   会掉回黑体，一段引文里混两种字形）。引用块的分量靠字号与记号做，不靠换字体。
+   ============================================================ */
 .md-body { color: var(--text); font-size: var(--fs-lg); line-height: var(--lh-prose); }
+/* 开篇第一段当导语：比正文大一档。只在文章**真的以段落开头**时生效 ——
+   用 `:first-child` 而不是 `:first-of-type`，后者在「小标题 + 段落」的开头
+   也会命中，把一个普通段落放大成导语。 */
+.md-body > p:first-child { font-size: var(--fs-lead); color: #fff; }
+/* 避免孤字行（最后一行只剩一个字）。浏览器不支持时无副作用。 */
+.md-body p, .md-body li { text-wrap: pretty; }
+.md-body strong { color: #fff; font-weight: 700; }
 .md-body h1, .md-body h2, .md-body h3, .md-body h4 { color: #fff; margin: 1.6em 0 .6em; line-height: var(--lh-snug); }
 /* 长文标题拉开到 30 / 22 / 18，正文 16。原来是 26 / 20 / 18，h3 只比正文大 12%，
    三级标题挤在一起 —— 公告和活动详情是读者真正停留的地方，层级最不该含糊。 */
@@ -1531,15 +1552,112 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 .md-body a { color: var(--accent-2); text-decoration: underline; text-underline-offset: 3px; }
 .md-body ul, .md-body ol { margin: .9em 0; padding-left: 1.6em; }
 .md-body li { margin: .3em 0; }
+/* 列表记号跟着品牌色。`::marker` 只吃颜色/字体这几个属性，够用了 */
+.md-body li::marker { color: var(--accent); font-family: var(--font-mono); }
 .md-body img { max-width: 100%; border-radius: 10px; border: 1px solid var(--line-d); margin: 10px 0; }
-.md-body blockquote { margin: 1em 0; padding: 8px 18px; border-left: 3px solid var(--accent); background: rgba(13, 169, 205, .07); color: var(--muted); border-radius: 0 8px 8px 0; }
+
+/* ---------- 图注 ----------
+   `render_markdown` 把「整段只有一张图」的段落升级成 figure，说明文字取 alt。
+   原来那句 alt **一个字都不显示**，而图注是长文里独立的一层信息。 */
+.md-body figure { margin: 1.6em 0; }
+.md-body figure img { margin: 0; display: block; width: 100%; }
+.md-body figcaption {
+    margin-top: 9px; padding-left: 15px; position: relative;
+    font-family: var(--font-mono); font-size: var(--fs-xs); line-height: var(--lh-normal);
+    color: var(--muted); letter-spacing: .3px;
+}
+/* 图注前面一道短竖线，和站上「丝印标注」的语法一致 */
+.md-body figcaption::before {
+    content: ""; position: absolute; left: 0; top: .45em; bottom: .3em;
+    width: 2px; background: var(--copper);
+}
+
+/* ---------- 引用 ----------
+   原来是一个青色底的圆角块，读起来像「提示框」。改成**拉引言**：大一号、
+   亮一档、去掉底色，左侧换成走线 + 焊盘（同会标的语法）。
+   底色去掉之后它不再抢正文的注意力，而分量反而更足。 */
+.md-body blockquote {
+    margin: 1.5em 0; padding: 2px 0 2px 26px; position: relative;
+    font-size: var(--fs-xl); line-height: var(--lh-relaxed); color: #fff;
+    border-radius: 0; background: none;
+}
+.md-body blockquote::before {
+    content: ""; position: absolute; left: 3px; top: .55em; bottom: .55em;
+    width: 2px; background: var(--accent);
+}
+/* 顶端一个焊盘，读作「这段话从这里接出来」 */
+.md-body blockquote::after {
+    content: ""; position: absolute; left: 0; top: calc(.55em - 4px);
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 2px solid var(--accent-2); background: var(--black);
+}
+.md-body blockquote p { margin: .4em 0; }
+.md-body blockquote p:first-child { margin-top: 0; }
+.md-body blockquote p:last-child { margin-bottom: 0; }
+
+/* ---------- 定义列表 = 参数表 ----------
+   Markdown 的 `术语` / `:   定义` 语法。这是长文里唯一能写「元件参数」的结构，
+   原来完全没有样式（dt 和 dd 长得一样，读不出哪个是名哪个是值）。 */
+.md-body dl {
+    margin: 1.4em 0; display: grid; grid-template-columns: minmax(96px, auto) 1fr;
+    gap: 1px; border: 1px solid var(--line-d); border-radius: 10px; overflow: hidden;
+}
+.md-body dt {
+    padding: 9px 14px; background: rgba(255, 255, 255, .045);
+    font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--copper-2);
+    letter-spacing: .5px;
+}
+.md-body dd {
+    padding: 9px 16px; margin: 0; font-size: var(--fs-sm);
+    background: rgba(255, 255, 255, .015);
+}
+@media (max-width: 560px) {
+    /* 窄屏两列会把术语挤成竖排单字，改成上下两行 */
+    .md-body dl { grid-template-columns: 1fr; }
+    .md-body dt { padding-bottom: 4px; }
+    .md-body dd { padding-top: 4px; padding-left: 14px; }
+}
+
+/* ---------- 脚注 ----------
+   `nh3` 原来把锚点 id 剥掉，所以脚注**点了跳不动**（见 news/markdown.py）。
+   放开 id 之后这一套才真的能用，于是也值得给它排版。 */
+.md-body sup { font-family: var(--font-mono); font-size: .72em; }
+.md-body sup a { color: var(--accent-2); text-decoration: none; padding: 0 2px; }
+.md-body sup a:hover { text-decoration: underline; }
+.md-body .footnote { margin-top: 2.4em; font-size: var(--fs-sm); color: var(--muted); }
+.md-body .footnote hr {
+    border: none; height: 8px; margin: 0 0 14px;
+    /* 丝印刻度当分隔线，比一条虚线更像仪器面板 */
+    background-image: repeating-linear-gradient(90deg, var(--line-d-strong) 0 1px, transparent 1px 7px);
+    background-size: 100% 8px; background-repeat: repeat-x;
+}
+.md-body .footnote ol { padding-left: 1.4em; }
+.md-body .footnote li { margin: .5em 0; }
+.md-body .footnote a[title] { color: var(--accent-2); text-decoration: none; }
 .md-body code { font-family: var(--font-mono); font-size: .88em; background: rgba(255, 255, 255, .08); padding: 2px 6px; border-radius: 5px; }
 .md-body pre { margin: 1em 0; padding: 14px 18px; background: rgba(0, 0, 0, .45); border: 1px solid var(--line-d); border-radius: 10px; overflow-x: auto; }
 .md-body pre code { background: none; padding: 0; font-size: var(--fs-xs); line-height: var(--lh-relaxed); }
-.md-body table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: var(--fs-sm); }
-.md-body th, .md-body td { padding: 8px 12px; border: 1px solid var(--line-d); text-align: left; }
-.md-body th { background: rgba(255, 255, 255, .05); color: #fff; }
-.md-body hr { border: none; border-top: 1px dashed var(--line-d); margin: 1.6em 0; }
+/* ---------- 表格 ----------
+   表头改成 mono + 字距 + 大写，读作「参数表的列名」；数字列用等宽数字对齐，
+   否则一列数字每行宽度不同，扫视时对不上。 */
+.md-body table {
+    width: 100%; border-collapse: collapse; margin: 1.4em 0; font-size: var(--fs-sm);
+    font-variant-numeric: tabular-nums;
+}
+.md-body th, .md-body td { padding: 9px 13px; border: 1px solid var(--line-d); text-align: left; }
+.md-body th {
+    background: rgba(255, 255, 255, .05); color: #fff;
+    font-family: var(--font-mono); font-size: var(--fs-xs);
+    letter-spacing: 1px; text-transform: uppercase; font-weight: 700;
+}
+.md-body tbody tr:nth-child(even) { background: rgba(255, 255, 255, .018); }
+/* ---------- 分隔线 ----------
+   一排丝印刻度，取代一条虚线。同一套语言在 eyebrow、脚注分隔线上也在用。 */
+.md-body hr {
+    border: none; height: 10px; margin: 2em 0;
+    background-image: repeating-linear-gradient(90deg, var(--line-d-strong) 0 1px, transparent 1px 8px);
+    background-size: 100% 10px; background-repeat: repeat-x;
+}
 
 /* 公告/活动编辑（驾驶舱） */
 .news-form-panel { max-width: 860px; }
