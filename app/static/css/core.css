@@ -54,7 +54,7 @@
     font-family: var(--font-display); color: #fff; font-weight: 900;
     font-size: var(--fs-dsp-3); line-height: var(--lh-tight); margin-bottom: 12px;
 }
-.auth-lede { color: var(--muted); font-size: var(--fs-md); line-height: var(--lh-prose); }
+.auth-lede { color: var(--muted); font-size: var(--fs-lead); line-height: var(--lh-prose); }
 
 /* 侧栏要点：一条铜色短划当项目符号（工艺记号语义，交互色留给按钮） */
 .auth-points { list-style: none; margin: 0; padding: 0; }
@@ -821,9 +821,11 @@ html.esta-pre-lock .line-reveal { animation-play-state: paused; }
     font-size: var(--fs-dsp-3); line-height: var(--lh-tight); margin: 12px 0 14px;
 }
 .page-hero h1 .accent { color: var(--hero-accent, var(--accent)); }
-.page-hero-sub { color: var(--muted); font-size: var(--fs-lg); line-height: var(--lh-prose); max-width: 720px; }
+/* 页头那句说明是**导语**，不是正文：它比正文大一档、行高更松、行宽掐在 720px。
+   用流体的 --fs-lead 而不是固定档 —— 窄屏 15px（不挤），宽屏 18px（撑得住）。 */
+.page-hero-sub { color: var(--muted); font-size: var(--fs-lead); line-height: var(--lh-prose); max-width: 720px; }
 .page-hero-sub strong {
-    color: #fff; font-family: var(--font-mono); font-size: var(--fs-xl);
+    color: #fff; font-family: var(--font-mono); font-size: var(--fs-2xl);
     font-variant-numeric: tabular-nums;
 }
 .page-hero-sub a { color: var(--accent-2); }
@@ -940,7 +942,7 @@ a.card-link { display: flex; color: var(--text); }
     border: 1px solid var(--line-d); border-radius: var(--radius);
     background: rgba(255, 255, 255, .02); padding: 26px 28px; margin-bottom: 20px;
 }
-.panel h2 { color: #fff; font-size: var(--fs-xl); margin-bottom: 16px; }
+.panel h2 { color: #fff; font-size: var(--fs-2xl); margin-bottom: 16px; }
 
 .table-wrap { overflow-x: auto; }
 /* 表格装在 panel 里时收掉左右内边距，让表头分隔线通到两边。
@@ -1074,7 +1076,7 @@ a.card-link { display: flex; color: var(--text); }
 
 /* 反馈页“我的反馈”列表 */
 .fb-mine { margin-top: 26px; border-top: 1px solid var(--line-d, rgba(148,163,184,.18)); padding-top: 18px; }
-.fb-mine h2 { font-size: var(--fs-lg); margin-bottom: 12px; }
+.fb-mine h2 { font-size: var(--fs-xl); margin-bottom: 12px; }
 .fb-mine ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .fb-mine li { display: flex; align-items: center; gap: 10px; font-size: var(--fs-sm); }
 .fb-mine-text { flex: 1; }
@@ -1152,7 +1154,7 @@ a.fb-mine-text:hover { color: var(--brand-2); }
     background: radial-gradient(ellipse 70% 90% at 85% -10%, rgba(13, 169, 205, .16), transparent 60%);
 }
 .recruit-hero h1 { font-family: var(--font-display); color: #fff; font-size: var(--fs-dsp-3); font-weight: 900; margin-bottom: 14px; }
-.recruit-hero p { color: var(--muted); max-width: 680px; font-size: var(--fs-lg); }
+.recruit-hero p { color: var(--muted); max-width: 680px; font-size: var(--fs-lead); }
 
 /* 「这一页有多长」：进来先给尺度，长页最怕的是不知道要读多久 */
 .rg-meta {
@@ -1254,7 +1256,7 @@ details.fold {
     margin-bottom: 14px; overflow: hidden;
 }
 details.fold summary {
-    cursor: pointer; list-style: none; padding: 17px 22px; color: #fff; font-weight: 700; font-size: var(--fs-lg);
+    cursor: pointer; list-style: none; padding: 17px 22px; color: #fff; font-weight: 700; font-size: var(--fs-xl);
     display: flex; justify-content: space-between; align-items: center; user-select: none;
     transition: background .2s;
 }
@@ -1313,7 +1315,7 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 .component-block:last-child { border-bottom: none; }
 /* 是 h3 而不是 h4：见 recruit.html 里的说明（外层是 h2，中间的 summary 不是标题）。
    字号 16px 比 `.recruit-content h3` 小是刻意的 —— 层级给读屏，字号给眼睛。 */
-.component-block h3 { color: #fff; font-size: var(--fs-lg); margin: 0 0 6px; }
+.component-block h3 { color: #fff; font-size: var(--fs-xl); margin: 0 0 6px; }
 .component-block > p { color: var(--muted); font-size: var(--fs-sm); }
 
 /* recruit 页末尾的加入面板 */
@@ -1405,7 +1407,7 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 .news-card-cover img { width: 100%; height: 100%; object-fit: cover; }
 .news-card-body { display: flex; flex-direction: column; gap: 9px; padding: 18px 20px; }
 .news-card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.news-card-title { color: #fff; font-size: var(--fs-xl); line-height: var(--lh-normal); }
+.news-card-title { color: #fff; font-size: var(--fs-2xl); line-height: var(--lh-normal); }
 .news-card-excerpt { color: var(--muted); font-size: var(--fs-sm); line-height: var(--lh-relaxed); }
 .news-card-foot { color: var(--muted); font-size: var(--fs-xs); font-family: var(--font-mono); opacity: .85; }
 
@@ -1420,7 +1422,7 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 .news-article-body { margin-top: 30px; }
 .news-article-foot { margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--line-d); }
 .news-related { max-width: 780px; margin: 46px auto 0; padding-top: 26px; border-top: 1px dashed var(--line-d); }
-.news-related h2 { color: #fff; font-size: var(--fs-lg); margin-bottom: 14px; }
+.news-related h2 { color: #fff; font-size: var(--fs-xl); margin-bottom: 14px; }
 .news-related ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
 .news-related li { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; }
 .news-related li a { color: var(--text); font-size: var(--fs-md); }
@@ -1430,8 +1432,10 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 /* Markdown 正文排版（公告/活动详情共用） */
 .md-body { color: var(--text); font-size: var(--fs-lg); line-height: var(--lh-prose); }
 .md-body h1, .md-body h2, .md-body h3, .md-body h4 { color: #fff; margin: 1.6em 0 .6em; line-height: var(--lh-snug); }
-.md-body h1 { font-size: var(--fs-4xl); }
-.md-body h2 { font-size: var(--fs-2xl); padding-bottom: 8px; border-bottom: 1px solid var(--line-d); }
+/* 长文标题拉开到 30 / 22 / 18，正文 16。原来是 26 / 20 / 18，h3 只比正文大 12%，
+   三级标题挤在一起 —— 公告和活动详情是读者真正停留的地方，层级最不该含糊。 */
+.md-body h1 { font-size: var(--fs-5xl); }
+.md-body h2 { font-size: var(--fs-3xl); padding-bottom: 8px; border-bottom: 1px solid var(--line-d); }
 .md-body h3 { font-size: var(--fs-xl); }
 .md-body p { margin: .9em 0; }
 .md-body a { color: var(--accent-2); text-decoration: underline; text-underline-offset: 3px; }
@@ -1468,7 +1472,7 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 .event-card-date small { color: var(--muted); font-size: var(--fs-xs); margin-top: 2px; }
 .event-card-main { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 .event-card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.event-card-title { color: #fff; font-size: var(--fs-lg); line-height: var(--lh-normal); }
+.event-card-title { color: #fff; font-size: var(--fs-xl); line-height: var(--lh-normal); }
 .event-card-info { color: var(--muted); font-size: var(--fs-xs); font-family: var(--font-mono); }
 .event-points-hint { margin-top: 30px; text-align: center; color: var(--muted); font-size: var(--fs-sm); }
 .event-points-hint a { color: var(--accent-2); }
@@ -1551,7 +1555,7 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 .rec-hero-title .accent { color: var(--accent); }
 .rec-hero-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
 .rec-hero-campaign { color: var(--muted); font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: 1px; }
-.rec-hero-sub { color: var(--muted); font-size: var(--fs-lg); max-width: 620px; line-height: var(--lh-prose); }
+.rec-hero-sub { color: var(--muted); font-size: var(--fs-lead); max-width: 620px; line-height: var(--lh-prose); }
 .rec-hero-sub strong { color: var(--accent-2); font-family: var(--font-mono); letter-spacing: 1px; }
 
 /* 实时报名数据。第一格是主角（已报名总数），后面三格是意向分布 */
@@ -1570,13 +1574,13 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
     gap: 44px; align-items: start; padding: 54px 0 80px;
 }
 .rec-main { line-height: var(--lh-prose); color: var(--text); max-width: 720px; }
-.rec-main h2 { color: #fff; font-size: var(--fs-2xl); font-weight: 800; margin: 30px 0 10px; }
+.rec-main h2 { color: #fff; font-size: var(--fs-3xl); font-weight: 800; margin: 30px 0 10px; }
 .rec-main h2:first-child { margin-top: 0; }
 .rec-main p { color: var(--text); font-size: var(--fs-md); margin-bottom: 12px; }
 .rec-main strong { color: var(--accent-2); }
 /* sticky：右栏跟着走，看说明时表单一直在视野里 */
 .rec-side { position: sticky; top: 96px; }
-.rec-box h2 { color: #fff; font-size: var(--fs-2xl); font-weight: 800; margin-bottom: 12px; }
+.rec-box h2 { color: #fff; font-size: var(--fs-3xl); font-weight: 800; margin-bottom: 12px; }
 .rec-hint { color: var(--muted); font-size: var(--fs-sm); line-height: var(--lh-relaxed); }
 .rec-hint a, .rec-note a { color: var(--accent-2); }
 .rec-hint strong { color: var(--accent-2); font-family: var(--font-mono); }
@@ -1738,7 +1742,7 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 div.proj-card { display: flex; }
 .proj-card-locked { opacity: .72; cursor: default; }
 .proj-card-head { display: flex; gap: 8px; flex-wrap: wrap; }
-.proj-card-title { color: #fff; font-size: var(--fs-lg); }
+.proj-card-title { color: #fff; font-size: var(--fs-xl); }
 .proj-card-summary { color: var(--muted); font-size: var(--fs-sm); line-height: var(--lh-normal); flex: 1; }
 .proj-card-foot { color: var(--accent-2); font-size: var(--fs-xs); font-family: var(--font-mono); }
 .proj-card-locked .proj-card-foot { color: var(--muted); }
@@ -1918,7 +1922,7 @@ div.proj-card { display: flex; }
     color: var(--copper-2); border: 1px solid rgba(201, 138, 61, .45);
     background: rgba(201, 138, 61, .1);
 }
-.wk-card-title { color: #fff; font-size: var(--fs-xl); font-weight: 700; line-height: var(--lh-snug); }
+.wk-card-title { color: #fff; font-size: var(--fs-2xl); font-weight: 700; line-height: var(--lh-snug); }
 .wk-card-teaser { color: var(--muted); font-size: var(--fs-sm); line-height: var(--lh-relaxed); flex: 1; }
 
 /* 标签：丝印语气的小方牌，不用圆角药丸 —— 圆角留给可点的东西 */
@@ -1941,7 +1945,7 @@ div.proj-card { display: flex; }
     font-family: var(--font-display); color: #fff; font-weight: 900;
     font-size: var(--fs-dsp-2); line-height: var(--lh-tight); margin-bottom: 12px;
 }
-.wk-detail-lede { color: var(--text); font-size: var(--fs-lg); line-height: var(--lh-prose); max-width: 680px; }
+.wk-detail-lede { color: var(--text); font-size: var(--fs-lead); line-height: var(--lh-prose); max-width: 680px; }
 .wk-detail-meta {
     display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 18px;
 }
@@ -2090,7 +2094,9 @@ div.proj-card { display: flex; }
     font-variant-numeric: tabular-nums;
 }
 .hn-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
-.hn-title { color: #fff; font-size: var(--fs-md); font-weight: 600; line-height: var(--lh-normal); }
+/* 奖项名是这一行的主角，要和 13px 的赛事/获奖人小字分开一档。
+   只升到 16 而不是 18：荣誉墙是一年十几行的密排清单，升两档整页会变高一屏。 */
+.hn-title { color: #fff; font-size: var(--fs-lg); font-weight: 600; line-height: var(--lh-normal); }
 .hn-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--muted); font-size: var(--fs-xs); }
 .hn-contest::before { content: "赛事 "; opacity: .6; }
 .hn-awardee::before { content: "获奖 "; opacity: .6; }
@@ -2178,7 +2184,7 @@ div.proj-card { display: flex; }
     background: rgba(201, 138, 61, .07);
 }
 .tm-body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 5px; }
-.tm-name { color: #fff; font-size: var(--fs-lg); font-weight: 600; line-height: var(--lh-snug); }
+.tm-name { color: #fff; font-size: var(--fs-xl); font-weight: 600; line-height: var(--lh-snug); }
 .tm-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--muted); font-size: var(--fs-xs); }
 .tm-cohort { font-family: var(--font-mono); color: var(--accent-2); }
 .tm-bio { color: var(--muted); font-size: var(--fs-sm); line-height: var(--lh-relaxed); margin: 3px 0 0; }

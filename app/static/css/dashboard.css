@@ -76,7 +76,7 @@
     border: 1px solid var(--line-d); border-radius: 16px; padding: 20px 22px;
     background: rgba(255, 255, 255, .02);
 }
-.dash-panel h2 { color: #fff; font-size: var(--fs-lg); font-weight: 700; margin-bottom: 16px; letter-spacing: .5px; }
+.dash-panel h2 { color: #fff; font-size: var(--fs-xl); font-weight: 700; margin-bottom: 16px; letter-spacing: .5px; }
 .dash-panel.wide { grid-column: 1 / -1; }
 .dash-chart-box { position: relative; height: 260px; }
 .dash-panel.wide .dash-chart-box { height: 240px; }
