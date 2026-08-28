@@ -590,36 +590,22 @@ select.input option { background: var(--bg-2); }
     letter-spacing: -.018em; margin-bottom: 34px; color: inherit;
 }
 
-/* ---------- 阻焊开窗（标题的工艺层） ----------
-   一道横向细缝把字面切开，读作「铜面被阻焊层开了一次窗」。
-   **只开一道。** 试过 45° 密斜纹（缝距 .02em），那不是工艺、是把字填成了纹理，
-   而且可读性掉得很明显 —— 76px 上勉强，48px 上糊成一片。稀疏才读得出是工艺。
+/* ---------- 标题的「工艺层」：试过，撤了 ----------
+   这里曾经有两个类，都因为**被真实读者读成故障**而删除，别再加回来：
 
-   用 mask 而不是把渐变画在字上：mask 不动 `color`，所以
-   `check_a11y.py` 的对比度照旧量得到。（原本还想给字加铜面渐变，
-   那要 `background-clip: text` + `color: transparent` —— 对比度直接变成量不到，
-   而且会让 `currentColor` 的焊盘一起变透明。为这个否决了铜面。） */
-.plated {
-    -webkit-mask-image: linear-gradient(#000 0 35%, transparent 35% 37.6%, #000 37.6%);
-    mask-image: linear-gradient(#000 0 35%, transparent 35% 37.6%, #000 37.6%);
-}
+   `.plated`（横向阻焊开窗，用 mask 在字面上切一道细缝）
+       意图是「铜面被阻焊层开了一次窗」。反馈是「有不明条纹」。
+       在没有这套上下文的人眼里，横穿字面的一道缝就是渲染故障。
+       （更早还试过 45° 密斜纹，那连可读性都掉，48px 上糊成一片。）
 
-/* 句尾焊盘：一小段引线 + 一个焊盘环，语义同会标的 pad-out（信号出口）。
-   尺寸全用 em，跟着字号缩放；颜色用 currentColor，跟着强调色走。
+   `.pad-out`（句尾焊盘环 + 引线）
+       意图是「信号从这里出去」，同会标的 pad-out。反馈是
+       「句号和输入符号重合」—— 一个圆环紧跟句末会被读成标点，
+       再加一道横线更像输入光标。
 
-   **必须挂在行内元素上。** 挂到 `.line-reveal` 那种 `display: block` 的行容器上时，
-   `right: .02em` 算的是整个容器的右边缘 —— 焊盘会跑到屏幕另一头去，
-   而它照样画得好好的（踩过，截图才看出来）。所以模板里包一层 `<i class="pad-out">`。 */
-.pad-out { position: relative; padding-right: .66em; font-style: normal; }
-.pad-out::before {
-    content: ""; position: absolute; right: .32em; bottom: .27em;
-    width: .22em; height: .05em; background: currentColor;
-}
-.pad-out::after {
-    content: ""; position: absolute; right: .02em; bottom: .16em;
-    width: .28em; height: .28em; border-radius: 50%;
-    border: .055em solid currentColor;
-}
+   留下来的规矩：**装饰记号不要放进句子的读取路径里。**
+   同一套记号放在 eyebrow 那条丝印带上（刻度尺 + 尺寸线）没有人误读，
+   因为那里本来就是放记号的地方。 */
 .nf-display .accent { color: var(--accent); }
 .nf-center { text-align: center; }
 .nf-section { padding: clamp(90px, 12vw, 150px) 0; position: relative; overflow: hidden; }

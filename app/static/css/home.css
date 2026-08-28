@@ -39,18 +39,9 @@
     letter-spacing: 2px; color: #fff; margin: 10px 0 26px;
 }
 .nf-hero-title .accent { color: var(--accent); }
-/* 句尾的收尾记号从「会闪的光标 `_`」换成焊盘 + 引线。
-   为什么不两个都留：先试过让光标当引线，但光标是 step-end 闪烁的 ——
-   灭的那半个周期里焊盘环就孤零零悬在半空，什么都没连着（移动端截图逮到的）。
-   记号只留一个，闪烁改由焊盘自己做：呼吸一下，读作「这条线是通电的」。 */
-.nf-hero-title .pad-out::after { animation: pad-live 2.4s var(--ease-out) infinite; }
-@keyframes pad-live {
-    0%, 100% { opacity: 1; }
-    50% { opacity: .34; }
-}
-@media (prefers-reduced-motion: reduce) {
-    .nf-hero-title .pad-out::after { animation: none; }
-}
+/* 首屏句尾曾经有过：会闪的光标 `_`、焊盘环 + 引线。两个都撤了 —— 读者反馈
+   「句号和输入符号重合」。句末的记号会被当成标点读，这条写进了 core.css 的
+   `.plated` / `.pad-out` 那段说明里。 */
 /* 首屏那句也是导语，用宋体（第二声音）—— 全站导语一个口径，见 tokens.css。
    它带 .line-reveal，字体变了会改动画元素的度量，所以改完跑 check_hero.py。 */
 .nf-hero-sub {
