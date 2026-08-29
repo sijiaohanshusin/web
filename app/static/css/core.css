@@ -1310,6 +1310,37 @@ a.fb-mine-text:hover { color: var(--brand-2); }
 /* 阅读行宽控制：正文不超过 ~40 字/行 */
 .recruit-content { max-width: 780px; }
 .recruit-content section { margin-bottom: 58px; scroll-margin-top: 100px; }
+/* ---------- 章节头横幅 ----------
+   五章各一张暗调氛围图（`img/banner-*.webp`，1920x810，7~25KB）。
+   标题**压在图上**，所以生成时就要求「左侧 40% 留干净」—— 图右侧是意象，
+   左侧是标题的地盘。`background-position: right center` 保证窄屏裁掉的是右边
+   的意象而不是标题区。
+
+   带一个 `background-color`：`check_a11y.py` 逐层向上找不透明背景来算对比度，
+   只给 background-image 的话它会一路找到更外层去，量出来的不是这里的实际底色。
+   （另外验收脚本已经量过左区 99 分位亮度 ≤80，白字压上去仍在 9:1 以上。）
+
+   选择器必须是 `section > h2`（章节头），**不能是 `.recruit-content h2`** ——
+   页末加入面板的标题也是 h2，套上这层壳之后它是一个「有描边、没有图」的黑盒子，
+   看起来像一处加载失败的横幅。截图才看出来的。 */
+.recruit-content section > h2 {
+    padding: 30px 26px 26px; border-radius: 14px; border: 1px solid var(--line-d);
+    background-color: #050506;
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: cover;
+}
+#intro > h2 { background-image: url("../img/banner-intro.webp"); }
+#training > h2 { background-image: url("../img/banner-training.webp"); }
+#hardware > h2 { background-image: url("../img/banner-hardware.webp"); }
+#software > h2 { background-image: url("../img/banner-software.webp"); }
+#resources > h2 { background-image: url("../img/banner-contest.webp"); }
+/* 章节副标题贴着横幅下缘，读成一组 */
+.recruit-content h2 + .sec-sub { margin-top: 10px; }
+@media (prefers-contrast: more) {
+    /* 高对比偏好下摘掉横幅：它是氛围，而这里的诉求是让标题最清楚 */
+    .recruit-content h2 { background-image: none !important; }
+}
 .recruit-content h2 {
     display: flex; align-items: baseline; gap: 12px;
     font-family: var(--font-display); color: #fff; font-size: var(--fs-4xl); font-weight: 900; margin-bottom: 6px;
@@ -1394,15 +1425,52 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 .component-block h3 { color: #fff; font-size: var(--fs-xl); margin: 0 0 6px; }
 .component-block > p { color: var(--muted); font-size: var(--fs-sm); }
 
-/* recruit 页末尾的加入面板 */
+/* recruit 页末尾的加入面板。
+   底部留 130px（比顶部厚一倍）是给 `.join-bg` 的焊点材质腾地方，见下面那段。 */
 .join-panel {
-    position: relative; text-align: center; padding: 60px 30px; border-radius: 24px; overflow: hidden;
+    position: relative; text-align: center; padding: 60px 30px 130px; border-radius: 24px; overflow: hidden;
     border: 1px solid var(--line-d-strong);
     background: radial-gradient(ellipse 90% 120% at 50% -20%, rgba(13, 169, 205, .18), transparent 60%), var(--black-2);
 }
-.join-bg { position: absolute; inset: 0; }
+/* `.join-bg` 是模板里那个空 div，本来只是占位。给它铺上焊点微距（局部材质，
+   1024px 一张、53KB）—— 这一段的语义是「来实验室焊你的第一块板」，焊点特写是
+   全站唯一一处「有景深的真实材质」，放在这里正好。
+
+   **混合模式必须是 `screen`，不能是 `soft-light`**：这张图很暗（中位亮度 14，
+   99 分位才 170 —— 一片黑底上一个高光焊点），而 soft-light 在接近纯黑的底色上
+   输出仍然接近纯黑，整张图等于没画。第一版就是这样，截图上一点痕迹都没有。
+   screen 只加光不减光：黑场原样留黑，只有那个高光透上来，读起来是「面板上真的
+   有一个反光的焊点」而不是贴了一张照片。
+
+   **材质只画在面板底部那条 130px 的空带里**，文案一个字都不压上去。先试过整块
+   铺满 `cover` 并把焦点放在高光上（68% / 45%），结果亮部升到 L≈120 正压在副标题
+   那一行：`var(--muted)` 的灰字在那里几乎看不见 —— 而 `check_a11y.py` 量的是
+   `.join-panel` 自己的 `background-color`（材质是兄弟节点，不在它那条链上），
+   这种事它发现不了。挪进空带之后不再有文字压上来，反而可以把强度给足。
+
+   取景与遮罩**全部用 px、不用百分比**：这个面板在窄屏会变成三倍高（内容竖排），
+   百分比写的话同一条带子在手机上有 200px 深，直接吃掉整个 QQ 群号那一块。
+   `bottom -180px / auto 450px` 把高光钉在「距底边约 67px」处、`right -30px` 把它
+   钉在「距右边约 123px」处 —— 两个数都与面板尺寸无关，桌面和窄屏取景一致。
+
+   遮罩是**一个以高光为心的椭圆**，不是自下往上的线性渐隐：线性渐隐只在竖直方向
+   收边，图片自己的左边界就成了一条笔直的竖线切在面板中间（截图上很显眼）。椭圆
+   的半径按 px 给死，两个方向同时收：竖直方向在文案下沿处正好归零，水平方向在图片
+   左边界处归零 —— 四面都没有硬边。 */
+.join-bg.join-bg {
+    position: absolute; inset: 0;
+    background: url("../img/tex-solder-joint.webp") right -30px bottom -180px / auto 450px no-repeat;
+    opacity: .9;
+    mix-blend-mode: screen;
+    -webkit-mask-image: radial-gradient(ellipse 320px 150px at calc(100% - 123px) calc(100% + 10px), #000 0 40%, transparent 92%);
+    mask-image: radial-gradient(ellipse 320px 150px at calc(100% - 123px) calc(100% + 10px), #000 0 40%, transparent 92%);
+    pointer-events: none;
+}
 .join-panel > * { position: relative; }
-.join-panel h2 { color: #fff; font-size: var(--fs-dsp-1); margin-bottom: 10px; }
+/* `.recruit-content h2` 把 h2 变成了 flex 容器，于是 `.join-panel` 的
+   `text-align: center` 对它无效 —— 这条标题一直是贴左的，和面板里其它全部居中的
+   东西不是一路。补 `justify-content` 才是居中 flex 项的办法。 */
+.join-panel h2 { color: #fff; font-size: var(--fs-dsp-1); margin-bottom: 10px; justify-content: center; }
 .join-panel > p { color: var(--muted); margin-bottom: 26px; }
 .join-qq {
     display: inline-flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: center;

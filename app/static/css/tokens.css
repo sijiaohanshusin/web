@@ -547,8 +547,25 @@ img.img-fade.img-loaded { opacity: 1; }
 }
 .surf-weave > *, .surf-hatch > *, .surf-via > * { position: relative; z-index: 1; }
 
-/* 裸基板：FR4 的玻纤布是两个方向交织的，所以用两道相互垂直的斜纹 */
+/* 裸基板：换成真实材质照片（`img/tex-fr4-weave.webp`，512² 可四方连续，30KB）。
+   原来是两道相互垂直的 CSS 斜纹 —— 那是「示意」，这是「材质」，静止时的厚度差别
+   全在这里。母图与加工流程见 `scripts/build_artwork.py` 与 `docs/美术资产清单.md`。
+
+   两条要记住的：
+   - **平铺尺寸给 256px**，不是图的原始 512 —— 512 平铺时织纹太大，读成布料而不是
+     玻纤；缩到一半才是「显微镜下的基板」那个尺度。
+   - `opacity` 仍然由上面那条共用规则控制（0.5 上下），照片不需要再压暗；
+     压得太狠就退回成一片黑，等于没加。 */
 .surf-weave::before {
+    background-image: url("../img/tex-fr4-weave.webp");
+    background-size: 256px 256px;
+    background-repeat: repeat;
+}
+/* 白区上照片材质会变成一块脏斑（它是暗材质），所以浅底退回原来的 CSS 斜纹。
+   `background-size`/`repeat` 也要一起还原 —— 只换 image 的话会继承上面那条
+   给照片定的 256px 平铺，虽然渐变看起来没差别，但这条规则就不再是自洽的了。 */
+.nf-light.surf-weave::before {
+    background-size: auto;
     background-image:
         repeating-linear-gradient(45deg,
             var(--surf-weave-line) 0 1px, transparent 1px var(--surf-weave-cell)),

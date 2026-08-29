@@ -273,8 +273,14 @@ CONTRAST_TARGETS = {
         [".page-hero h1", "rgb(5, 5, 6)"], [".page-hero-sub", "rgb(5, 5, 6)"],
         ".news-card-title", ".news-card-meta", ".pill", ".footer-col a",
     ],
+    # `.recruit-content h2` 现在压在章节头横幅（背景图）上，会被这段逻辑正确地
+    # 跳过 —— 图背景算不出唯一底色。所以另外补两个**实底**角色进来，否则这一页
+    # 只剩 2 个可量元素，会触发下面「至少量到 3 个」那条守卫。
+    # 横幅上的白字改由 `check_artwork.py` 保证：它断言横幅左侧（标题区）的
+    # 99 分位亮度 ≤80，白字压上去仍在 9:1 以上。
     "/recruit/": [
         ".recruit-content p", ".recruit-content h2", ".rg-meta", ".recruit-toc a",
+        ".recruit-content h3", ".recruit-content .sec-sub",
     ],
 }
 
