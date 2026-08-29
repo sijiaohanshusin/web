@@ -60,6 +60,38 @@ core/slots.py 的「新生指南 · 现场照」组。
         <section id="intro">
             <h2><span class="rg-no">01</span>协会简介</h2>
             <div class="sec-sub">// WHO WE ARE</div>
+
+            {% comment %}
+            开篇导语 + 三联画。这一页有一万多字，读者进来第一个念头是「这跟我有什么
+            关系」—— 所以先用一句话和三张图把「这一年会经历什么」讲完，再进细节。
+
+            导语用宋体（`--font-serif`）：它是**模板文案**，符合宋体子集的使用条件
+            （子集按模板用字构建，站务后写的正文不能用它，见 tokens.css）。
+
+            三张插画是同一支笔画的一套（`illu-journey-1/2/3`），不是三张孤立的图 ——
+            风格孤立的单张插画在这套几何 + 真实材质的设计里会显得像贴上去的，
+            所以 `check_artwork.py` 里有「三张尺寸一致 + 色相配比接近」的断言。
+            {% endcomment %}
+            <p class="rg-lead">零基础进来，一年之后你会焊完自己的第一块板、让它真的跑起来、再带着它上赛场。这一页把这一年拆开讲清楚。</p>
+
+            <ol class="rg-arc">
+                <li>
+                    <img src="{% static 'img/illu-journey-1.webp' %}" alt="插画：一支烙铁正在电路板上焊一个焊点，焊点透出青光"
+                         loading="lazy" decoding="async">
+                    <p><b>01</b>焊上第一个点</p>
+                </li>
+                <li>
+                    <img src="{% static 'img/illu-journey-2.webp' %}" alt="插画：电路板上一颗指示灯亮起，上方浮着一段波形曲线"
+                         loading="lazy" decoding="async">
+                    <p><b>02</b>让它跑起来</p>
+                </li>
+                <li>
+                    <img src="{% static 'img/illu-journey-3.webp' %}" alt="插画：几块做好的电路板摊在暗色桌面上，中间一圈青色光晕"
+                         loading="lazy" decoding="async">
+                    <p><b>03</b>带它上赛场</p>
+                </li>
+            </ol>
+
             <p>电子科技协会成立于 1995 年，是哈尔滨工程大学信息与通信工程学院下的学生技术组织。我们做的事很具体：<strong>教一年，然后一起去比赛</strong>。</p>
             <p>协会分<strong>硬件</strong>与<strong>软件</strong>两个方向，但不是两条互不相干的路 —— 大一下的合作任务（自制万用表）就要两边坐在一张桌子上。硬件从音乐盒、运放、滤波器开始；软件从 C 语言、STM32 的 GPIO 与定时器开始。所有培训免费，配套 27 章自编电子学教材。</p>
             <p>零基础完全可以，而且大部分人都是。真正缺的是时间和动手意愿，不是基础。</p>

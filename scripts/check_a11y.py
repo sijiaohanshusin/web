@@ -269,7 +269,10 @@ CONTRAST_TARGETS = {
         ".nf-dir-body p",
     ],
     "/news/": [
-        # 页头横幅叠着示波器网格，平底色是 --black
+        # 页头横幅叠着示波器网格，平底色是 --black。
+        # 现在还多叠了一张氛围图（`--scope-art`），但**这个假设仍然成立** ——
+        # 图的意象被要求只放在右 40%，标题与导语在左 55% 的纯黑区里，
+        # 而 `check_artwork.py` 断言那一区的 99 分位亮度 ≤30。
         [".page-hero h1", "rgb(5, 5, 6)"], [".page-hero-sub", "rgb(5, 5, 6)"],
         ".news-card-title", ".news-card-meta", ".pill", ".footer-col a",
     ],

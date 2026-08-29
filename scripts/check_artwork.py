@@ -23,15 +23,16 @@ IMG = REPO / "app" / "static" / "img"
 # 可四方连续的底纹（大面积平铺用）。
 # **`tex-solder-joint` 不在这里** —— 它是浅景深的单个焊点特写，清单里从没要求它
 # 平铺，它的用法是「局部材质」。第一版把它一起量了，于是报出一个 7.19 的假红。
-TEXTURES = ["tex-fr4-weave.webp", "tex-etched-copper.webp",
-            "tex-matte-solder-mask.webp"]
+# （`tex-matte-solder-mask` 已弃用并删除产物：p95−p5 跨度只有 2，等于没有纹理，
+#   而且站上没有它的去处。母图还在 `.artsrc/`，理由见 docs/美术资产清单.md。）
+TEXTURES = ["tex-fr4-weave.webp", "tex-etched-copper.webp"]
 # 局部材质：只要求暗部无色带与色相正确
 SPOT = ["tex-solder-joint.webp"]
 # 横幅：左侧要留出压标题的干净区。**这条断言是横幅上白字的唯一保障** ——
 # `check_a11y.py` 会跳过图背景的元素（算不出唯一底色），所以那边量不到它。
 BANNERS = ["banner-intro.webp", "banner-training.webp", "banner-hardware.webp",
            "banner-software.webp", "banner-contest.webp"]
-OTHERS = SPOT + ["banner-social-card.webp", "illustration-soldering-journey.webp"]
+OTHERS = SPOT + ["banner-social-card.webp"]
 
 # ---------- 第二批（工单在 docs/美术资产清单.md 的「第二批」一节） ----------
 # 这一批还没交付，所以**缺文件不算失败**，只打印「待交付」。理由：验收标准写在
@@ -100,6 +101,31 @@ def hue_split(im) -> tuple[float, float, float]:
     if not colored:
         return 0.0, 0.0, 0.0
     return cyan / colored, copper / colored, magenta / colored
+
+
+def texture_spread(im) -> float:
+    """材质到底有没有纹理：亮度的 p95 − p5。
+
+    **这条断言是被两次「交了但等于没有」逼出来的。** `tex-matte-solder-mask` 压出来
+    只有 2KB、`tex-copper-light` 第一版拉到 24 倍对比度还是一片均匀噪点 —— 两张都
+    通过了当时全部的断言（不平铺？平铺。有色带？没有。色相跑了？没跑），
+    因为**没有一条在问「这上面有东西吗」**。
+
+    阈值 12 是从实测分出来的，不是猜的（量的都是入库的 webp）：
+        tex-fr4-weave     17    有纹理，站上效果成立
+        tex-etched-copper 20    有纹理
+        tex-solder-joint  73    浅景深照片
+        ---- 线 12 ----
+        tex-copper-light   3    第一版，均匀噪点
+        tex-matte-solder-mask 2 已弃用
+
+    用 p95−p5 而不是 max−min：一两个孤立的亮点/暗点不算纹理，
+    而极值对它们极其敏感（那张纯平的图 max−min 是 16，跨度却只有 3）。
+    """
+    import numpy as np
+
+    a = np.asarray(im.convert("L"), dtype=np.float32)
+    return float(np.percentile(a, 95) - np.percentile(a, 5))
 
 
 def banding_score(im) -> int:
@@ -222,7 +248,10 @@ def check_batch2(Image) -> None:
         # 白区底色是 #f7f8fa（亮度 248）。材质要压在它上面当「浅浮雕」，
         # 平均亮度低于 235 就会读成一块脏斑 —— 这是第一批那张暗铜纹放不进白区的原因。
         check(mean_l >= 235, "整体够亮（平均 ≥235，白区底色是 248）", f"{mean_l:.1f}")
-        check(lo >= 195, "最暗处也不深（≥195，不能有深色块）", f"{lo:.0f}")
+        check(lo >= 185, "最暗处也不深（≥185，不能有大块阴影）", f"{lo:.0f}")
+        # 第一版就死在这里：又亮又干净，但一片均匀噪点。见 texture_spread 的说明。
+        spread = texture_spread(im)
+        check(spread >= 12, "**上面真的有纹理**（p95−p5 跨度 ≥12）", f"{spread:.1f}")
         check(magenta < 0.08, "没有紫红色相", f"紫红 {magenta:.1%}")
         note("色相分布", f"青 {cyan:.0%} · 铜 {copper:.0%}")
 
@@ -281,6 +310,8 @@ def main() -> int:
               "接缝不明显（绝对差 <1.5 或 接缝差/内部差 <2.0）",
               f"绝对 {seam_abs:.2f} · 比值 {seam_ratio:.2f}")
         check(band <= 2, "暗部无色带（0-64 灰阶空档 ≤2）", f"{band} 个空档")
+        spread = texture_spread(im)
+        check(spread >= 12, "**上面真的有纹理**（p95−p5 跨度 ≥12）", f"{spread:.1f}")
         check(magenta < 0.08, "没有紫红色相", f"紫红 {magenta:.1%}")
         note("色相分布", f"青 {cyan:.0%} · 铜 {copper:.0%}")
 

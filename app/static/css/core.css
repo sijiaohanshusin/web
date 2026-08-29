@@ -891,6 +891,32 @@ html.esta-pre-lock .line-reveal { animation-play-state: paused; }
     padding: clamp(52px, 7vw, 88px) 0 clamp(26px, 4vw, 40px);
     border-bottom: 1px solid var(--line-d);
 }
+/* ---------- 每页一张氛围图 ----------
+   走 `.nf-scope` 的 `--scope-art`（那一层默认 `none`，说明在它旁边）。
+   收敛之后这七页的页头只差一个强调色，**静止时看起来是同一个黑矩形七遍** ——
+   新生指南五章配了章节头横幅之后这个落差就很明显了。
+
+   挂在 `body.page-*` 上而不是模板的 inline style，理由有三条：
+   - 七个引用集中在这里，改名/换图时一眼看得全，不用翻七个模板；
+   - 它们因此落在 `check_static_pipeline` 的「CSS 引用必须指向真实文件」那步里
+     （inline style 不在 CSS 里，那一步扫不到）；
+   - `body_class` 这七个类本来就都有了，不用为配图往模板里加东西。
+
+   `page-works` 同时挂在作品墙与作品详情上，所以选择器要收窄到 `.page-hero`
+   —— 详情页用的是 `.wk-detail-hero`，它顶上压着封面与标题，不该再加氛围。
+   意象与安全区的要求见 `docs/美术资产清单.md` 的「第二批工单」。 */
+body.page-news     .page-hero { --scope-art: url("../img/hero-news.webp"); }
+body.page-events   .page-hero { --scope-art: url("../img/hero-events.webp"); }
+body.page-resources .page-hero { --scope-art: url("../img/hero-resources.webp"); }
+body.page-works    .page-hero { --scope-art: url("../img/hero-works.webp"); }
+body.page-honors   .page-hero { --scope-art: url("../img/hero-honors.webp"); }
+body.page-team     .page-hero { --scope-art: url("../img/hero-team.webp"); }
+body.page-leaderboard .page-hero { --scope-art: url("../img/hero-leaderboard.webp"); }
+/* 高对比偏好下摘掉氛围图：它是气氛，而这里的诉求是让标题最清楚。
+   和章节头横幅同一个处理。 */
+@media (prefers-contrast: more) {
+    .page-hero { --scope-art: none; }
+}
 /* 页头铺一层颗粒：它是每个内页最先看到的一块，一整片纯平的黑最显薄。
    噪声图复用 tokens.css 的 `--grain-img`（一份图、两处用，见那里的说明）。
    挂在组件自己的 `::after` 上，而不是让十来个模板各加一个 `.grain` 类；
@@ -1375,6 +1401,47 @@ a.fb-mine-text:hover { color: var(--brand-2); }
     font: 700 var(--fs-md)/var(--lh-flat) var(--font-mono); color: var(--copper);
     letter-spacing: 1px; flex: none;
 }
+/* ---------- 开篇导语 + 三联画 ----------
+   导语是**第二声音**（宋体 SemiBold），和列表页页头那句 `.page-hero-sub` 同一个
+   角色：比正文大一档、行高更松。这一页有一万多字，先给一句能读完的。 */
+.rg-lead {
+    font-family: var(--font-serif); font-weight: 600;
+    font-size: var(--fs-lead); line-height: var(--lh-prose);
+    color: #fff; margin: 0 0 22px;
+}
+/* 三联画：一年的三个节点。`<ol>` 而不是 `<div>` —— 它是有顺序的三步，
+   序号在语义里就该存在（读屏软件会念「列表，3 项」）。 */
+.rg-arc {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    list-style: none; padding: 0; margin: 0 0 26px;
+}
+.rg-arc li { margin: 0; }
+/* **不要给 `<img>` 写 width/height 属性**：宽高都是确定值时 CSS 的 aspect-ratio
+   会被忽略，占位就没了（见 tokens.css 那条教训）。所以比例写在这里。 */
+.rg-arc img {
+    display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
+    border-radius: 10px; border: 1px solid var(--line-d);
+    background: var(--black-2);
+}
+.rg-arc p {
+    display: flex; align-items: baseline; gap: 7px;
+    margin: 8px 0 0; color: var(--muted); font-size: var(--fs-xs);
+}
+/* 序号沿用丝印语气（铜色 mono），和章节编号 `.rg-no`、目录焊盘上的编号同一套 */
+.rg-arc b {
+    font: 700 var(--fs-2xs)/var(--lh-flat) var(--font-mono);
+    color: var(--copper); letter-spacing: 1px; flex: none;
+}
+@media (max-width: 720px) {
+    /* 窄屏三栏各只有 110px 宽，插画整个糊掉 —— 换成一栏一张，图反而更大。
+       「窄屏换构图，不是缩小桌面版」。
+       同时把比例从 4:3 压到 16:10：三张全宽 4:3 图加图注要占掉 900px，
+       而这是一页一万多字长文的**开篇**，铺垫不该比正文还长。三张画的主体都是
+       横向居中的，`cover` 裁掉的是上下两条空白。 */
+    .rg-arc { grid-template-columns: 1fr; gap: 18px; }
+    .rg-arc img { aspect-ratio: 16 / 10; }
+}
+
 /* 每章一张现场照（素材槽）：拍到之前是空焊盘占位 */
 .rg-shot { margin: 18px 0 22px; }
 .recruit-content .sec-sub { color: var(--accent); font-size: var(--fs-xs); margin-bottom: 24px; font-family: var(--font-mono); letter-spacing: 2px; }

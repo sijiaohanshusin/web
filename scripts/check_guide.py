@@ -254,6 +254,50 @@ def main() -> int:
             check(len(sh["brief"].strip()) > 8, f"{sh['key']} 显示了拍摄要求")
             check("16" in (sh["ratio"] or ""), f"{sh['key']} 写了比例占住版面",
                   sh["ratio"] or "")
+
+        # ---------------- 开篇导语 + 三联画 ----------------
+        # 这一页有一万多字，开篇那句导语和三张图是「读者要不要读下去」的唯一钩子。
+        # 三条判据都是「渲染之后到底成不成」，不是「标记写对了没有」：
+        #   - 导语真的用上了宋体（换成系统字体时会静默回退，肉眼未必看得出）
+        #   - 三张图**真的下载成功**（naturalWidth > 0）—— 改名/漏提交就是三个空框，
+        #     而 `<img>` 的 alt 会撑出布局、页面看起来只是「有点空」
+        #   - 三张图渲染出来一样大（同一行并排，不齐就参差）
+        print("\n开篇导语 + 三联画（这一页的钩子）")
+        arc = page.evaluate("""() => {
+            const lead = document.querySelector('.rg-lead');
+            const imgs = [...document.querySelectorAll('.rg-arc img')];
+            const nos  = [...document.querySelectorAll('.rg-arc b')].map(b => b.textContent.trim());
+            return {
+                lead: lead ? getComputedStyle(lead).fontFamily : null,
+                leadLen: lead ? lead.textContent.trim().length : 0,
+                n: imgs.length,
+                loaded: imgs.filter(i => i.naturalWidth > 0).length,
+                alts: imgs.filter(i => (i.alt || '').trim().length > 6).length,
+                lazy: imgs.filter(i => i.loading === 'lazy').length,
+                boxes: imgs.map(i => Math.round(i.getBoundingClientRect().width)
+                                     + 'x' + Math.round(i.getBoundingClientRect().height)),
+                nos,
+                tag: document.querySelector('.rg-arc') ?
+                     document.querySelector('.rg-arc').tagName : null,
+            };
+        }""")
+        check(arc["n"] == 3, "开篇三联画有三张", f"{arc['n']} 张")
+        check(arc["leadLen"] > 20, "开篇导语有内容", f"{arc['leadLen']} 字")
+        check("Serif" in (arc["lead"] or ""), "**导语真的用上了宋体**（第二声音）",
+              arc["lead"] or "")
+        # 图是 loading=lazy 的，先滚到它那里再看下载结果，否则这条会假失败
+        page.evaluate("document.querySelector('.rg-arc').scrollIntoView()")
+        page.wait_for_timeout(700)
+        loaded = page.evaluate(
+            "() => [...document.querySelectorAll('.rg-arc img')]"
+            ".filter(i => i.naturalWidth > 0).length")
+        check(loaded == 3, "**三张插画真的下载成功了**（不是三个空框）", f"{loaded}/3")
+        check(arc["alts"] == 3, "三张都写了有内容的 alt", f"{arc['alts']}/3")
+        check(arc["lazy"] == 3, "三张都是 lazy（在首屏之外）", f"{arc['lazy']}/3")
+        check(len(set(arc["boxes"])) == 1, "三张渲染出来一样大（并排不参差）",
+              " · ".join(arc["boxes"]))
+        check(arc["tag"] == "OL", "三联画是有序列表（它是有顺序的三步）", arc["tag"] or "")
+        check(arc["nos"] == ["01", "02", "03"], "序号沿用丝印编号", str(arc["nos"]))
         ctx.close()
 
         # ---------------- 脚本挂了 ----------------

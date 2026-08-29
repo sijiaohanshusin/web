@@ -28,12 +28,16 @@ REPO = Path(__file__).resolve().parent.parent
 SRC = REPO / ".artsrc"
 OUT = REPO / "app" / "static" / "img"
 
-# name → (是否要四方连续, 输出边长/宽度, webp 质量)
+# name → (是否要四方连续, 输出边长/宽度, webp 质量, 可选 src=母图名)
 # 尺寸的依据：纹理按平铺尺寸给，横幅按站上最宽的容器（1240）× 2 给。
+#
+# **`tex-matte-solder-mask` 已从这里移除**（母图还在 `.artsrc/`）：它压出来只有 2KB，
+# p95−p5 跨度 2 —— 也就是几乎没有纹理，而且站上没有它的去处。理由写在
+# `docs/美术资产清单.md`。不做而不是留着，是因为留着会让新加的「纹理必须真的有
+# 纹理」那条断言常红，而常红的断言等于没有断言。
 JOBS: dict[str, dict] = {
     "tex-fr4-weave":          {"tile": True,  "size": 512,  "q": 88},
     "tex-etched-copper":      {"tile": True,  "size": 512,  "q": 88},
-    "tex-matte-solder-mask":  {"tile": True,  "size": 512,  "q": 88},
     # 浅景深特写，不平铺；当局部材质用，给大一点
     "tex-solder-joint":       {"tile": False, "size": 1024, "q": 86},
     "banner-intro":           {"tile": False, "size": 1920, "q": 84},
@@ -42,7 +46,22 @@ JOBS: dict[str, dict] = {
     "banner-software":        {"tile": False, "size": 1920, "q": 84},
     "banner-contest":         {"tile": False, "size": 1920, "q": 84},
     "banner-social-card":     {"tile": False, "size": 1200, "q": 88},
-    "illustration-soldering-journey": {"tile": False, "size": 1280, "q": 86},
+    # 列表页页头氛围（`.nf-scope` 的 --scope-art）。母图 2560x860，输出 1920：
+    # 页头最宽就是视口宽，而这几张是柔光氛围、没有需要 1:1 像素的细节。
+    # 质量给到 86 而不是横幅的 84 —— hero-news 那张有一排细竖条，84 会让它起毛边。
+    "hero-news":              {"tile": False, "size": 1920, "q": 86},
+    "hero-events":            {"tile": False, "size": 1920, "q": 86},
+    "hero-resources":         {"tile": False, "size": 1920, "q": 86},
+    "hero-works":             {"tile": False, "size": 1920, "q": 86},
+    "hero-honors":            {"tile": False, "size": 1920, "q": 86},
+    "hero-team":              {"tile": False, "size": 1920, "q": 86},
+    "hero-leaderboard":       {"tile": False, "size": 1920, "q": 86},
+    # 新生指南开篇三联画。第 1 张就是第一批那张，只是改个名进套 ——
+    # 母图不用重新生成，所以这里用 src 指过去。
+    "illu-journey-1":         {"tile": False, "size": 1280, "q": 86,
+                               "src": "illustration-soldering-journey"},
+    "illu-journey-2":         {"tile": False, "size": 1280, "q": 86},
+    "illu-journey-3":         {"tile": False, "size": 1280, "q": 86},
 }
 
 
@@ -110,9 +129,9 @@ def main() -> int:
     for name, job in JOBS.items():
         if args.only and name != args.only:
             continue
-        src = SRC / f"{name}.png"
+        src = SRC / f"{job.get('src', name)}.png"
         if not src.exists():
-            print(f"  --   {name}.png 不在 .artsrc/，跳过")
+            print(f"  --   {src.name} 不在 .artsrc/，跳过")
             continue
         im = Image.open(src).convert("RGB")
         before = dark_histogram_gaps(im)
