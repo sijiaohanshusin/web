@@ -711,16 +711,35 @@ html.esta-pre-lock .line-reveal { animation-play-state: paused; }
    白区的坐标纸已经在 .nf-light 里内联，这是给黑区区块用的对应物，格距与白区
    一致以保持同一套度量。挂在需要「示波器屏幕」质感的区块上。
    两层网格：10px 细格 + 50px 粗格，对比度压到几乎看不见 —— 它是底纹不是内容。 */
+/* 最后那一层 `--scope-art` 是**可选的氛围图**，默认 `none`：想给某个用了
+   `.nf-scope` 的区块配一张暗调氛围图，只设这一个变量就行 ——
+   `style="--scope-art: url('...')"`，和隔壁 `--hero-accent` 一样的用法。
+   **不要为了配图再复制一份 hero**，也不要在别处重写这四层网格（写第二份必然漂移）。
+
+   层序是刻意的：网格四层在前（画在上面），氛围图在最后（画在下面）。
+   坐标纸压在材质上才是「仪器屏幕」，反过来是「网格上贴了张图」。
+
+   **设了这个变量的页面，`check_a11y.py` 会跳过该元素的对比度计算**（图背景算不出
+   唯一底色），所以那一页要么另外补几个实底角色进 `CONTRAST_TARGETS`、要么靠
+   `check_artwork.py` 的「左 55% 区 99 分位亮度 ≤30」那条兜住。
+   `/recruit/` 的章节头横幅就是这么处理的，别只加图不管这一步。
+   `right center` + `cover`：桌面横幅扁到 5.3:1、窄屏只有 1.7:1，两边都靠
+   `cover` 裁 —— 所以要求图的意象**放在右侧 40%、竖直居中**，
+   窄屏裁掉的是左边的空处，桌面裁掉的是上下。 */
 .nf-scope {
     position: relative;
     background-image:
         linear-gradient(var(--scope-line) 1px, transparent 1px),
         linear-gradient(90deg, var(--scope-line) 1px, transparent 1px),
         linear-gradient(var(--scope-line-strong) 1px, transparent 1px),
-        linear-gradient(90deg, var(--scope-line-strong) 1px, transparent 1px);
+        linear-gradient(90deg, var(--scope-line-strong) 1px, transparent 1px),
+        var(--scope-art, none);
     background-size:
         100% var(--scope-cell-fine), var(--scope-cell-fine) 100%,
-        100% var(--scope-cell), var(--scope-cell) 100%;
+        100% var(--scope-cell), var(--scope-cell) 100%,
+        cover;
+    background-position: 0 0, 0 0, 0 0, 0 0, right center;
+    background-repeat: repeat, repeat, repeat, repeat, no-repeat;
 }
 /* 网格向上下边缘渐隐，避免出现一条生硬的截断线 */
 .nf-scope::before {

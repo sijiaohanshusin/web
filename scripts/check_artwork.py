@@ -33,6 +33,35 @@ BANNERS = ["banner-intro.webp", "banner-training.webp", "banner-hardware.webp",
            "banner-software.webp", "banner-contest.webp"]
 OTHERS = SPOT + ["banner-social-card.webp", "illustration-soldering-journey.webp"]
 
+# ---------- 第二批（工单在 docs/美术资产清单.md 的「第二批」一节） ----------
+# 这一批还没交付，所以**缺文件不算失败**，只打印「待交付」。理由：验收标准写在
+# 代码里比写在文档里有用得多（数字不会漂），但不能因此把主线检查卡红 ——
+# 那会让人为了让脚本变绿而去删断言。
+#
+# 列表页页头氛围图：走 `.nf-scope` 的 `--scope-art` 变量（见 core.css）。
+# 尺寸与安全区是**算出来的**，不是拍脑袋：页头在桌面是 1440x274（5.26:1）、
+# 窄屏是 390x229（1.70:1），`cover` + `right center` 之下
+#   桌面看到竖向 22%~78%（整宽）、窄屏看到横向 43%~100%（整高）
+# 所以意象必须落在「右 40% × 竖中 56%」这块交集里，左 55% 留给标题与导语。
+# 2560x860（≈2.98:1）是让两边裁掉的量大致相等的那个比例。
+HERO_ART = {
+    "hero-news.webp": "公告与动态",
+    "hero-events.webp": "活动",
+    "hero-resources.webp": "学习资源",
+    "hero-works.webp": "作品墙",
+    "hero-honors.webp": "荣誉墙",
+    "hero-team.webp": "团队",
+    "hero-leaderboard.webp": "积分榜",
+}
+# 浅底板面材质：白区（#nf-honors 的 .surf-hatch）现在是全站最平的地方，
+# 而第一批的覆铜纹是暗材质、铺白区上是一块脏斑。
+LIGHT_TEX = ["tex-copper-light.webp"]
+# 插画成套（新生指南开篇）。**成套是硬要求**：一张风格孤立的插画会显得像贴上去的，
+# 所以验收里有一条「三张的尺寸与色相要一致」。
+# 第 1 张就是第一批那张 `illustration-soldering-journey`（改名而来，母图不用重生成），
+# 只需要再补 2 张对得上它的。
+ILLU = ["illu-journey-1.webp", "illu-journey-2.webp", "illu-journey-3.webp"]
+
 failures: list[str] = []
 notes: list[str] = []
 
@@ -132,6 +161,95 @@ def left_clean(im, frac=0.4) -> tuple[float, float]:
     return mean(left), mean(right), left[int(len(left) * .99)]
 
 
+def region(im, x0f, x1f, y0f=0.0, y1f=1.0):
+    """返回一块矩形区域的 (平均亮度, 99 分位, 99.9 分位)。比例参数是 0~1。"""
+    import numpy as np
+
+    a = np.asarray(im.convert("L"), dtype=np.float32)
+    h, w = a.shape
+    box = a[int(h * y0f):int(h * y1f), int(w * x0f):int(w * x1f)]
+    return (float(box.mean()), float(np.percentile(box, 99)),
+            float(np.percentile(box, 99.9)))
+
+
+def pending(name, label):
+    print(f"  ..   {name} 待交付（{label}）")
+
+
+def check_batch2(Image) -> None:
+    print("\n第二批 · 列表页页头氛围（意象在右 40% × 竖中 56%，左 55% 留给标题）")
+    for name, label in HERO_ART.items():
+        path = IMG / name
+        if not path.exists():
+            pending(name, label)
+            continue
+        im = Image.open(path)
+        lmean, l99, _ = region(im, 0.0, 0.55)
+        rmean, r99, _ = region(im, 0.60, 1.0)
+        _, _, g999 = region(im, 0.0, 1.0)
+        cyan, copper, magenta = hue_split(im)
+        print(f"\n  {name}  {im.size[0]}x{im.size[1]}  {label}")
+        check(2.90 <= im.size[0] / im.size[1] <= 3.06,
+              "比例 ≈2.98:1（两边裁掉的量大致相等）", f"{im.size}")
+        # 左区收得比第一批（≤80）狠：页头上压着 h1 + 一句 720px 宽的宋体导语，
+        # 覆盖面积比章节头大得多，一小块高光就会顶在笔画上。
+        check(l99 <= 30, "左 55% 干净（99 分位 ≤30）", f"{l99:.0f}")
+        check(lmean < rmean, "左侧比右侧暗", f"左 {lmean:.1f} vs 右 {rmean:.1f}")
+        # 窄屏时文字会压到右区上（`cover` 从左边裁），所以右区也不能整片发亮 ——
+        # 但允许细高光（第一批实测右区 99 分位到 134，肉眼没问题）。
+        check(rmean <= 25, "右 40% 整体仍是暗场（平均 ≤25）", f"{rmean:.1f}")
+        check(r99 <= 140, "右 40% 没有大片过曝（99 分位 ≤140）", f"{r99:.0f}")
+        check(g999 <= 210, "全图 99.9 分位 ≤210（细高光可以，大面积不行）", f"{g999:.0f}")
+        check(magenta < 0.08, "没有紫红色相", f"紫红 {magenta:.1%}")
+        note("色相分布", f"青 {cyan:.0%} · 铜 {copper:.0%}")
+
+    print("\n第二批 · 浅底板面材质（白区用，判据和暗材质正好相反）")
+    for name in LIGHT_TEX:
+        path = IMG / name
+        if not path.exists():
+            pending(name, "白区底纹")
+            continue
+        im = Image.open(path)
+        seam_abs, seam_ratio = seam_delta(im)
+        mean_l, _, _ = region(im, 0.0, 1.0)
+        import numpy as np
+        lo = float(np.asarray(im.convert("L")).min())
+        cyan, copper, magenta = hue_split(im)
+        print(f"\n  {name}  {im.size[0]}x{im.size[1]}")
+        check(im.size[0] == im.size[1], "是正方形（平铺用）", f"{im.size}")
+        check(seam_abs < 1.5 or seam_ratio < 2.0, "接缝不明显", 
+              f"绝对 {seam_abs:.2f} · 比值 {seam_ratio:.2f}")
+        # 白区底色是 #f7f8fa（亮度 248）。材质要压在它上面当「浅浮雕」，
+        # 平均亮度低于 235 就会读成一块脏斑 —— 这是第一批那张暗铜纹放不进白区的原因。
+        check(mean_l >= 235, "整体够亮（平均 ≥235，白区底色是 248）", f"{mean_l:.1f}")
+        check(lo >= 195, "最暗处也不深（≥195，不能有深色块）", f"{lo:.0f}")
+        check(magenta < 0.08, "没有紫红色相", f"紫红 {magenta:.1%}")
+        note("色相分布", f"青 {cyan:.0%} · 铜 {copper:.0%}")
+
+    print("\n第二批 · 新生指南开篇插画（三张必须像同一支笔画的）")
+    got = [(n, Image.open(IMG / n)) for n in ILLU if (IMG / n).exists()]
+    for n in ILLU:
+        if not (IMG / n).exists():
+            pending(n, "开篇插画")
+    for name, im in got:
+        band = banding_score(im)
+        cyan, copper, magenta = hue_split(im)
+        print(f"\n  {name}  {im.size[0]}x{im.size[1]}")
+        check(band <= 3, "暗部无色带", f"{band} 个空档")
+        check(magenta < 0.08, "没有紫红色相", f"紫红 {magenta:.1%}")
+        note("色相分布", f"青 {cyan:.0%} · 铜 {copper:.0%}")
+    if len(got) == len(ILLU):
+        sizes = {im.size for _, im in got}
+        check(len(sizes) == 1, "三张尺寸一致（一行并排，不齐就参差）", f"{sizes}")
+        # 「成套」不是一句形容词，是可以量的：三张的青/铜配比要在同一个区间里。
+        cyans = [hue_split(im)[0] for _, im in got]
+        check(max(cyans) - min(cyans) <= 0.35,
+              "三张的色相配比接近（否则不像同一支笔）",
+              " · ".join(f"{c:.0%}" for c in cyans))
+    elif got:
+        check(False, "插画必须成套交付（宁缺勿滥）", f"只有 {len(got)}/{len(ILLU)} 张")
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -197,6 +315,8 @@ def main() -> int:
         check(band <= 3, "暗部无色带", f"{band} 个空档")
         check(magenta < 0.08, "没有紫红色相", f"紫红 {magenta:.1%}")
         note("色相分布", f"青 {cyan:.0%} · 铜 {copper:.0%}")
+
+    check_batch2(Image)
 
     if args.dump:
         out = Path(args.dump)
