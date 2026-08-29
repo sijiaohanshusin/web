@@ -19,11 +19,17 @@
 发布前应当跑一次；退出码非 0 表示有问题，可直接用在 CI 里。
 命令只往临时目录写入，不会碰 STATIC_ROOT。
 """
+import os
+import posixpath
 import re
 import shutil
 import tempfile
 from pathlib import Path
+from urllib.parse import unquote, urldefrag
 
+from django.conf import settings
+from django.contrib.staticfiles import finders
+from django.contrib.staticfiles.storage import HashedFilesMixin
 from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
 from django.test import Client, override_settings
@@ -66,6 +72,7 @@ class Command(BaseCommand):
         self.failures = []
         try:
             with override_settings(DEBUG=False, STATIC_ROOT=tmp, STORAGES=PROD_STORAGES):
+                self._check_css_refs()
                 self._collect(tmp)
                 self._check_js_modules(tmp)
                 self._check_page(tmp)
@@ -94,6 +101,75 @@ class Command(BaseCommand):
         (self._ok if cond else self._fail)(label, detail)
 
     # ------------------------------------------------------------------ 步骤
+
+    def _check_css_refs(self):
+        """用 Django 自己那两条 CSS 正则扫一遍全部样式表，逐个确认引用的目标真的存在。
+
+        **为什么不能只靠下面那步 collectstatic**：Win32 API 会**默默丢掉路径末尾的
+        点**。所以注释里一句 `url('...')` 这样的示例写法（正则会把 `...` 当成路径
+        抓出来），在本机 `os.path.exists("css/...")` 等于问 `css/` 这个目录存不存在
+        —— True。Django 那条「找不到就 raise ValueError」的分支根本走不到，接着
+        `self.open()` 打开目录抛 OSError，又正好被 `except OSError: return name`
+        吞掉。于是本机 collectstatic 一路绿灯。
+
+        到了 Linux 上，`css/...` 就是一个不存在的文件名：collectstatic 抛
+        ValueError → entrypoint 里那一步失败 → 容器起不来 → 线上 502。
+        **真踩过一次**（`--scope-art` 那条注释）。
+
+        所以这一步刻意**不碰文件系统**：先把 finders 能列出来的静态路径收成一个
+        字符串集合，再拿引用去查集合。纯字符串比较，没有平台差异。
+        """
+        self.stdout.write("CSS 引用的目标真实存在（不查文件系统，查 finders 的清单）")
+        known = set()
+        for finder in finders.get_finders():
+            for path, _storage in finder.list([]):
+                known.add(path.replace(os.sep, "/"))
+        self._assert(len(known) > 50, "finders 真的列出了静态文件（不然这一步空跑）",
+                     f"{len(known)} 个")
+
+        css_pats = [
+            re.compile(p[0] if isinstance(p, tuple) else p, re.IGNORECASE)
+            for ext, pats in HashedFilesMixin.patterns if ext == "*.css"
+            for p in pats
+            # sourceMappingURL 那条由 collectstatic 自己管（它抓的是注释里的 map 文件）
+            if "sourceMappingURL" not in (p[0] if isinstance(p, tuple) else p)
+        ]
+        self._assert(len(css_pats) >= 2, "取到了 Django 的 CSS 引用正则", f"{len(css_pats)} 条")
+
+        bad = []
+        checked = 0
+        for name in sorted(n for n in known if n.endswith(".css")):
+            abs_path = finders.find(name)
+            if not abs_path:
+                continue
+            text = Path(abs_path).read_text(encoding="utf-8", errors="replace")
+            for rx in css_pats:
+                for m in rx.finditer(text):
+                    raw = (m.groupdict().get("url") or "").strip()
+                    if not raw or raw.startswith(("#", "http:", "https:", "//", "data:")):
+                        continue
+                    target, _frag = urldefrag(unquote(raw))
+                    target = target.split("?")[0]
+                    if not target:
+                        continue
+                    if target.startswith("/"):
+                        if not target.startswith(settings.STATIC_URL):
+                            continue
+                        rel = target.removeprefix(settings.STATIC_URL)
+                    else:
+                        rel = posixpath.join(posixpath.dirname(name), target)
+                    rel = posixpath.normpath(rel)
+                    checked += 1
+                    if rel not in known:
+                        bad.append(f"{name} → {raw}")
+
+        self._assert(checked > 0, "确实扫到了 CSS 引用（不然这一步空跑）", f"{checked} 处")
+        if bad:
+            self._fail("**每条 CSS 引用都指向真实文件**",
+                       "断链：" + "；".join(bad[:6]) +
+                       "（注释里也不许出现示例写法，正则连注释一起扫）")
+        else:
+            self._ok("**每条 CSS 引用都指向真实文件**", f"{checked} 处全部命中")
 
     def _collect(self, tmp: Path):
         self.stdout.write("collectstatic（ManifestStaticFilesStorage）")
