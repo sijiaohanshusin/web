@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <title>晶振的原理图符号</title>
+  <g data-terminals="0,24 56,24" data-grid="4">
+    <path d="M0 24h20.0M36.0 24h20.0" />
+    <path d="M20.0 14v20M36.0 14v20" />
+    <rect x="24.0" y="12" width="8" height="24" rx="1" />
+  </g>
+</svg>

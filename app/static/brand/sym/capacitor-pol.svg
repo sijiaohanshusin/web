@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <title>电解电容的原理图符号</title>
+  <g data-terminals="0,24 56,24" data-grid="4">
+    <path d="M0 24h25.0M35.0 24h21.0" />
+    <path d="M25.0 13v22" />
+    <path d="M31.0 13a15 15 0 0 1 0 22" />
+    <path d="M15.0 9h6M18.0 6v6" />
+  </g>
+</svg>

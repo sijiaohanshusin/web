@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <title>发光二极管的原理图符号</title>
+  <g data-terminals="0,24 56,24" data-grid="4">
+    <path d="M0 24h20.0M33.0 24h23.0" />
+    <path d="M20.0 15L33.0 24L20.0 33Z" />
+    <path d="M33.0 15v18" />
+    <path d="M22.0 12L29.0 5" />
+    <path d="M29.0 5.0L27.1 9.6L24.4 6.9Z" fill="currentColor" stroke="none" />
+    <path d="M29.0 12L36.0 5" />
+    <path d="M36.0 5.0L34.1 9.6L31.4 6.9Z" fill="currentColor" stroke="none" />
+  </g>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <title>电源的原理图符号</title>
+  <g data-terminals="16,48" data-grid="4">
+    <path d="M16 48V12" />
+    <path d="M9 19l7-7 7 7" />
+  </g>
+</svg>

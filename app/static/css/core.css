@@ -1512,6 +1512,41 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 
 .component-block { padding: 18px 0; border-bottom: 1px solid var(--line-d); }
 .component-block:last-child { border-bottom: none; }
+/* ---------- 元件名 + 原理图符号 ----------
+   一行里：左边是元件名，右边是它在原理图里的画法（`brand/sym/*.svg`，
+   由 scripts/build_symbols.py 生成）。下面那排是实物照片 —— 照片教
+   「长什么样」，符号教「怎么画」，原来只有前一半。
+
+   符号用铜色而不是青色：全站的语汇里青色是「信号」，铜色是「工艺记号 / 丝印」
+   （章节编号 `.rg-no`、三联画的序号都是铜色）。原理图符号属于后者。 */
+.cb-head { display: flex; align-items: center; gap: 16px; }
+.cb-sym {
+    /* **高度固定、宽度自动**：符号库里每个 SVG 的 viewBox 高度都是 48，
+       所以固定高度就等于固定缩放比例 —— 一列符号的线宽才一样粗。
+
+       高度取 40px 而不是 30：两端元件的本体只占画布中间 22/48，30px 时实际墨迹
+       只有 14px、比 20px 的元件名还小，读起来像个附注；40px 之后墨迹约 20px，
+       和元件名同高。三极管/运放占满画布所以会明显更大 —— 那是**对的**，
+       真实符号库里三极管本来就比电阻大一圈，统一的是比例尺不是视觉大小。
+
+       **`width` 必须显式给出来，不能只写 `auto`。** 内联 SVG 只有 viewBox、
+       没有 width/height 属性时，`width: auto` 解析成 100%（撑满 flex 容器），
+       于是它按容器宽度反推高度、把整行顶成几百像素高。上面那条 `height: 40px`
+       会被这个宽度连带作废。所以宽度按各自的 viewBox 比例写死在下面。 */
+    height: 40px; flex: none; margin-left: auto;
+    color: var(--copper-2);
+}
+/* 按 viewBox 宽高比给宽度（高度统一 48）：56/48 → 46.7px，48/48 → 40px，
+   32/48 → 26.7px。写成 aspect-ratio 更省事，但 Safari 对无内在尺寸的内联 SVG
+   支持得不一致，直接给 width 最稳。 */
+.cb-sym { width: 46.7px; }                       /* 两端元件 56x48 */
+.cb-sym[viewBox="0 0 48 48"] { width: 40px; }    /* 三极管 / MOSFET */
+.cb-sym[viewBox="0 0 32 48"] { width: 26.7px; }  /* 接地 / 电源 / 排针 */
+@media (max-width: 720px) {
+    /* 窄屏元件名可能换行，符号跟着挤成一条竖的。让它退到名字下面单独一行。 */
+    .cb-head { flex-wrap: wrap; gap: 6px 16px; }
+    .cb-sym { margin-left: 0; }
+}
 /* 是 h3 而不是 h4：见 recruit.html 里的说明（外层是 h2，中间的 summary 不是标题）。
    字号 16px 比 `.recruit-content h3` 小是刻意的 —— 层级给读屏，字号给眼睛。 */
 .component-block h3 { color: #fff; font-size: var(--fs-xl); margin: 0 0 6px; }

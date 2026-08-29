@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <title>接地的原理图符号</title>
+  <g data-terminals="16,0" data-grid="4">
+    <path d="M16 0v24" />
+    <path d="M5 24h22M9 30h14M13 36h6" />
+  </g>
+</svg>

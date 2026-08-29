@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <title>运算放大器的原理图符号</title>
+  <g data-terminals="0,12 0,36 56,24" data-grid="4">
+    <path d="M0 12h14M0 36h14M42 24h14" />
+    <path d="M14 4v40l28-20Z" />
+    <path d="M17.5 12h5" />
+    <path d="M17.5 36h5M20 33.5v5" />
+  </g>
+</svg>

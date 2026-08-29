@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <title>NPN 三极管的原理图符号</title>
+  <g data-terminals="0,24 36,0 36,48" data-grid="4">
+    <circle cx="24" cy="24" r="18" />
+    <path d="M0 24h18" />
+    <path d="M18 14v20" />
+    <path d="M18 19L36 10V0" />
+    <path d="M18 29L36 38V48" />
+    <path d="M30.0 34.8L24.1 34.1L26.3 30.0Z" fill="currentColor" stroke="none" />
+  </g>
+</svg>

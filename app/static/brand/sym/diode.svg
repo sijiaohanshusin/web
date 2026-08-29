@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <title>二极管的原理图符号</title>
+  <g data-terminals="0,24 56,24" data-grid="4">
+    <path d="M0 24h20.0M33.0 24h23.0" />
+    <path d="M20.0 15L33.0 24L20.0 33Z" />
+    <path d="M33.0 15v18" />
+  </g>
+</svg>

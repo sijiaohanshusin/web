@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <title>开关的原理图符号</title>
+  <g data-terminals="0,24 56,24" data-grid="4">
+    <path d="M0 24h14M42 24h14" />
+    <circle cx="14" cy="24" r="2" />
+    <circle cx="42" cy="24" r="2" />
+    <path d="M15.8 22.8l24 -9" />
+  </g>
+</svg>
