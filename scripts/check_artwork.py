@@ -133,13 +133,24 @@ def banding_score(im) -> int:
 
     暗调图如果做过量化/JPEG 压缩，暗部直方图会梳齿状 —— 有值的灰阶之间夹着 0。
     连续渐变的图在这一段应该几乎每一级都有像素。
+
+    **只在「像素够多」的那一段里数空档。** 第一版拿「第一个有值的灰阶」到
+    「最后一个有值的灰阶」当范围，于是**高光尾巴上的稀疏采样会被误判成色带**：
+    `tex-etched-copper` 在 52 / 55 / 59 三级各是 0，而它们左右邻居也只有 1~3 个
+    像素（那是几个镜面高光点），0~51 那一段密得连一个空档都没有。
+    照那样判，任何带一点高光的暗材质都会红。
+
+    门槛取「总像素的两万分之一」：512² 图上约 13 个像素。低于它的灰阶不算
+    「这里本该有像素」，所以不参与空档统计。真正的梳齿仍然拦得住 —— 梳齿的两侧
+    是**大量**像素，空档夹在它们中间。
     """
     g = im.convert("L")
     hist = g.histogram()[:64]
-    used = [i for i, n in enumerate(hist) if n > 0]
-    if not used:
+    floor = max(4, (g.size[0] * g.size[1]) // 20000)
+    dense = [i for i, n in enumerate(hist) if n >= floor]
+    if len(dense) < 2:
         return 0
-    return sum(1 for i in range(used[0], used[-1] + 1) if hist[i] == 0)
+    return sum(1 for i in range(dense[0], dense[-1] + 1) if hist[i] == 0)
 
 
 def seam_delta(im) -> tuple[float, float]:
@@ -252,6 +263,23 @@ def check_batch2(Image) -> None:
         # 第一版就死在这里：又亮又干净，但一片均匀噪点。见 texture_spread 的说明。
         spread = texture_spread(im)
         check(spread >= 12, "**上面真的有纹理**（p95−p5 跨度 ≥12）", f"{spread:.1f}")
+        # ---- 这一条是无障碍守卫，不是审美判断 ----
+        # 材质铺满白区之后，**文字实际压着的底色就是这张图**，不再是 #f7f8fa。
+        # 而 `check_a11y.py` 量的是元素自己的 `background-color`（材质画在
+        # ::before 上，不在它那条链上），所以它永远量到 248、永远是绿的。
+        #
+        # 白区最紧的角色是 eyebrow 小字（13px，`--accent-ink` #0a7288，要 4.5:1）。
+        # 量**最暗的 5%** 而不是中位数：纹理是逐像素变化的，笔画正好落在暗纹上的
+        # 情况必须也过关。实测 #0a7288 在 230 的底色上是 4.55:1，所以门槛取 230。
+        #
+        # 这条断言和 `--accent-ink` 是一对：谁改了另一个也要重算。
+        # 第二版母图（平均 236.5、p5 约 223）就是踩在这条线下面 —— 铺上去之后
+        # eyebrow 跌到 4.4，而全套浏览器脚本一条都不会红。
+        import numpy as np
+        p5 = float(np.percentile(np.asarray(im.convert("L"), dtype=np.float32), 5))
+        check(p5 >= 230,
+              "**白区文字压上去仍够对比**（最暗 5% ≥230 ⇔ eyebrow 有 4.5:1）",
+              f"{p5:.0f}")
         check(magenta < 0.08, "没有紫红色相", f"紫红 {magenta:.1%}")
         note("色相分布", f"青 {cyan:.0%} · 铜 {copper:.0%}")
 

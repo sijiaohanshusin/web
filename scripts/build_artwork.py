@@ -28,7 +28,17 @@ REPO = Path(__file__).resolve().parent.parent
 SRC = REPO / ".artsrc"
 OUT = REPO / "app" / "static" / "img"
 
-# name → (是否要四方连续, 输出边长/宽度, webp 质量, 可选 src=母图名)
+# name → (是否要四方连续, 输出边长/宽度, webp 质量, 可选 sat=饱和度倍数, src=母图名)
+#
+# **`sat` 是为「大面积平铺」加的，不是为了好看。** 全站配色是近黑 + 信号青 + 焊锡铜
+# 三支，而 FR4 的母图是一张饱和的绿色阻焊照片：铺在页脚那 400px 里读起来是「板子的
+# 背面」（真实、也没人会当成设计色），但铺满一个 900px 高的分镜之后，整块就变成
+# **绿色色块** —— 实测把区块从 (5,5,6) 抬到 (7.6, 14.0, 11.8)，绿比红高 6.4。
+# 那是往配色里塞了第四支颜色。
+#
+# 压饱和度而不是压透明度：纹理靠的是**亮度起伏**，去掉颜色之后 p95−p5 跨度
+# 从 17 只掉到 16（几乎不掉），而绿比红从 +8 降到 +3。也就是「材质留下，颜色收走」。
+
 # 尺寸的依据：纹理按平铺尺寸给，横幅按站上最宽的容器（1240）× 2 给。
 #
 # **`tex-matte-solder-mask` 已从这里移除**（母图还在 `.artsrc/`）：它压出来只有 2KB，
@@ -36,8 +46,24 @@ OUT = REPO / "app" / "static" / "img"
 # `docs/美术资产清单.md`。不做而不是留着，是因为留着会让新加的「纹理必须真的有
 # 纹理」那条断言常红，而常红的断言等于没有断言。
 JOBS: dict[str, dict] = {
-    "tex-fr4-weave":          {"tile": True,  "size": 512,  "q": 88},
-    "tex-etched-copper":      {"tile": True,  "size": 512,  "q": 88},
+    "tex-fr4-weave":          {"tile": True,  "size": 512,  "q": 88, "sat": 0.4},
+    # 母图是裸铜棚拍，平均亮度 32 —— 铺满一个分镜会把整块抬成中灰。
+    # `tone` 把它压到「平均 12、跨度 15」：近黑底上一层能看见的铜面，见 retone()。
+    "tex-etched-copper":      {"tile": True,  "size": 512,  "q": 88, "sat": 0.55,
+                               "tone": (12, 15)},
+    # 白区材质。质量给到 92：浅色低对比的图最经不起有损压缩 ——
+    # 88 就会把那层极淡的纹理压成块，而它整张的明暗跨度只有 23 级。
+    #
+    # `tone` 提亮到「平均 245、跨度 12」。**白区的材质强度直接就是文字对比度预算**：
+    # 暗材质有大把抬升余量（底色 5，往上很远都还是黑），而浅材质只能往下压 ——
+    # 纸白已经是 248，再亮就顶到 255。母图平均 236.5、最暗 5% 约 223，铺上去把
+    # 白区压到中位 225，于是 eyebrow 那 13px 小字跌破 4.5:1，而全套浏览器脚本
+    # 一条都不会红（理由见 check_artwork.py 里那条断言）。
+    # 241/15 是把「纹理够看得见」和「文字够对比」一起满足的那一档：实测最暗 5%
+    # 落在 234，配上压暗一档的 `--accent-ink` 还有 4.68:1。**留了余量是刻意的** ——
+    # webp 有损压缩会再吃掉 1~2 级跨度（(245,12) 那档压完只剩 11.3，反而跌破 12）。
+    "tex-copper-light":       {"tile": True,  "size": 512,  "q": 92,
+                               "tone": (241, 15)},
     # 浅景深特写，不平铺；当局部材质用，给大一点
     "tex-solder-joint":       {"tile": False, "size": 1024, "q": 86},
     "banner-intro":           {"tile": False, "size": 1920, "q": 84},
@@ -99,12 +125,55 @@ def make_seamless(im):
     return Image.fromarray(np.clip(out + 0.5, 0, 255).astype("uint8"), im.mode)
 
 
+def retone(im, target_mean: float, target_spread: float):
+    """把一张图重映射到「指定的平均亮度 + 指定的明暗跨度」。
+
+    **为什么需要它**：`tex-etched-copper` 的母图是一张裸铜棚拍，平均亮度 32、
+    跨度 20 —— 直接铺满一个分镜，整块就从 #050506 抬到中灰，那不是「近黑底上有
+    材质」而是「页面变灰了」。而单纯压暗（整体乘一个系数）会把跨度一起压掉：
+    乘 0.33 之后平均是 11、跨度只剩 6.6，低于「上面真的有纹理」那条线（12）。
+
+    所以要把**平均**和**跨度**分开控制：先按跨度算缩放系数，再把中心平移到目标
+    平均值。`out = (in − 原均值) × k + 目标均值`，三个通道用同一组数 ——
+    这样通道之间的差值（也就是铜色的暖调）按 k 等比收窄，不会变色。
+
+    FR4 那张不用 retone：它的母图本来就是暗的（平均 7.6），分布也是「大部分极暗
+    + 织纹高光」，正好是暗材质该有的样子。
+
+    最后那一步**抖动（dither）是必需的**：`ImageEnhance.Color` 已经量化过一次到
+    8bit，再乘一个非整数系数取整，会有个别输出灰阶一次都取不到 —— 于是暗部直方图
+    出现梳齿，`check_artwork.py` 的「暗部无色带」当场判红（实测 3 个空档）。
+    在取整前加 ±0.5 的噪声就能把空档填上，而这一层噪声的幅度小于一个灰阶、
+    肉眼看不到。种子写死，保证同样的母图每次出一样的产物。
+    """
+    import numpy as np
+
+    a = np.asarray(im, dtype=np.float32)
+    lum = a.mean(axis=2)
+    m = float(lum.mean())
+    spread = float(np.percentile(lum, 95) - np.percentile(lum, 5))
+    k = target_spread / max(spread, 0.001)
+    out = (a - m) * k + target_mean
+    rng = np.random.default_rng(20260829)
+    out = out + rng.uniform(-0.5, 0.5, out.shape)
+    from PIL import Image
+
+    return Image.fromarray(np.clip(out + 0.5, 0, 255).astype("uint8"), "RGB")
+
+
 def dark_histogram_gaps(im) -> int:
-    hist = im.convert("L").histogram()[:64]
-    used = [i for i, n in enumerate(hist) if n > 0]
-    if not used:
+    """和 `check_artwork.py` 的 `banding_score` 同一套判据，保持一致。
+
+    只在「像素够多」的灰阶之间数空档 —— 高光尾巴上一两个像素造成的 0
+    不是色带（理由写在那个函数里）。
+    """
+    g = im.convert("L")
+    hist = g.histogram()[:64]
+    floor = max(4, (g.size[0] * g.size[1]) // 20000)
+    dense = [i for i, n in enumerate(hist) if n >= floor]
+    if len(dense) < 2:
         return 0
-    return sum(1 for i in range(used[0], used[-1] + 1) if hist[i] == 0)
+    return sum(1 for i in range(dense[0], dense[-1] + 1) if hist[i] == 0)
 
 
 def main() -> int:
@@ -146,6 +215,13 @@ def main() -> int:
             im = im.resize((round(w * target / h), target), Image.LANCZOS)
         if job["tile"]:
             im = make_seamless(im)
+        # 压饱和度放在最后：去接缝是在像素上做混合，先压不影响结果，
+        # 但放最后能保证「量到的就是入库的那张」。
+        if job.get("sat") is not None:
+            from PIL import ImageEnhance
+            im = ImageEnhance.Color(im).enhance(job["sat"])
+        if job.get("tone") is not None:
+            im = retone(im, *job["tone"])
         dst = OUT / f"{name}.webp"
         im.save(dst, "WEBP", quality=job["q"], method=6)
         after = dark_histogram_gaps(Image.open(dst))

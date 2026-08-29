@@ -121,9 +121,16 @@
     --accent-2: #41d8e8;
     /* 白区（`.nf-light`，底色 --paper）上的信号青。**同一个 --accent 放到浅底上
        只有 2.61:1**，连大字要的 3:1 都不到 —— 而白区里恰好有 eyebrow 小字和大标题
-       里的强调词两处在用它。压暗到 4.68:1 过 AA，色相仍然是那条信号青。
-       暗底上继续用 --accent，那边是 11:1 以上。 */
-    --accent-ink: #0a7a94;
+       里的强调词两处在用它。所以白区单独一个更暗的档，色相仍是那条信号青；
+       暗底上继续用 --accent，那边是 11:1 以上。
+
+       **从 #0a7a94（4.68:1）再压一档到 #0a7288（5.23:1）**，理由不是「更保险」
+       而是白区铺了材质：`.nf-light.surf-hatch` 的浅底板面纹把有效底色从 248 压到
+       中位 244、最暗 5% 到 237。而 4.68:1 只有 0.18 的余量 —— 材质一铺上去
+       eyebrow 那 13px 小字就跌到 4.5 以下，**而 check_a11y.py 量不到**
+       （材质画在 ::before 上，它量的是元素自己的 background-color，永远是 248）。
+       压暗之后：纸白 5.23、材质中位 5.12、材质最暗处 4.81，三种情况都有余量。 */
+    --accent-ink: #0a7288;
     /* 第二记忆色「焊锡铜」：与论坛皮肤 --esta-copper 同源，
        小面积用于编号、选区等工艺感细节，不承担交互语义 */
     --copper: #c98a3d;
@@ -573,12 +580,31 @@ img.img-fade.img-loaded { opacity: 1; }
             var(--surf-weave-line) 0 1px, transparent 1px var(--surf-weave-cell));
 }
 
-/* 覆铜区：EDA 里大面积覆铜用网格填充画（省铜、也减少翘曲），
-   单向 45° 细线就够读出「这块是铜」，双向会太满 */
+/* 覆铜区：暗区换成真实材质照片（`img/tex-etched-copper.webp`，512² 可四方连续，
+   56KB）。和 `.surf-weave` 同一个做法、同一个理由 —— CSS 斜纹是「示意」，
+   照片是「材质」，静止时的厚度差别全在这里。
+
+   平铺给 **320px** 而不是织纹那档 256px：蚀刻纹本身比玻纤布粗一档，
+   256px 平铺时那些走向会密到读成噪点；320px 才看得出「铜面被蚀刻过」。 */
 .surf-hatch::before {
-    background-image:
-        repeating-linear-gradient(45deg,
-            var(--surf-hatch-line) 0 1px, transparent 1px var(--surf-hatch-cell));
+    background-image: url("../img/tex-etched-copper.webp");
+    background-size: 320px 320px;
+    background-repeat: repeat;
+}
+/* 白区换**浅底版**（`img/tex-copper-light.webp`，512² 可四方连续）。
+   暗区那张铺到 #f7f8fa 上是一块脏斑（它是暗材质），所以两边各用一张 ——
+   和 `.surf-weave` 那里「白区退回 CSS 斜纹」不同，这里白区有专门的材质。
+
+   为什么白区值得单独做一张：改版之后白区一直是**全站最平的地方** ——
+   一块 #f7f8fa 的纯色加几条几乎看不见的 CSS 细线，静止时没有任何材质信息，
+   而白区在首页占了四段。
+
+   平铺给 256px：母图的纹理是大尺度的流动走向，512 平铺时那些波纹会大到读成
+   「布料花纹」；缩到一半才是「纸面/板面的肌理」那个尺度。 */
+.nf-light.surf-hatch::before {
+    background-image: url("../img/tex-copper-light.webp");
+    background-size: 256px 256px;
+    background-repeat: repeat;
 }
 
 /* 过孔阵列：钻孔的金属环。中心要留空 —— 填实了就变成一片装饰圆点，

@@ -105,8 +105,12 @@
 </section>
 
 <!-- ============ 最新公告（有公告才显示） ============ -->
+{% comment %}
+`surf-via grain`：一条条公告读成一排孔位。这一段只有 100px 高，斜纹在这个高度会
+糊成一片灰，点阵不会 —— 表面选哪一种要看区块的高度，不只看语义。
+{% endcomment %}
 {% if latest_posts %}
-<section class="nf-news-strip nf-dark" data-nav="dark">
+<section class="nf-news-strip nf-dark surf-via grain" data-nav="dark">
     <div class="container">
         <div class="nf-news-head">
             <p class="nf-eyebrow">// 最新公告</p>
@@ -130,7 +134,12 @@
 {% endif %}
 
 <!-- ============ 白色区：三个理由（照片卡骑跨黑白分界线） ============ -->
-<section class="nf-section nf-light nf-bridge" data-nav="light">
+{% comment %}
+`surf-hatch grain`：白区的覆铜（浅底走 CSS 斜纹，见 tokens.css）。
+和下面荣誉段同一种表面 —— 白区现在只有两种表面可选，而白区有四块，
+重复是必然的。浅底版覆铜纹交付之后这里换成它，两块白区才真正区分开。
+{% endcomment %}
+<section class="nf-section nf-light nf-bridge surf-hatch grain" data-nav="light">
     {# 上面永远是黑区：公告条有则是它、无则是分镜 01，两者都是 nf-dark #}
     {% include "includes/edge.html" with from="dark" %}
     <div class="container">
@@ -208,7 +217,8 @@
 </section>
 
 <!-- ============ 白色区：三大方向 ============ -->
-<section class="nf-section nf-light" data-nav="light">
+{# `surf-via grain`：三个方向读成三组节点 #}
+<section class="nf-section nf-light surf-via grain" data-nav="light">
     {% include "includes/edge.html" with from="dark" %}
     <div class="container">
         <p class="nf-eyebrow reveal">// DIRECTIONS</p>
@@ -263,7 +273,8 @@
 </section>
 
 <!-- ============ 黑色区：招新视频 ============ -->
-<section class="nf-section nf-dark" data-nav="dark">
+{# `surf-hatch grain`：暗区的覆铜是真实蚀刻纹照片（见 tokens.css） #}
+<section class="nf-section nf-dark surf-hatch grain" data-nav="dark">
     {% include "includes/edge.html" with from="light" %}
     <div class="container">
         <p class="nf-eyebrow nf-center reveal">// MOVIE</p>
@@ -296,7 +307,14 @@
 </section>
 
 <!-- ============ 黑色区：图片走廊（可拖拽 · 自动漂移） ============ -->
-<section class="nf-gallery-section nf-dark" data-nav="dark">
+{% comment %}
+`surf-weave grain`：照片钉在裸基板上。和分镜 01 同一种表面是刻意的 ——
+那一段讲「从一块空板开始」，这一段是「板上后来贴了什么」。
+
+（这里原来写成跨两行的 `{# #}`，于是整段注释被当成正文渲染出来了 ——
+Django 的 `{# #}` **只支持单行**，跨行必须用 `{% comment %}`。截图才看出来的。）
+{% endcomment %}
+<section class="nf-gallery-section nf-dark surf-weave grain" data-nav="dark">
     <div class="container nf-gallery-head">
         <div>
             <p class="nf-eyebrow reveal">// GALLERY</p>
@@ -426,7 +444,8 @@ includes/honor_row.html，和荣誉墙是同一份。
 {% endif %}
 
 <!-- ============ 黑色区：学习资源 + B站 ============ -->
-<section class="nf-section nf-dark" data-nav="dark">
+{# `surf-hatch grain`：暗区覆铜（真实蚀刻纹照片） #}
+<section class="nf-section nf-dark surf-hatch grain" data-nav="dark">
     <div class="container">
         <p class="nf-eyebrow reveal">// RESOURCES</p>
         <h2 class="nf-display reveal">技术传承<span class="accent">从未停歇</span></h2>
@@ -487,8 +506,18 @@ includes/honor_row.html，和荣誉墙是同一份。
 </section>
 
 <!-- ============ 加入我们 ============ -->
-<section class="nf-join nf-dark" id="join" data-nav="dark">
+{% comment %}
+`grain` + 一块 `.join-bg`（焊点微距）。和新生指南页末那个加入面板**共用同一份
+实现**（`.join-bg` 在 core.css）—— 两处说的是同一句话「来焊你的第一块板」，
+所以不该有第二份代码。那份 CSS 的取景全用 px 钉死（距底边 67px、距右边 123px），
+与容器尺寸无关，所以搬到这个高得多的区块上不用改一个数。
+
+这里**不加 `.surf-*`**：`.nf-join-halo` 已经是一层大面积的光，再叠一层底纹就是
+两层材质加颗粒 —— 那是噪音不是层次（见 tokens.css「一个区块只能有一层表面」）。
+{% endcomment %}
+<section class="nf-join nf-dark grain" id="join" data-nav="dark">
     <div class="nf-join-halo" aria-hidden="true"></div>
+    <div class="join-bg" aria-hidden="true"></div>
     <div class="container nf-center">
         <p class="nf-eyebrow reveal">// JOIN US</p>
         <h2 class="nf-display reveal">准备好点亮<br>你的<span class="accent">第一颗 LED</span> 了吗？</h2>
