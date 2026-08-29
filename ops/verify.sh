@@ -136,6 +136,31 @@ for probe in 'skip-link' 'view-transitions' 'nf-hero' 'SmileySans-subset' \
 done
 
 echo
+echo "装上去的是不是我刚推的那个提交"
+echo "（真事故：推完立刻部署，deploy.sh 说完成、这份脚本全绿，而线上跑的是上一个"
+echo " 提交 —— 分支名归档 tar.gz/refs/heads/main 有 CDN 缓存。deploy.sh 现在按"
+echo " 提交号下载并把它写进 /opt/heuesta/DEPLOYED_SHA，这一节负责对账。）"
+SHA_FILE=/opt/heuesta/DEPLOYED_SHA
+if [ ! -f "$SHA_FILE" ]; then
+    bad "没有 $SHA_FILE —— 上次部署没能确认提交号（或用的是旧版 deploy.sh）"
+else
+    deployed=$(tr -d '[:space:]' < "$SHA_FILE")
+    note "线上装的是 $deployed"
+    if remote=$(curl -fsS --connect-timeout 10 \
+                "https://api.github.com/repos/sijiaohanshusin/web/commits/main" 2>/dev/null); then
+        latest=$(grep -oiE '[0-9a-f]{40}' <<<"$remote" | head -n 1)
+        if [ -z "$latest" ]; then
+            note "GitHub API 回了东西但取不到 sha，跳过对账"
+        elif [ "$latest" = "$deployed" ]; then
+            ok "和 GitHub main 一致（$latest）"
+        else
+            bad "**落后于 GitHub main** —— 线上 $deployed / main $latest；重新跑一次 deploy.sh"
+        fi
+    else
+        note "api.github.com 不通，只能确认「装了哪个」、无法确认「是不是最新」"
+    fi
+fi
+echo
 echo "容器"
 docker compose -f /opt/heuesta/web/ops/docker-compose.yml \
     --env-file /opt/heuesta/.env ps \
