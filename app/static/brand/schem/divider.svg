@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" data-nets="GND=G1.1,R2.2;MID=R1.2,R2.1;VCC=R1.1,V1.1">
+  <title>电阻分压原理图</title>
+  <path d="M88 112L184 112" />
+  <circle cx="88" cy="112" r="3" fill="currentColor" stroke="none" />
+  <g transform="translate(88 32) rotate(0) translate(-16.0 -24.0)" data-ref="V1" data-sym="vcc">
+    <path d="M16 48V12" />
+    <path d="M9 19l7-7 7 7" />
+  </g>
+  <g transform="translate(88 84) rotate(90) translate(-28.0 -24.0)" data-ref="R1" data-sym="resistor">
+    <path d="M0 24h14M42 24h14" />
+    <rect x="14" y="17" width="28" height="14" rx="1.5" />
+  </g>
+  <g transform="translate(88 140) rotate(90) translate(-28.0 -24.0)" data-ref="R2" data-sym="resistor">
+    <path d="M0 24h14M42 24h14" />
+    <rect x="14" y="17" width="28" height="14" rx="1.5" />
+  </g>
+  <g transform="translate(88 192) rotate(0) translate(-16.0 -24.0)" data-ref="G1" data-sym="gnd">
+    <path d="M16 0v24" />
+    <path d="M5 24h22M9 30h14M13 36h6" />
+  </g>
+  <text x="88" y="16" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="13" text-anchor="middle">VCC</text>
+  <text x="108" y="88" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="13" text-anchor="start">R1</text>
+  <text x="108" y="144" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="13" text-anchor="start">R2</text>
+  <text x="188" y="116" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="13" text-anchor="start">Vout</text>
+</svg>

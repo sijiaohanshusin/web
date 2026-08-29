@@ -1442,6 +1442,34 @@ a.fb-mine-text:hover { color: var(--brand-2); }
     .rg-arc img { aspect-ratio: 16 / 10; }
 }
 
+/* ---------- 四张最小电路（原理图片段） ----------
+   `brand/schem/*.svg`，由 scripts/build_schematics.py 从符号库拼出来。
+   画布统一 240x240，所以给一半宽度就能让四张的线宽一致。
+
+   `<ol>` 而不是 `<div>`：这四个是有顺序的（从最简单往上走），
+   序号在语义里就该存在。 */
+.schem-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+    list-style: none; padding: 0; margin: 0 0 26px;
+}
+.schem-grid li { margin: 0; }
+.schem-grid figure {
+    margin: 0; height: 100%;
+    border: 1px solid var(--line-d); border-radius: 12px;
+    background: rgba(255, 255, 255, .03); padding: 12px 14px 14px;
+}
+/* 原理图本身是**内容**不是装饰，所以用正文色，不像元件符号那样用铜色 */
+.schem { display: block; width: 100%; height: auto; color: var(--text); }
+.schem-grid figcaption {
+    margin-top: 8px; color: var(--muted);
+    font-size: var(--fs-xs); line-height: var(--lh-prose);
+}
+.schem-grid figcaption b { display: block; color: #fff; font-weight: 700; }
+@media (max-width: 720px) {
+    /* 窄屏两栏各只有 165px，原理图上的 Vin/Vout 标注就糊了 —— 换成一栏一张 */
+    .schem-grid { grid-template-columns: 1fr; }
+}
+
 /* 每章一张现场照（素材槽）：拍到之前是空焊盘占位 */
 .rg-shot { margin: 18px 0 22px; }
 .recruit-content .sec-sub { color: var(--accent); font-size: var(--fs-xs); margin-bottom: 24px; font-family: var(--font-mono); letter-spacing: 2px; }

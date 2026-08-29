@@ -261,6 +261,49 @@ core/slots.py 的「新生指南 · 现场照」组。
             <details class="fold">
                 <summary>电路图与电路板</summary>
                 <div class="fold-body">
+                    {% comment %}
+                    四张最小电路（`app/static/brand/schem/`，由
+                    `scripts/build_schematics.py` 从符号库拼出来、
+                    `check_schematics.py` 从几何重算连通性验收）。
+
+                    放在「电路图示例」**之前**：上面那一节刚教完六个元件符号，
+                    这里立刻把它们连起来 —— 从「认识符号」到「读懂一张图」中间
+                    缺的就是这一步。下面那张实物原理图照片留着当「真实的图长什么样」，
+                    但它太密、不能当入门。
+
+                    每张都是**电气讲得通**的：网表写在生成脚本里，验收脚本从画出来的
+                    几何重新算一遍连通性再比对。接错的原理图比没有图更糟 ——
+                    新手会照着它接。
+                    {% endcomment %}
+                    <h3>先读懂四个最小的电路</h3>
+                    <p>元件符号连起来就是电路图。下面四个是第一年一定会遇到的，每个只有两三个元件 —— 看懂它们，再看下面那张真实的原理图就不会一片茫然。</p>
+                    <ol class="schem-grid">
+                        <li>
+                            <figure>
+                                {% inline_svg "brand/schem/led-series.svg" class="schem" label="LED 限流电路：电源经限流电阻接到发光二极管，再接地" %}
+                                <figcaption><b>LED 限流</b>LED 自己不限流，直接接电源会烧。串一个电阻把电流压到它能承受的范围 —— 第一次点亮 LED 就是这个电路。</figcaption>
+                            </figure>
+                        </li>
+                        <li>
+                            <figure>
+                                {% inline_svg "brand/schem/divider.svg" class="schem" label="电阻分压电路：两个电阻串联，中点引出输出电压" %}
+                                <figcaption><b>电阻分压</b>两个电阻串起来，中间那点的电压按阻值比例分：Vout = VCC × R2 ÷ (R1 + R2)。欧姆定律的第一个用处。</figcaption>
+                            </figure>
+                        </li>
+                        <li>
+                            <figure>
+                                {% inline_svg "brand/schem/rc-lowpass.svg" class="schem" label="RC 低通滤波电路：电阻串在信号路上，电容并联到地" %}
+                                <figcaption><b>RC 低通滤波</b>电阻串在信号路上、电容并到地。高频被电容旁路掉、低频照常通过 —— 电容「阻直流、通交流」最直接的用法。</figcaption>
+                            </figure>
+                        </li>
+                        <li>
+                            <figure>
+                                {% inline_svg "brand/schem/follower.svg" class="schem" label="运放电压跟随器：输出接回反相输入" %}
+                                <figcaption><b>运放电压跟随器</b>输出直接接回反相输入，于是输出跟着输入走、增益是 1。看着没做事，其实把带不动负载的高阻信号变成了能带负载的信号。</figcaption>
+                            </figure>
+                        </li>
+                    </ol>
+
                     <h3>电路图示例</h3>
                     <div class="img-grid img-grid-lg">
                         <figure class="img-wide"><img src="{% static 'img/recruit/schematic.webp' %}" alt="电路图示例" loading="lazy"><figcaption>电路原理图</figcaption></figure>

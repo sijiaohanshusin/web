@@ -552,6 +552,19 @@ img.img-fade.img-loaded { opacity: 1; }
     mask-image: linear-gradient(180deg, transparent 0,
         #000 10%, #000 90%, transparent 100%);
 }
+/* **白区不做边缘渐隐，铺满整块。** 上面那道 mask 是为暗区做的：暗材质在近黑底上
+   淡出淡入看不出来，而一条生硬的截断线会很显眼。白区的取舍正好相反 ——
+   浅材质在白底上表现为**一层暖色偏移**，把它在上下 10% 渐隐掉，结果是一大片平坦的
+   白上出现一条从奶油色渐变到冷白的横带。实测：右侧干净纸面从 y=80 到 680 是
+   亮度 232~239 / R−B +5~+8（有材质），到 y=880 变成 243 / R−B −0.7（没材质）——
+   大面积平色上的这种缓变，眼睛最容易挑出来，而它并没有换来什么：
+   区块边界那里本来就有 `includes/edge.html` 的过渡件在接。 */
+.nf-light.surf-weave::before,
+.nf-light.surf-hatch::before,
+.nf-light.surf-via::before {
+    -webkit-mask-image: none;
+    mask-image: none;
+}
 .surf-weave > *, .surf-hatch > *, .surf-via > * { position: relative; z-index: 1; }
 
 /* 裸基板：换成真实材质照片（`img/tex-fr4-weave.webp`，512² 可四方连续，30KB）。

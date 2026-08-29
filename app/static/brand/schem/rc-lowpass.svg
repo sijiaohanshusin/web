@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" data-nets="GND=C1.2,G1.1;IN=R1.1;OUT=C1.1,R1.2">
+  <title>RC 低通滤波原理图</title>
+  <path d="M24 88L68 88" />
+  <path d="M124 88L152 88" />
+  <path d="M152 88L208 88" />
+  <path d="M152 88L152 116" />
+  <circle cx="152" cy="88" r="3" fill="currentColor" stroke="none" />
+  <g transform="translate(96 88) rotate(0) translate(-28.0 -24.0)" data-ref="R1" data-sym="resistor">
+    <path d="M0 24h14M42 24h14" />
+    <rect x="14" y="17" width="28" height="14" rx="1.5" />
+  </g>
+  <g transform="translate(152 144) rotate(90) translate(-28.0 -24.0)" data-ref="C1" data-sym="capacitor">
+    <path d="M0 24h25.0M31.0 24h25.0" />
+    <path d="M25.0 13v22M31.0 13v22" />
+  </g>
+  <g transform="translate(152 196) rotate(0) translate(-16.0 -24.0)" data-ref="G1" data-sym="gnd">
+    <path d="M16 0v24" />
+    <path d="M5 24h22M9 30h14M13 36h6" />
+  </g>
+  <text x="20" y="92" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="13" text-anchor="end">Vin</text>
+  <text x="212" y="92" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="13" text-anchor="start">Vout</text>
+  <text x="96" y="68" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="13" text-anchor="middle">R1</text>
+  <text x="172" y="148" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="13" text-anchor="start">C1</text>
+</svg>

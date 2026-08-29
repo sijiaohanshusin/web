@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" data-nets="GND=D1.2,G1.1;N1=D1.1,R1.2;VCC=R1.1,V1.1">
+  <title>LED 限流原理图</title>
+  <g transform="translate(120 32) rotate(0) translate(-16.0 -24.0)" data-ref="V1" data-sym="vcc">
+    <path d="M16 48V12" />
+    <path d="M9 19l7-7 7 7" />
+  </g>
+  <g transform="translate(120 84) rotate(90) translate(-28.0 -24.0)" data-ref="R1" data-sym="resistor">
+    <path d="M0 24h14M42 24h14" />
+    <rect x="14" y="17" width="28" height="14" rx="1.5" />
+  </g>
+  <g transform="translate(120 140) rotate(90) translate(-28.0 -24.0)" data-ref="D1" data-sym="led">
+    <path d="M0 24h20.0M33.0 24h23.0" />
+    <path d="M20.0 15L33.0 24L20.0 33Z" />
+    <path d="M33.0 15v18" />
+    <path d="M22.0 12L29.0 5" />
+    <path d="M29.0 5.0L27.1 9.6L24.4 6.9Z" fill="currentColor" stroke="none" />
+    <path d="M29.0 12L36.0 5" />
+    <path d="M36.0 5.0L34.1 9.6L31.4 6.9Z" fill="currentColor" stroke="none" />
+  </g>
+  <g transform="translate(120 192) rotate(0) translate(-16.0 -24.0)" data-ref="G1" data-sym="gnd">
+    <path d="M16 0v24" />
+    <path d="M5 24h22M9 30h14M13 36h6" />
+  </g>
+  <text x="120" y="16" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="13" text-anchor="middle">VCC</text>
+  <text x="140" y="88" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="13" text-anchor="start">R1</text>
+  <text x="148" y="152" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="13" text-anchor="start">D1</text>
+</svg>
