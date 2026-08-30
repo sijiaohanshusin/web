@@ -903,6 +903,7 @@ def recruitment_manage(request):
 
     status = request.GET.get("status", "")
     applications = []
+    page = None
     status_tabs = []
     total_count = 0
     if campaign:
@@ -910,7 +911,11 @@ def recruitment_manage(request):
         counts = {row["status"]: row["c"] for row in base.values("status").annotate(c=Count("id"))}
         total_count = sum(counts.values())
         status_tabs = [(value, label, counts.get(value, 0)) for value, label in Application.Status.choices]
-        applications = base if status not in Application.Status.values else base.filter(status=status)
+        # 显式补 id 当次序的第二关键字。`Meta.ordering` 只有 `created_at`，两条
+        # 同一微秒的记录在分页下的先后就没定义了 —— 那会让同一条记录在两页里
+        # 重复出现或者干脆消失，而页面照常渲染。
+        applications = (base if status not in Application.Status.values
+                        else base.filter(status=status)).order_by("created_at", "id")
 
         if request.GET.get("export") == "csv":
             import csv
@@ -931,17 +936,58 @@ def recruitment_manage(request):
                 ])
             return response
 
+        # **分页必须排在导出之后。** 反过来的话导出的 CSV 只有当前那一页 ——
+        # 站务拿到一份 25 行的名单当成全部，而文件能正常打开、没有任何提示。
+        page = Paginator(applications, 25).get_page(request.GET.get("page"))
+        applications = page
+
     context = {
         "active_nav": "recruitment",
         "campaigns": campaigns,
         "campaign": campaign,
         "applications": applications,
+        "page": page,
         "status": status,
         "status_tabs": status_tabs,
         "total_count": total_count,
         "is_admin": _is_admin(request.user),
     }
     return render(request, "dashboard/recruitment.html", context)
+
+
+@officer_required
+def application_detail(request, pk: int):
+    """单条报名的完整答卷。
+
+    **为什么要有这一页**：纸质申请表的字段并进来之后，一条报名有十几项内容
+    （两组多选 + 三个开放题 + 档案），列表页那张表塞不进去。原来自我介绍全文
+    只能靠 `title` 属性的 tooltip 看 —— 那在触屏上压根打不开。
+
+    改状态复用 `_apply_recruit_result`，和列表页的批量操作是同一份实现 ——
+    不写第二份，否则「单条改」和「批量改」的副作用迟早漂开（一边发通知一边不发）。
+    """
+    application = get_object_or_404(
+        Application.objects.select_related("user", "user__position", "campaign"), pk=pk,
+    )
+
+    if request.method == "POST":
+        key = request.POST.get("result", "")
+        if key not in _RECRUIT_RESULTS:
+            messages.error(request, "未知操作。")
+        else:
+            _apply_recruit_result(
+                application, key, (request.POST.get("note") or "").strip(), request.user,
+            )
+            messages.success(request, f"已更新：{_RECRUIT_RESULTS[key][2]}。")
+        return redirect("dashboard:application_detail", pk=pk)
+
+    context = {
+        "active_nav": "recruitment",
+        "application": application,
+        # (键, 中文说明)，顺序跟着动作表 —— 模板不该自己再抄一遍这四个键
+        "results": [(key, spec[2]) for key, spec in _RECRUIT_RESULTS.items()],
+    }
+    return render(request, "dashboard/application_detail.html", context)
 
 
 @officer_required

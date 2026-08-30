@@ -22,6 +22,10 @@ urlpatterns = [
     path("recruitment/", views.recruitment_manage, name="recruitment"),
     path("recruitment/campaign/new/", views.campaign_edit, name="campaign_create"),
     path("recruitment/campaign/<int:pk>/edit/", views.campaign_edit, name="campaign_edit"),
+    # 单条报名的完整答卷。**排在 campaign/ 之后**：`<int:pk>` 不会匹配到
+    # "campaign" 这个词，所以其实不冲突，但按「具体路径在前、参数路径在后」排
+    # 是这份文件的既有顺序。
+    path("recruitment/<int:pk>/", views.application_detail, name="application_detail"),
     path("projects/", views.projects_manage, name="projects"),
     path("projects/new/", views.project_edit, name="project_create"),
     path("projects/<int:pk>/edit/", views.project_edit, name="project_edit"),

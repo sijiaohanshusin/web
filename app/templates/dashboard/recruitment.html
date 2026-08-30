@@ -55,8 +55,14 @@
             <thead>
             <tr>
                 <th style="width:36px;"><input type="checkbox" id="check-all"></th>
-                <th>报名人</th><th>意向</th><th>特长</th><th>自我介绍</th>
-                <th>当前等级</th><th>进展</th><th>面试备注</th><th>报名时间</th>
+                {% comment %}
+                列表只放「扫一眼要看的」，完整答卷去详情页。
+                原来这里有一列截断到 36 字的自我介绍，全文靠 `title` 属性的
+                tooltip —— 那在触屏上压根打不开，而现在全文一键可达，
+                那一列就只是把行挤窄。换成兴趣方向（培训分组要看）。
+                {% endcomment %}
+                <th>报名人</th><th>意向</th><th>兴趣方向</th>
+                <th>当前等级</th><th>进展</th><th>面试备注</th><th>报名时间</th><th></th>
             </tr>
             </thead>
             <tbody>
@@ -69,12 +75,16 @@
                         <small style="color:var(--muted);">{{ a.user.student_id|default:"—" }} · {{ a.user.college|default:"—" }} · {{ a.user.grade|default:"" }}</small>
                     </td>
                     <td>{{ a.get_department_display }}</td>
-                    <td>{{ a.skills|default:"—"|truncatechars:20 }}</td>
-                    <td><span title="{{ a.self_intro }}">{{ a.self_intro|truncatechars:36 }}</span></td>
+                    <td>{{ a.interests_display|default:"—"|truncatechars:26 }}</td>
                     <td><span class="badge" style="color:#fff;background:{{ a.user.level_color }};border-color:{{ a.user.level_color }};">{{ a.user.level_label }}</span></td>
                     <td><span class="badge" style="color:#fff;background:{{ a.status_color }};border-color:{{ a.status_color }};">{{ a.get_status_display }}</span></td>
-                    <td>{{ a.interview_note|default:"—"|truncatechars:24 }}</td>
+                    <td>{{ a.interview_note|default:"—"|truncatechars:20 }}</td>
                     <td>{{ a.created_at|date:"m-d H:i" }}</td>
+                    {% comment %}
+                    完整答卷去详情页看。列表这张表塞不进十几项内容，而自我介绍全文
+                    原来只能靠 title 属性的 tooltip —— 那在触屏上压根打不开。
+                    {% endcomment %}
+                    <td><a class="btn btn-outline btn-sm" href="{% url 'dashboard:application_detail' a.pk %}">详情</a></td>
                 </tr>
             {% empty %}
                 <tr><td colspan="9"><div class="dash-empty">该筛选下还没有报名者。</div></td></tr>
@@ -83,6 +93,15 @@
         </table>
     </div>
 </form>
+
+{% comment %}
+分页走全站唯一那份共用件：它用 `{% querystring %}` 从 request.GET 出发只覆盖
+`page`，所以批次与状态筛选自动带过去。驾驶舱另外六处分页还是各自手拼
+`?page=N&tab=...`（那是 pager.html 之前留下的），别照着那个抄。
+
+注意「全选」只勾得到**当前这一页**的行 —— 批量操作因此也只作用于当前页。
+{% endcomment %}
+{% include "includes/pager.html" with page=page %}
 
 {% endif %}
 

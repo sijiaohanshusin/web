@@ -1,0 +1,101 @@
+{% extends "dashboard/base.html" %}
+
+{% comment %}
+单条报名的完整答卷。
+
+**为什么要有这一页**：纸质申请表的字段并进来之后，一条报名有十几项内容（两组多选
++ 三个开放题 + 档案），列表页那张表塞不进去。原来自我介绍全文只能靠 `title` 属性
+的 tooltip 看 —— 那在触屏上压根打不开。
+
+联系方式（手机 / QQ / 邮箱 / 学号）在这里是**该出现**的：隐私说明写的是「只对本人
+和获得授权的协会管理人员开放」，而这一页是 `@officer_required`。它们绝不该出现在
+任何公开页面上，那一侧由团队页的泄漏断言守着。
+
+多选两项一律走 `interests_display` / `channels_display`，不在模板里拆键数组 ——
+那是第二份实现，迟早和 CSV 导出漂开。
+{% endcomment %}
+
+{% block title %}{{ application.user.display_name }} 的报名{% endblock %}
+{% block page_title %}报名详情{% endblock %}
+
+{% block content %}
+
+<div class="dash-toolbar">
+    <a class="btn btn-outline btn-sm"
+       href="{% url 'dashboard:recruitment' %}?campaign={{ application.campaign.pk }}">← 回名单</a>
+    <span class="dash-detail-campaign">{{ application.campaign.name }}</span>
+    <span class="badge" style="color:#fff;background:{{ application.status_color }};border-color:{{ application.status_color }};">
+        {{ application.get_status_display }}
+    </span>
+    <span class="badge" style="color:#fff;background:{{ application.user.level_color }};border-color:{{ application.user.level_color }};">
+        {{ application.user.level_label }}
+    </span>
+</div>
+
+<div class="dash-grid-2">
+    <div class="dash-panel">
+        <h2>报名人</h2>
+        <dl class="dash-dl">
+            <dt>姓名</dt><dd>{{ application.user.real_name|default:"—" }}</dd>
+            <dt>用户名</dt><dd>{{ application.user.username }}</dd>
+            <dt>学号</dt><dd>{{ application.user.student_id|default:"—" }}</dd>
+            <dt>学院</dt><dd>{{ application.user.college|default:"—" }}</dd>
+            <dt>届别</dt><dd>{{ application.user.cohort_label|default:"—" }}</dd>
+            <dt>性别</dt><dd>{{ application.user.get_gender_display|default:"未填" }}</dd>
+            <dt>出生日期</dt><dd>{{ application.user.birthday|date:"Y-m-d"|default:"未填" }}</dd>
+            <dt>手机</dt><dd>{{ application.user.phone|default:"—" }}</dd>
+            <dt>QQ</dt><dd>{{ application.user.qq|default:"—" }}</dd>
+            <dt>邮箱</dt><dd>{{ application.user.email|default:"—" }}</dd>
+            <dt>报名时间</dt><dd>{{ application.created_at|date:"Y-m-d H:i" }}</dd>
+        </dl>
+    </div>
+
+    <div class="dash-panel">
+        <h2>处理</h2>
+        {% comment %}
+        改状态和列表页的批量操作走同一个 `_apply_recruit_result` —— 不写第二份，
+        否则「单条改」和「批量改」的副作用迟早漂开（一边发通知一边不发）。
+
+        每颗按钮都有 `data-recruit-result` 钩子：这一页有多张小表单各带提交按钮，
+        脚本按 `button[type=submit]` 点会点错一颗。
+        {% endcomment %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_note">面试备注</label>
+                <textarea class="input" name="note" id="id_note" rows="4"
+                          placeholder="仅管理组可见">{{ application.interview_note }}</textarea>
+            </div>
+            <div class="dash-actions-bar">
+                {% for key, label in results %}
+                <button type="submit" name="result" value="{{ key }}"
+                        data-recruit-result="{{ key }}"
+                        class="btn btn-sm {% if key == 'reject' %}btn-danger{% elif key == 'reset' %}btn-ghost{% else %}btn-primary{% endif %}">
+                    {{ label }}
+                </button>
+                {% endfor %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="dash-panel dash-detail-sheet">
+    <h2>答卷</h2>
+    <dl class="dash-dl">
+        <dt>意向部门</dt><dd>{{ application.get_department_display }}</dd>
+        <dt>兴趣方向</dt><dd>{{ application.interests_display|default:"未填" }}</dd>
+        <dt>主要经历 / 兴趣爱好</dt><dd>{{ application.skills|default:"未填" }}</dd>
+        <dt>得知渠道</dt><dd>{{ application.channels_display|default:"未填" }}</dd>
+    </dl>
+
+    <h3>自我介绍</h3>
+    <p class="dash-detail-text">{{ application.self_intro|linebreaksbr }}</p>
+
+    <h3>对协会的初步印象</h3>
+    <p class="dash-detail-text">{{ application.first_impression|linebreaksbr|default:"未填" }}</p>
+
+    <h3>对大学四年的寄语</h3>
+    <p class="dash-detail-text">{{ application.motto|linebreaksbr|default:"未填" }}</p>
+</div>
+
+{% endblock %}

@@ -94,6 +94,9 @@
 .dash-table-wrap { border: 1px solid var(--line-d); border-radius: 14px; overflow: auto; background: rgba(255, 255, 255, .015); }
 .dash-table-wrap .table th { position: sticky; top: 0; background: var(--black-2); }
 .dash-row-actions { white-space: nowrap; }
+/* 徽章里的中文不要在词中间断行（「招新成员」断成「招新成/员」）。列多了之后
+   表格宽度不够时应当让 .dash-table-wrap 横向滚，而不是把每个徽章挤成两行。 */
+.dash-table-wrap .badge { white-space: nowrap; }
 .dash-row-actions .inline-form { display: inline-block; margin-left: 4px; }
 
 /* 活动报名名单页 */
@@ -234,6 +237,30 @@
 }
 
 .dash-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+
+/* ---------- 单条详情：字段清单 + 长文 ----------
+   报名详情页用。`dt` 固定一列宽而不是 auto：十来行标签长短不一，auto 会让
+   每一行的值从不同位置起排，扫一列数据时眼睛要来回找。 */
+/* 132px 是量出来的：最长那条标签是「主要经历 / 兴趣爱好」，108px 时「好」会掉到
+   第二行、把那一行的值顶得和上下不齐。 */
+.dash-dl { display: grid; grid-template-columns: 132px 1fr; gap: 9px 14px; margin: 0; }
+.dash-dl dt { color: var(--muted); font-size: var(--fs-xs); }
+.dash-dl dd {
+    margin: 0; color: var(--text); font-size: var(--fs-sm);
+    line-height: var(--lh-snug); word-break: break-word;
+}
+.dash-detail-campaign { color: var(--muted); font-size: var(--fs-sm); }
+.dash-detail-sheet { margin-top: 16px; }
+.dash-detail-sheet h3 {
+    color: #fff; font-size: var(--fs-md); font-weight: 700;
+    margin: 20px 0 6px; letter-spacing: .5px;
+}
+/* 开放题可能一个字都没写、也可能写满一屏。`pre-wrap` 之外还要 break-word：
+   有人会粘一整段没有空格的英文进来。 */
+.dash-detail-text {
+    color: var(--text); font-size: var(--fs-sm); line-height: var(--lh-relaxed);
+    white-space: pre-wrap; word-break: break-word; margin: 0;
+}
 
 /* ---------- 响应式 ---------- */
 @media (max-width: 1100px) {

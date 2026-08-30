@@ -170,6 +170,152 @@ class RecruitDashboardTests(TestCase):
         self.assertEqual(resp["Content-Type"], "text/csv; charset=utf-8-sig")
         self.assertIn("newbie", resp.content.decode("utf-8-sig"))
 
+
+class ApplicationDetailTests(TestCase):
+    """单条报名详情页。列表页塞不进十几项内容，完整答卷只能在这里看。"""
+
+    def setUp(self):
+        Campaign.objects.update(is_active=False)
+        self.campaign = make_campaign()
+        self.officer = make_user("doff", roles.LEVEL_OFFICER)
+        self.applicant = make_user("dnewbie", roles.LEVEL_APPLICANT)
+        self.applicant.real_name = "钱答卷"
+        self.applicant.phone = "13800112233"
+        self.applicant.gender = "female"
+        self.applicant.birthday = date(2007, 3, 8)
+        self.applicant.save()
+        self.app = Application.objects.create(
+            campaign=self.campaign, user=self.applicant,
+            department=Application.Department.HARDWARE,
+            interests=["mcu", "other"], interests_other="电机控制",
+            skills="高中做过循迹小车",
+            self_intro="想加入的自我介绍内容足够长。",
+            first_impression="在实验室门口看过一墙作品。",
+            motto="想做出一台自己的示波器。",
+            heard_from=["senior", "online"],
+        )
+        self.url = reverse("dashboard:application_detail", args=[self.app.pk])
+        self.client.login(username="doff", password="Str0ngPass!2025")
+
+    def test_plain_member_cannot_open_it(self):
+        make_user("dplain")
+        self.client.login(username="dplain", password="Str0ngPass!2025")
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+
+    def test_every_answer_shows_up(self):
+        """加了字段却忘了往详情页放，表现是站务**看不到那一项**而页面完全正常。
+        所以逐项断言，不是只断言页面 200。"""
+        body = self.client.get(self.url).content.decode()
+        for expected in (
+            "钱答卷", "硬件部",
+            "单片机编程与设计", "其他：电机控制",       # 多选走 interests_display
+            "高中做过循迹小车",
+            "想加入的自我介绍内容足够长。",
+            "在实验室门口看过一墙作品。",
+            "想做出一台自己的示波器。",
+            "高年级学长学姐介绍", "海报 / 官网 / QQ / 公众号",
+            "女", "2007-03-08",
+        ):
+            self.assertIn(expected, body, f"详情页少了「{expected}」")
+
+    def test_contact_details_are_visible_to_officers_here(self):
+        """和公开页面正好相反：隐私说明写的是「联系方式只对本人和获得授权的协会
+        管理人员开放」，而这一页是 officer_required —— 站务看不到手机号就没法
+        安排面试。公开侧的边界由团队页那组泄漏断言守着。"""
+        body = self.client.get(self.url).content.decode()
+        self.assertIn("13800112233", body)
+
+    def test_single_record_status_change_reuses_the_batch_implementation(self):
+        """单条改必须和批量改走同一份 `_apply_recruit_result` —— 副作用（晋级 +
+        站内通知）要完全一致，否则两条路迟早漂开成「一边发通知一边不发」。"""
+        # 量**增量**而不是总数：建账号时 `set_level` 自己就发过一封等级通知，
+        # 拿总数去比会写成 `== 1` 然后莫名失败（实际是 2）。
+        before = self.applicant.notifications.filter(title__contains="等级").count()
+
+        resp = self.client.post(self.url, {"result": "first_pass", "note": "面得不错"})
+        self.assertEqual(resp.status_code, 302)
+        self.app.refresh_from_db()
+        self.applicant.refresh_from_db()
+        self.assertEqual(self.app.status, Application.Status.FIRST_PASS)
+        self.assertEqual(self.app.interview_note, "面得不错")
+        self.assertEqual(self.applicant.member_level, roles.LEVEL_PREPARATORY)
+        # 晋级通知是 set_level 的副作用，批量那条路也发同一封
+        after = self.applicant.notifications.filter(title__contains="等级").count()
+        self.assertEqual(after - before, 1, "单条改状态应当也发一封等级变更通知")
+
+    def test_an_unknown_action_changes_nothing(self):
+        self.client.post(self.url, {"result": "promote_to_president"})
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, Application.Status.SUBMITTED)
+
+
+class RecruitListPaginationTests(TestCase):
+    """列表分页。行变高之后没有分页是不可用的，但分页本身会带来两个静默故障。"""
+
+    PER_PAGE = 25
+
+    def setUp(self):
+        Campaign.objects.update(is_active=False)
+        self.campaign = make_campaign()
+        self.officer = make_user("poff", roles.LEVEL_OFFICER)
+        # **造够两页**。不够一页的话分页控件整块不渲染，下面那几条断言全都空跑
+        # 而一路绿灯 —— 这个形状踩过两次。
+        self.total = self.PER_PAGE + 5
+        for i in range(self.total):
+            Application.objects.create(
+                campaign=self.campaign, user=make_user(f"pstu{i}"),
+                self_intro=f"第 {i} 个人的自我介绍内容足够长。",
+                department=(Application.Department.HARDWARE if i % 2
+                            else Application.Department.SOFTWARE),
+            )
+        self.client.login(username="poff", password="Str0ngPass!2025")
+        self.url = reverse("dashboard:recruitment")
+
+    def test_the_seed_really_spans_two_pages(self):
+        """先证明前提成立，再谈后面的断言。"""
+        resp = self.client.get(self.url, {"campaign": self.campaign.pk})
+        page = resp.context["page"]
+        self.assertEqual(page.paginator.count, self.total)
+        self.assertEqual(page.paginator.num_pages, 2)
+        self.assertTrue(page.has_next())
+
+    def test_page_two_carries_the_rest(self):
+        resp = self.client.get(self.url, {"campaign": self.campaign.pk, "page": 2})
+        self.assertEqual(len(resp.context["page"].object_list), self.total - self.PER_PAGE)
+
+    def test_paging_keeps_the_campaign_filter(self):
+        """`includes/pager.html` 用 `{% querystring %}` 从 request.GET 出发只覆盖
+        `page`，所以批次与状态都会带过去。手拼 `?page=N` 会把它们丢掉 —— 而页面
+        照常渲染、控制台干净（驾驶舱另外六处分页正是手拼的）。"""
+        body = self.client.get(self.url, {"campaign": self.campaign.pk}).content.decode()
+        self.assertIn(f"campaign={self.campaign.pk}&amp;page=2", body)
+
+    def test_paging_keeps_the_status_filter_too(self):
+        body = self.client.get(
+            self.url, {"campaign": self.campaign.pk, "status": "submitted"},
+        ).content.decode()
+        self.assertIn("status=submitted", body)
+        self.assertIn("page=2", body)
+
+    def test_csv_export_is_not_paginated(self):
+        """**这一条守的是一个静默故障。**
+
+        分页要是排在导出之前，导出的 CSV 就只有当前那一页 —— 站务拿到一份 25 行
+        的名单当成全部，而文件能正常打开、没有任何提示。
+        """
+        resp = self.client.get(self.url, {"campaign": self.campaign.pk, "export": "csv"})
+        rows = resp.content.decode("utf-8-sig").strip().splitlines()
+        self.assertEqual(len(rows), self.total + 1, "导出行数应当是全量 + 一行表头")
+
+    def test_export_still_follows_the_status_filter(self):
+        Application.objects.filter(user__username="pstu0").update(
+            status=Application.Status.FIRST_PASS)
+        resp = self.client.get(self.url, {
+            "campaign": self.campaign.pk, "export": "csv", "status": "first_pass",
+        })
+        rows = resp.content.decode("utf-8-sig").strip().splitlines()
+        self.assertEqual(len(rows), 2, "筛选之后导出应当只有那一条 + 表头")
+
     def test_campaign_create(self):
         start = timezone.now()
         resp = self.client.post(reverse("dashboard:campaign_create"), {
