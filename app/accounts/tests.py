@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.test import TestCase, override_settings
@@ -513,16 +515,31 @@ class TeamWallViewTests(TestCase):
         隐私说明里写的是「公开页面不会展示手机号、邮箱或完整学号」，而这一页是
         全站唯一一个把成员逐个列出来的公开页面 —— 泄漏在这里最可能发生，而且
         页面照常渲染、没有任何报错。
+
+        性别与出生日期也在这里守：它们是招新报名表带进来的档案，隐私说明写的是
+        「报名答卷、性别与出生日期不出现在任何公开页面上」。**`User` 上每加一个
+        字段，这一条就要跟着加一个探针** —— 卡片模板改一行就可能把它渲染出来。
         """
         make_team_member(
             "w3", self.chair, real_name="李隐私",
             phone="13800001234", email="leak@example.cn",
             student_id="2025999888", qq="998877665",
+            gender=User.Gender.FEMALE, birthday=date(2005, 12, 31),
         )
         body = self.client.get(reverse("team:wall")).content.decode()
         self.assertIn("李隐私", body)
         for secret in ("13800001234", "leak@example.cn", "2025999888", "998877665"):
             self.assertNotIn(secret, body, f"团队页泄漏了 {secret}")
+        # 日期要搜**多种渲染**，不能只搜一种：`{{ u.birthday }}` 在 zh-hans 下是
+        # 「2005年12月31日」、`|date:"Y-m-d"` 是「2005-12-31」、`|date:"Y"` 只剩
+        # 「2005」。单搜年份能一网打尽，另外几条是为了让失败信息说得清是哪种写法。
+        # （测试用的是明文静态路径，没有十六进制哈希，所以搜「2005」不会误命中。）
+        for probe in ("2005", "2005-12-31", "2005年12月31日", "12月31日"):
+            self.assertNotIn(probe, body, f"团队页泄漏了出生日期（{probe}）")
+        # 性别存的是 "female"，渲染出来是「女」—— 两个都要搜。
+        # 已确认 base.html / includes / team_wall.html 里没有「女」字，不会误报。
+        for probe in ("female", "女"):
+            self.assertNotIn(probe, body, f"团队页泄漏了性别（{probe}）")
 
     def test_member_without_avatar_gets_an_initial_plate_not_a_broken_image(self):
         make_team_member("w4", self.chair, real_name="赵无头像")
@@ -622,3 +639,76 @@ class ProfileTeamOptInTests(TestCase):
         user.refresh_from_db()
         self.assertFalse(user.show_on_team)
         self.assertEqual(user.public_bio, "")
+
+
+class ProfileApplicantFieldsTests(TestCase):
+    """性别与出生日期：招新报名表带进来的两项档案，本人在这一页能改。"""
+
+    def _login(self, user):
+        user.set_password("Str0ngPass!2025")
+        user.save()
+        self.client.login(username=user.username, password="Str0ngPass!2025")
+
+    def _payload(self, **over):
+        data = {
+            "real_name": "钱档案", "college": "集成电路学院", "grade": "2025",
+            "specialty": "hardware", "specialty_custom": "", "qq": "", "phone": "",
+            "gender": "", "birthday": "",
+        }
+        data.update(over)
+        return data
+
+    def _user(self):
+        user = make_team_member("pa1", None, show=False, real_name="钱档案",
+                                college="集成电路学院", grade="2025")
+        self._login(user)
+        return user
+
+    def test_member_can_fill_and_change_them(self):
+        user = self._user()
+        self.client.post(reverse("accounts:profile_edit"),
+                         self._payload(gender="female", birthday="2005-12-31"))
+        user.refresh_from_db()
+        self.assertEqual(user.gender, "female")
+        self.assertEqual(user.birthday, date(2005, 12, 31))
+
+    def test_both_are_optional_and_blank_means_not_disclosed(self):
+        """性别留空就是「不愿透露」—— 不另设一个枚举值，两种表达同一件事迟早
+        有一处判断只查其中一种。出生日期留空也必须能存（null=True）。"""
+        user = self._user()
+        resp = self.client.post(reverse("accounts:profile_edit"), self._payload())
+        self.assertEqual(resp.status_code, 302, "两项都留空应当能保存")
+        user.refresh_from_db()
+        self.assertEqual(user.gender, "")
+        self.assertIsNone(user.birthday)
+
+    def test_saved_birthday_is_rendered_back_in_the_format_the_input_expects(self):
+        """**这一条守的是一个静默故障。**
+
+        `<input type="date">` 只认 ISO 的 `YYYY-MM-DD`。不给 widget 指定
+        `format` 时，已存的值会按 Django 的本地化格式渲染（zh-hans 下是
+        「2005年12月31日」），浏览器读不懂就**显示成一个空框** —— 于是用户每次
+        打开资料页保存一次，就顺手把自己的生日清掉了，而页面一切正常、没有任何
+        报错。所以这里断言的是「渲染出来的 value 长什么样」，不是「存进去了没有」。
+        """
+        user = self._user()
+        user.birthday = date(2005, 12, 31)
+        user.gender = "male"
+        user.save(update_fields=["birthday", "gender"])
+
+        body = self.client.get(reverse("accounts:profile_edit")).content.decode()
+        self.assertIn('value="2005-12-31"', body,
+                      "日期没有按 ISO 回填，浏览器会把它显示成空框")
+        self.assertNotIn("2005年12月31日", body)
+        # 顺带确认往返一圈不会丢：把渲染出来的值原样提交回去，日期应当不变
+        self.client.post(reverse("accounts:profile_edit"),
+                         self._payload(gender="male", birthday="2005-12-31"))
+        user.refresh_from_db()
+        self.assertEqual(user.birthday, date(2005, 12, 31))
+
+    def test_the_empty_choice_reads_as_a_real_answer_not_a_placeholder(self):
+        """空选项的标签是「不愿透露」而不是 Django 默认的「---------」：
+        不填是一个正当的答案，不是「还没选」。"""
+        self._user()
+        body = self.client.get(reverse("accounts:profile_edit")).content.decode()
+        self.assertIn("不愿透露", body)

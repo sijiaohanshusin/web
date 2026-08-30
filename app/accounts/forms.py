@@ -21,6 +21,48 @@ def _style(fields, skip=()):
         field.widget.attrs["class"] = f"{existing} {_TEXT_INPUT_CLASS}".strip()
 
 
+# ---------------------------------------------------------------- 共用字段工厂
+#
+# 性别与出生日期出现在**两张表**上：本人的个人资料页（修正入口）和招新报名表
+# （首次收集）。写成工厂函数而不是各写一遍 —— 两份定义必然漂移，而这两个字段的
+# 麻烦之处恰好都在细节里（空选项的标签、date 输入框的格式），漂了不会报错，
+# 只会让其中一页的体验莫名其妙地差一档。
+#
+# 用函数而不是模块级的字段实例：Django 的表单字段是**有状态的**，同一个实例被
+# 两个表单类共用时 widget.attrs 会互相污染（`_style` 就往 attrs 里写 class）。
+
+def GENDER_FIELD():
+    """性别。空选项的标签是「不愿透露」而不是 Django 默认的「---------」。
+
+    空串本身就是「不愿透露」，不在 choices 里另设一个枚举值 —— 两种表达同一件
+    事，迟早有一处判断只查其中一种。
+    """
+    return forms.ChoiceField(
+        label="性别", required=False,
+        choices=[("", "不愿透露"), *User.Gender.choices],
+    )
+
+
+def BIRTHDAY_FIELD():
+    """出生日期。
+
+    `format` 和 `input_formats` 都要给：`<input type="date">` 只认 ISO 的
+    `YYYY-MM-DD`，而 zh-hans 下 locale 的 `DATE_INPUT_FORMATS[0]` 是 `%Y/%m/%d`
+    —— **实测不给 `format` 时渲染出来的是 `value="2005/12/31"`**，浏览器读不懂
+    就显示成一个空框。于是用户每次打开资料页保存一次，就顺手把自己的生日清掉了，
+    而页面一切正常、没有任何报错。
+    钉住它的是 `ProfileApplicantFieldsTests`
+    `.test_saved_birthday_is_rendered_back_in_the_format_the_input_expects`
+    —— 它断言的是「渲染出来的 value 长什么样」，不是「存进去了没有」。
+    """
+    return forms.DateField(
+        label="出生日期", required=False,
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+        input_formats=["%Y-%m-%d"],
+        help_text="用于生日祝福与分组，不会公开",
+    )
+
+
 class BaseRegisterForm(UserCreationForm):
     username = forms.RegexField(
         label="用户名", regex=r"^[A-Za-z0-9_]{4,20}$", max_length=20,
@@ -197,8 +239,8 @@ class ForgotPasswordForm(forms.Form):
 # 个人资料的两组字段。**放模块级**：`class Meta` 的类体看不见外层类的类属性
 # （Python 的类作用域不参与嵌套查找），写成 ProfileForm 的属性会直接 NameError。
 PROFILE_BASIC_FIELDS = (
-    "real_name", "college", "grade", "specialty", "specialty_custom",
-    "qq", "phone", "avatar",
+    "real_name", "college", "grade", "gender", "birthday",
+    "specialty", "specialty_custom", "qq", "phone", "avatar",
 )
 # 公开团队页那一组。只对**当前担任职位**的人显示（见 ProfileForm.__init__）。
 PROFILE_TEAM_FIELDS = ("show_on_team", "public_bio")
@@ -207,6 +249,12 @@ PROFILE_TEAM_FIELDS = ("show_on_team", "public_bio")
 class ProfileForm(forms.ModelForm):
     college = forms.ChoiceField(label="学院", choices=COLLEGE_CHOICES)
     grade = forms.ChoiceField(label="届别", choices=cohort_choices)
+    # 性别与出生日期是招新报名表带进来的两项档案（见 User 上那段注释）。
+    # 这里是**本人的修正入口** —— 报名时填错了、或者账号建得比报名表还早的人，
+    # 都只能从这一页改。注册表刻意不加这两项：注册链路已经 13 个字段分三段，
+    # 而这两项在报名时问一次就够。
+    gender = GENDER_FIELD()
+    birthday = BIRTHDAY_FIELD()
     specialty = forms.ChoiceField(label="擅长方向", choices=User.Specialty.choices)
     specialty_custom = forms.CharField(label="自定义方向", max_length=60, required=False)
 

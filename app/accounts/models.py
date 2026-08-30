@@ -41,6 +41,10 @@ class User(AbstractUser):
         SOFTWARE = "software", "软件"
         CUSTOM = "custom", "自定义"
 
+    class Gender(models.TextChoices):
+        MALE = "male", "男"
+        FEMALE = "female", "女"
+
     real_name = models.CharField("姓名", max_length=30, blank=True)
     student_id = models.CharField("学号", max_length=20, blank=True, db_index=True)
     college = models.CharField("学院", max_length=50, blank=True)
@@ -48,6 +52,21 @@ class User(AbstractUser):
     qq = models.CharField("QQ 号", max_length=15, blank=True)
     phone = models.CharField("手机号", max_length=20, blank=True, db_index=True)
     avatar = models.ImageField("头像", upload_to="avatars/", blank=True)
+
+    # ---- 招新申请表带来的两项档案 ----
+    # 纸质《会员申请表》上有性别与出生年月。它们放在 User 上而不是 Application 上，
+    # 因为**跨批次稳定**：一个人报两次名不该填两遍生日。报名表会问，答完写回这里；
+    # 本人随后也能在个人资料页改。
+    #
+    # 刻意**没有**收纸质表上的民族与籍贯：招新决策用不到它们，而收了就要动隐私
+    # 说明的收集清单（那是一份封闭列举）。证件照同理，还要额外一个 nginx 私有前缀。
+    #
+    # `gender` 空串就是「不愿透露」，不另设一个枚举值 —— 两种表达同一件事迟早
+    # 有一处判断只查其中一种。
+    gender = models.CharField("性别", max_length=8, choices=Gender.choices, blank=True)
+    # 纸质表只到「年月」，这里收到日：用途是生日祝福，没有日就用不上。
+    birthday = models.DateField("出生日期", null=True, blank=True)
+
     registration_channel = models.CharField(
         "注册通道", max_length=12, choices=RegistrationChannel.choices,
         default=RegistrationChannel.NEW, db_index=True,

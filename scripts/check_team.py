@@ -20,6 +20,7 @@
 """
 import os
 import sys
+from datetime import date
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -37,11 +38,33 @@ SEED_POSITION = "自动化职位·硬件部长"
 failures = []
 
 # 这几个值只要出现在页面源码里就是泄漏。刻意选成不可能与别处文案碰撞的串。
+# 「种进去的值」和「页面上会出现的样子」是同一个串，所以一个表就够。
 SECRETS = {
     "phone": "13800997700",
     "email": "team-leak-probe@heuesta.invalid",
     "student_id": "2025770099",
     "qq": "877700991",
+}
+
+# 性别与出生日期是招新报名表带进来的两项档案，隐私说明写的是「不出现在任何公开
+# 页面上」。它们**不能放进上面那个表** —— 种进去的值和页面上会出现的样子不是同
+# 一个东西：`birthday` 是 date，`gender` 存 "female" 而渲染成「女」。
+PROFILE_SECRETS = {
+    "gender": "female",
+    "birthday": date(2007, 11, 23),
+}
+# 要搜的串。日期搜**多种渲染**：`{{ u.birthday }}` 在 zh-hans 下是
+# 「2007年11月23日」、`|date:"Y-m-d"` 是「2007-11-23」、`|date:"Y"` 只剩「2007」。
+# 单搜年份能一网打尽，其余几条是为了让失败信息说得清是哪种写法漏的。
+# 性别两个都搜（存的值 + 渲染出来的字）。已确认 base.html / includes /
+# team_wall.html 里一个「女」字都没有，不会误报。
+PROFILE_PROBES = {
+    "出生年份": "2007",
+    "出生日期(ISO)": "2007-11-23",
+    "出生日期(中文)": "2007年11月23日",
+    "出生月日": "11月23日",
+    "性别(存储值)": "female",
+    "性别(显示值)": "女",
 }
 
 
@@ -152,7 +175,7 @@ def seed():
         "chair", position=chair, show=True,
         real_name="毕业照里的那个主席", grade="2023", college="集成电路学院",
         public_bio="统筹整体方向，平时在实验室折腾电源",
-        avatar=png(), **SECRETS,
+        avatar=png(), **SECRETS, **PROFILE_SECRETS,
     )
     made["hw"] = mk(
         "hw", position=hw, show=True,
@@ -270,6 +293,11 @@ def main() -> int:
         text = page.evaluate("() => document.body.innerText")
         for label, secret in SECRETS.items():
             check(secret not in text, f"可见文本里没有{label}")
+        # 性别与出生日期同样一个字都不该出现。种子值挂在「主席」那位身上，
+        # 而她是唯一上墙且卡片最完整的一张 —— 泄漏最可能从那张卡开始。
+        for label, probe in PROFILE_PROBES.items():
+            check(probe not in html, f"页面源码里没有{label}", probe)
+            check(probe not in text, f"可见文本里没有{label}")
 
         # ---------------- 缺头像的样子 ----------------
         print("\n缺头像：渲染丝印首字母牌，不是碎图也不是空白")
