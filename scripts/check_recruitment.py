@@ -306,9 +306,18 @@ def main() -> int:
         from django.contrib.auth import get_user_model
 
         who = get_user_model().objects.get(username=user)
+        # 纸质申请表那几项也要填上。**种成空的等于没种**：后面几条断言看的是
+        # 进度时间线，而这条记录同时也是驾驶舱详情页与分布统计的样本 —— 全是
+        # 「未填」的话那两页有没有接对压根验不出来。
         app = Application.objects.create(
             campaign=campaign, user=who, department=Application.Department.HARDWARE,
             self_intro="自动化测试提交的自我介绍。",
+            interests=[Application.Interest.MCU, Application.Interest.OTHER],
+            interests_other="电机控制",
+            skills="焊过几块板子",
+            first_impression="在实验室门口看过一墙作品。",
+            motto="想做出一台自己的示波器。",
+            heard_from=[Application.Channel.SENIOR, Application.Channel.ONLINE],
         )
         ctx, page = open_page()
         st = page.evaluate(PANEL)

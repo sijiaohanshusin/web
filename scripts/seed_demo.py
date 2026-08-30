@@ -83,8 +83,29 @@ for i in range(3):
             campaign=campaign, user=applicant,
             defaults={
                 "department": ["hardware", "software", "undecided"][i],
+                # 纸质申请表那几项也要种上。**种成空的等于没种** —— 驾驶舱详情页
+                # 与分布统计看着「能打开」，其实每一格都是「未填」，那两页有没有
+                # 接对压根验不出来。所以三个人给三种不同的组合。
+                "interests": [
+                    ["mcu", "embedded"],
+                    ["dsp_fpga", "rf"],
+                    ["unknown", "other"],
+                ][i],
+                "interests_other": ["", "", "电机控制"][i],
                 "skills": ["会一点 C", "焊过板子", "零基础但很想学"][i],
                 "self_intro": "演示报名者的自我介绍，说明为什么想加入以及期待收获。",
+                "first_impression": [
+                    "在实验室门口看过一墙作品。",
+                    "学长在班会上讲过电赛。",
+                    "",
+                ][i],
+                "motto": ["想做出一台自己的示波器。", "", "四年里至少参加一次电赛。"][i],
+                "heard_from": [
+                    ["senior"],
+                    ["online", "campaign"],
+                    ["mentor", "other"],
+                ][i],
+                "heard_from_other": ["", "", "在实验室门口看到的"][i],
             },
         )
 
