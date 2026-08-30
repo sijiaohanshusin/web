@@ -82,9 +82,14 @@ SLOTS: tuple[SlotSpec, ...] = (
     SlotSpec(
         key="home.gallery.group",
         label="科协合影",
-        ratio="4 / 3",
+        # 走廊里唯一一格宽幅。60 人排开就是一条横带：塞进 4:3 的框里，上下会是
+        # 四成天花板加三成地砖，人脸只剩 7px；而横向裁到 4:3 就要切掉两端的人。
+        # 走廊已经改成等高胶片条（见 home.css 的 .nf-tile），宽照片自然变宽。
+        ratio="12 / 5",
         brief="全员合照，横幅构图，人脸别太小；室内就开顶灯避免逆光。这一格是招新页面最想看到的一张。",
         group="首页 · 科协日常",
+        # 2024 年全员合影（约 60 人）。来源与裁切见 scripts/build_photos.py。
+        fallback="img/photo/group-2024.webp",
         priority=1,
     ),
     SlotSpec(
@@ -102,6 +107,8 @@ SLOTS: tuple[SlotSpec, ...] = (
         ratio="4 / 3",
         brief="有人在工作的实验室广角，示波器/电源/焊台入画；抓拍胜过摆拍。",
         group="首页 · 科协日常",
+        # 2024 TI 杯赛场：指导老师 + 三名队员围着示波器调试。是抓拍不是摆拍。
+        fallback="img/photo/lab-debug.webp",
         priority=10,
     ),
     SlotSpec(
@@ -119,6 +126,9 @@ SLOTS: tuple[SlotSpec, ...] = (
         ratio="4 / 3",
         brief="领奖台或奖状合影，能看出赛事名称最好。证书单独拍一张也可以。",
         group="首页 · 科协日常",
+        # 2024 TI 杯颁奖台。裁切时刻意只从两侧裁 —— 横幅上「2024 年 TI 杯模拟
+        # 电子系统设计专题赛决赛 / 二等奖」正是 brief 要的「能看出赛事名称」。
+        fallback="img/photo/award-ti-2024.webp",
         priority=5,
     ),
 
@@ -149,6 +159,9 @@ SLOTS: tuple[SlotSpec, ...] = (
         brief="培训课上的广角：投影/白板上有内容，底下有人在记笔记或动手。"
               "抓拍胜过摆拍，能看出「一屋子人在学同一件事」就对了。",
         group="新生指南 · 现场照",
+        # **刻意留空。** 手上那批照片里没有一张是「培训课现场」—— 最接近的是赛场
+        # 调试（已用在 home.gallery.lab）。按 fallback 那段说明：没有合适的自有
+        # 素材就留空显示占位框，比放一张不相干的图诚实。这一格仍在缺图清单里。
         priority=8,
     ),
     SlotSpec(
@@ -158,6 +171,9 @@ SLOTS: tuple[SlotSpec, ...] = (
         brief="我们自己的硬件工位：焊台、示波器、电源、工具墙同框，桌面别收拾得太干净，"
               "有在用的痕迹才可信。这一张替代网上的器材图。",
         group="新生指南 · 现场照",
+        # 两台 RIGOL（示波器上有波形、信号源显示 1MHz）+ 一排开发板与射频板，
+        # 同轴线还接着 —— brief 要的「有在用的痕迹」就是这个。
+        fallback="img/photo/bench-scopes.webp",
         priority=12,
     ),
     SlotSpec(

@@ -1,3 +1,4 @@
+import re
 import tempfile
 
 from django.contrib.auth import get_user_model
@@ -333,10 +334,31 @@ class MediaSlotDashboardTests(TestCase):
 
     def test_public_placeholder_links_to_the_media_center(self):
         """这条守住 URL 名字：{% slot %} 靠 reverse('dashboard:media_slots')
-        决定要不要显示上传入口，改名会让入口静默消失。"""
+        决定要不要显示上传入口，改名会让入口静默消失。
+
+        取样页面从首页换到了新生指南：首页六格走廊现在全有素材，剩下的那个
+        影像区槽位是 `show_cta=False`（旁边就是播放按钮，再来一个上传链接是噪音），
+        于是首页一个上传入口都不剩。写死 `?key=home.gallery.group` 的老写法就是
+        这么被「照片补齐了」弄红的。
+
+        断言改成对**页面上还缺素材的每一格**都要求带着直达链接，并先确认真的
+        有这样的格子 —— 否则等哪天指南那三张现场照也补齐了，这条会变成空跑。
+        """
         self.login()
-        body = self.client.get(reverse("core:home")).content.decode()
-        self.assertIn(f"{self.url}?key=home.gallery.group", body)
+        body = self.client.get(reverse("core:recruit")).content.decode()
+
+        empty_keys = []
+        for tag in re.findall(r"<figure[^>]*>", body):
+            if "is-empty" not in tag:
+                continue
+            m = re.search(r'data-slot-key="([^"]+)"', tag)
+            if m:
+                empty_keys.append(m.group(1))
+
+        self.assertTrue(empty_keys, "这一页一个空槽位都没有，这条断言没测到东西")
+        for key in empty_keys:
+            self.assertIn(key, slot_registry.REGISTRY)
+            self.assertIn(f"{self.url}?key={key}", body)
 
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="esta-test-video-"))

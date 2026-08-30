@@ -372,9 +372,17 @@ html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
 }
 .nf-strip.dragging { cursor: grabbing; }
 .nf-strip-track { display: flex; gap: 22px; width: max-content; padding: 6px 4vw; will-change: transform; }
+/* 走廊是**等高**的胶片条，不是等宽的网格：定高、宽度由每一格自己的比例算出来。
+   原来写的是 `width: clamp(260px, 30vw, 460px); aspect-ratio: 4/3`，等于要求
+   每张照片都是 4:3 —— 而 60 人的全员合影横向铺满一整面墙，塞进 4:3 的框里
+   上下就是四成天花板加三成地砖，人脸只剩 7px。定高之后宽照片自然变宽（合影
+   那格是 12:5），既不用裁掉两端的人，也不用为它单开一个尺寸类。
+   高度取值与旧版 4:3 时完全一致（宽 × 3/4），所以其余五格几何不变。
+   {% slot %} 的内联 style 会给出这一格的 aspect-ratio；下面那条是没有内联值
+   时的兜底，顺便说明「走廊的默认构图是 4:3」。 */
 .nf-tile {
     position: relative; flex: 0 0 auto;
-    width: clamp(260px, 30vw, 460px); aspect-ratio: 4 / 3;
+    height: clamp(195px, 22.5vw, 345px); width: auto; aspect-ratio: 4 / 3;
     border-radius: 20px; overflow: hidden; background: var(--bg-2);
     border: 1px solid var(--line-d);
     transition: transform .5s var(--ease-out), border-color .3s;
@@ -598,7 +606,9 @@ html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
     .nf-timeline { grid-template-columns: 1fr; }
     .nf-reasons li { padding-left: 58px; }
     .nf-gallery-head { flex-direction: column; align-items: flex-start; }
-    .nf-tile { width: 78vw; }
+    /* 窄屏同样定高（= 旧版 78vw 宽的 4:3 高度），宽度继续由比例决定。
+       写 `width: 78vw` 会让 12:5 的合影那格缩到 250px 高，胶片条就参差了。 */
+    .nf-tile { height: 58.5vw; }
     .nf-bignum { gap: 16px; }
     .nf-news-row { grid-template-columns: 1fr; }
 }

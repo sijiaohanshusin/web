@@ -655,11 +655,41 @@ class SlotRegistryTests(TestCase):
         self.assertFalse(unknown, f"GALLERY_SLOT_KEYS 里有未登记的 key：{sorted(unknown)}")
 
 
+def an_empty_slot_key(kind="image"):
+    """挑一个登记表里**确实还没有素材**的槽位，用来当空态的样本。
+
+    刻意不写死某个 key。槽位会随着照片陆续到位被一个个填上，写死的话每补一张
+    照片就有一批「空态长什么样」的断言变红 —— 而渲染逻辑一行都没动。真发生过：
+    下面这些用例原本都拿 home.gallery.group 当样本，2024 年那张全员合影进仓库、
+    在 slots.py 里加上 fallback 之后，五条断言同时红了。
+
+    找不到样本时**报错而不是跳过**：空态是这套设计里正式的一态，得一直有东西
+    在验它。真到了所有槽位都有素材的那天，就在这里造一个临时 SlotSpec。
+    """
+    from core import slots
+
+    for spec in slots.SLOTS:
+        if spec.kind == kind and not spec.fallback:
+            return spec.key
+    raise AssertionError(
+        f"登记表里已经没有 kind={kind} 且没有 fallback 的槽位了，空态没有样本可测。"
+        "要么在 slots.py 里留一个真的还缺素材的槽位，要么在这里造一个临时 SlotSpec。"
+    )
+
+
 class MediaSlotRenderTests(TestCase):
     """{% slot %} 的两种状态与缓存行为。"""
 
+    # 有静态兜底图的样本。这个是写死的：它测的就是「登记表里的 fallback 会被
+    # 渲染成图片」，哪天有人把 pcb 那条 fallback 删了，这里就**应该**红。
+    FILLED_KEY = "home.gallery.pcb"
+
     def setUp(self):
         cache.clear()
+        from core import slots
+
+        self.empty_key = an_empty_slot_key()
+        self.empty_spec = slots.get(self.empty_key)
 
     def _render(self, key, user=None):
         from django.template import Context, Template
@@ -668,20 +698,22 @@ class MediaSlotRenderTests(TestCase):
         return Template('{%% load slots %%}{%% slot "%s" %%}' % key).render(ctx)
 
     def test_empty_slot_renders_the_designed_placeholder(self):
-        html = self._render("home.gallery.group")
+        from django.utils.html import escape
+
+        html = self._render(self.empty_key)
         self.assertIn("slot is-empty", html)
-        self.assertIn("slot-fid", html)          # 四角定位标
-        self.assertIn("科协合影", html)           # 名字
-        self.assertIn("全员合照", html)           # 拍摄要求原样显示
-        self.assertNotIn("<img", html)           # 绝不引一张不存在的图
+        self.assertIn("slot-fid", html)                        # 四角定位标
+        self.assertIn(escape(self.empty_spec.label), html)     # 名字
+        self.assertIn(escape(self.empty_spec.brief), html)     # 拍摄要求原样显示
+        self.assertNotIn("<img", html)                         # 绝不引一张不存在的图
 
     def test_empty_slot_reserves_layout_via_aspect_ratio(self):
         """占位与填好图必须占同样的版面，否则补图前后要排两次版。"""
-        html = self._render("home.gallery.group")
-        self.assertIn("aspect-ratio: 4 / 3", html)
+        html = self._render(self.empty_key)
+        self.assertIn(f"aspect-ratio: {self.empty_spec.ratio}", html)
 
     def test_slot_with_static_fallback_renders_an_image(self):
-        html = self._render("home.gallery.pcb")
+        html = self._render(self.FILLED_KEY)
         self.assertIn("slot is-filled", html)
         self.assertIn("img/carousel/pcb", html)
 
@@ -708,9 +740,9 @@ class MediaSlotRenderTests(TestCase):
         from core.models import MediaSlot
 
         MediaSlot.objects.create(
-            key="home.gallery.group", image=make_png("y.png"), is_active=False,
+            key=self.empty_key, image=make_png("y.png"), is_active=False,
         )
-        html = self._render("home.gallery.group")
+        html = self._render(self.empty_key)
         self.assertIn("slot is-empty", html)
 
     def test_upload_affordance_is_officer_only(self):
@@ -723,8 +755,8 @@ class MediaSlotRenderTests(TestCase):
         officer.member_level = 4
         officer.save()
 
-        as_officer = self._render("home.gallery.group", user=officer)
-        as_visitor = self._render("home.gallery.group", user=None)
+        as_officer = self._render(self.empty_key, user=officer)
+        as_visitor = self._render(self.empty_key, user=None)
 
         self.assertRegex(as_officer, r"slot-empty-(cta|key)")
         self.assertNotRegex(as_visitor, r"slot-empty-(cta|key)")
@@ -752,9 +784,23 @@ class MediaSlotRenderTests(TestCase):
         strip = body[body.find('id="nf-strip-track"'):]
         strip = strip[: strip.find("</section>")]
         self.assertEqual(strip.count('class="slot '), len(GALLERY_SLOT_KEYS))
-        # 真实照片与占位框必须能同时出现 —— 这正是旧逻辑做不到的
-        self.assertIn("slot is-filled", strip)
-        self.assertIn("slot is-empty", strip)
+        # 每一格都要带着自己的 key：这是驾驶舱深链和自动化断言定位槽位的钩子，
+        # 而且**填没填图都要有** —— 它原来只出现在空态里，于是给某个槽位补一张
+        # 兜底图就会让「这一页用了哪几个槽位」的断言静默失效
+        for key in GALLERY_SLOT_KEYS:
+            self.assertIn(f'data-slot-key="{key}"', strip, f"走廊里没有 {key}")
+
+    def test_filled_and_empty_slots_can_coexist(self):
+        """真实照片与占位框必须能同时出现 —— 这正是旧轮播做不到的事：那一版整组
+        要么全读数据库、要么全用静态图，补一张就得把六张一起补齐。
+
+        刻意不拿首页走廊当样本。走廊六格现在全有素材了，那条「同时出现」的断言
+        会随着「照片补齐」这件好事变红。这里把一填一空两格直接渲染在一起，钉的是
+        渲染逻辑的性质，与当下有多少张照片无关。
+        """
+        html = self._render(self.FILLED_KEY) + self._render(self.empty_key)
+        self.assertIn("slot is-filled", html)
+        self.assertIn("slot is-empty", html)
 
 
 def make_mp4(name="clip.mp4", size=2048):
@@ -1067,11 +1113,17 @@ class GuidePageTests(TestCase):
         self.assertNotIn("width", bar.group(1))
 
     def test_three_field_photo_slots_are_used(self):
-        """每章一张现场照。图鉴那 69 张继续走静态 <img>，见 core/slots.py 的注释。"""
+        """每章一张现场照。图鉴那 69 张继续走静态 <img>，见 core/slots.py 的注释。
+
+        数 `rg-shot` 而不是数空态：这三格会随着照片陆续到位从占位框变成真照片，
+        断言的是「三章各有一格现场照」，和填没填图无关。原来写的是
+        `count('class="slot is-empty rg-shot"') == 3`，给工作台那格补上照片之后
+        就红了 —— 而模板一个字都没改。
+        """
         for key in ("recruit.training.session", "recruit.hardware.bench",
                     "recruit.software.debug"):
-            self.assertIn(key, self.body, f"模板里没有用 {key}")
-        self.assertEqual(self.body.count('class="slot is-empty rg-shot"'), 3)
+            self.assertIn(f'data-slot-key="{key}"', self.body, f"模板里没有用 {key}")
+        self.assertEqual(len(re.findall(r'class="slot is-\w+ rg-shot"', self.body)), 3)
 
     def test_reference_gallery_stays_static_images(self):
         """图鉴不该被顺手改成素材槽。

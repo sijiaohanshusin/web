@@ -91,14 +91,20 @@ SCROLL_TO_SECTION = """
 """
 
 SLOTS = """
-() => [...document.querySelectorAll('.rg-shot')].map(el => ({
+() => [...document.querySelectorAll('.rg-shot')].map(el => {
+  const img = el.querySelector('img');
+  return {
     key: el.getAttribute('data-slot-key'),
     empty: el.classList.contains('is-empty'),
     fids: el.querySelectorAll('.slot-fid').length,
     label: (el.querySelector('.slot-empty-label') || {}).textContent || '',
     brief: (el.querySelector('.slot-empty-brief') || {}).textContent || '',
     ratio: el.style.aspectRatio || getComputedStyle(el).aspectRatio,
-}))
+    // 填好图的那一格要验「照片真的看得见」，而不是验空焊盘的零件
+    img: img ? { opacity: parseFloat(getComputedStyle(img).opacity),
+                 naturalWidth: img.naturalWidth, alt: img.alt || '' } : null,
+  };
+})
 """
 
 MOBILE = """
@@ -241,19 +247,45 @@ def main() -> int:
         ctx.close()
 
         # ---------------- 现场照素材槽 ----------------
-        print("\n每章一张现场照（素材槽，拍到之前是空焊盘）")
+        # 三格照片是**陆续**到位的（工作台那张已经有了，培训现场还没拍）。所以
+        # 按状态分支断言：空的验空焊盘的零件，填上的验照片真的看得见。原来这里
+        # 对三格一律要求「有四角定位标」，等于要求这一页永远缺图 —— 补上一张就红。
+        print("\n每章一张现场照（拍到之前是空焊盘）")
         ctx = browser.new_context(viewport=vp)
         page = ctx.new_page()
         page.goto(base + URL, wait_until="load")
         page.wait_for_timeout(500)
+        # 折叠块里那格默认收着，图不展开不会下载
+        page.evaluate("() => document.querySelectorAll('details.fold')"
+                      ".forEach(d => { d.open = true; })")
+        page.evaluate("() => document.querySelectorAll('.rg-shot img')"
+                      ".forEach(i => { i.loading = 'eager'; })")
+        try:
+            page.wait_for_function(
+                "() => [...document.querySelectorAll('.rg-shot img')]"
+                ".every(i => i.complete)", timeout=15000)
+        except Exception:
+            pass  # 下面那条断言会把没加载成的那张点出来
+        page.wait_for_timeout(700)   # 懒加载淡入是 .45s
         shots = page.evaluate(SLOTS)
         check(len(shots) == 3, "三章各有一个现场照槽位", f"{len(shots)} 个")
         for sh in shots:
-            check(sh["fids"] == 4, f"{sh['key']} 有四角定位标", f"{sh['fids']} 个")
-            check(bool(sh["label"].strip()), f"{sh['key']} 显示了槽位名称")
-            check(len(sh["brief"].strip()) > 8, f"{sh['key']} 显示了拍摄要求")
             check("16" in (sh["ratio"] or ""), f"{sh['key']} 写了比例占住版面",
                   sh["ratio"] or "")
+            if sh["empty"]:
+                check(sh["fids"] == 4, f"{sh['key']}（空）有四角定位标", f"{sh['fids']} 个")
+                check(bool(sh["label"].strip()), f"{sh['key']}（空）显示了槽位名称")
+                check(len(sh["brief"].strip()) > 8, f"{sh['key']}（空）显示了拍摄要求")
+            else:
+                img = sh["img"] or {}
+                check(img.get("naturalWidth", 0) > 0,
+                      f"{sh['key']}（有图）照片真的下载成功了",
+                      f"naturalWidth={img.get('naturalWidth')}")
+                check(img.get("opacity", 0) > 0.9,
+                      f"{sh['key']}（有图）照片真的看得见（不是透明的）",
+                      f"opacity={img.get('opacity')}")
+                check(len(img.get("alt", "").strip()) > 1,
+                      f"{sh['key']}（有图）写了有内容的 alt", img.get("alt") or "空")
 
         # ---------------- 开篇导语 + 三联画 ----------------
         # 这一页有一万多字，开篇那句导语和三张图是「读者要不要读下去」的唯一钩子。

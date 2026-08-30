@@ -10,8 +10,14 @@ aspect-ratio 写成内联 style 是有意的：比例来自登记表，每个槽
 CSS 拦不住、HTML 属性也没法条件化。改由 video-slots.js 决定，并且只在进入视口时
 播、离开就暂停。JS 没跑起来就停在封面帧上 —— 是个能看的状态，不是白屏。
 {% endcomment %}
+{% comment %}
+`data-slot-key` 三种状态都要发。它原来只在空态里（来自 empty_board.html），
+于是「模板里用了哪几个槽位」的断言会**因为把图填上而失效** —— 给 slots.py 的
+某个 spec 加一条 fallback，`/recruit/` 那几条断言就红了，而页面完全正常。
+这个钩子的语义是「这一格是哪个槽位」，和填没填图无关。
+{% endcomment %}
 <figure class="slot is-filled is-video {{ css_class }}" style="aspect-ratio: {{ ratio }}"
-        data-slot-video>
+        data-slot-key="{{ spec.key }}" data-slot-video>
     <video muted loop playsinline preload="metadata"
            {% if src %}poster="{{ src }}"{% endif %}
            aria-label="{{ alt }}"
@@ -32,7 +38,8 @@ CSS 拦不住、HTML 属性也没法条件化。改由 video-slots.js 决定，�
     {% endif %}
 </figure>
 {% elif src %}
-<figure class="slot is-filled {{ css_class }}" style="aspect-ratio: {{ ratio }}">
+<figure class="slot is-filled {{ css_class }}" style="aspect-ratio: {{ ratio }}"
+        data-slot-key="{{ spec.key }}">
     <img src="{{ src }}" alt="{{ alt }}"
          {% if width %}width="{{ width }}" height="{{ height }}"{% endif %}
          loading="{{ loading }}" decoding="async" draggable="false"
