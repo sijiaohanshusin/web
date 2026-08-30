@@ -15,6 +15,7 @@
 
 跑法：python scripts/check_honors.py
 """
+import atexit
 import os
 import sys
 from pathlib import Path
@@ -94,6 +95,37 @@ def png(color=(201, 138, 61), size=(600, 450)):
     return ContentFile(buf.getvalue(), name="cert.png")
 
 
+def hide_real_honors():
+    """把**不属于本脚本**的公开荣誉临时收起来，返回它们的 pk 以便还原。
+
+    为什么需要这一步：下面的断言是「墙上有几条」「按年怎么分组」「一条都没有时
+    空态什么样」—— 库里有真实获奖记录时它们全部对不上（`import_honors` 导入 15 条
+    之后就是这样）。而真实记录不能删，那是站上的正式数据。
+
+    所以只能临时把 `is_public` 关掉：`Honor.wall()` 和首页那一段都按它过滤，
+    关掉就等于从墙上拿下来，而记录本身一个字没动。收尾必须还原 —— 见
+    `restore_real_honors()`，它挂在 atexit 上，崩在中间也会跑。
+    """
+    from news.models import Honor
+
+    pks = list(
+        Honor.objects.filter(is_public=True)
+        .exclude(title__startswith=SEED_TAG)
+        .values_list("pk", flat=True)
+    )
+    if pks:
+        Honor.objects.filter(pk__in=pks).update(is_public=False)
+    return pks
+
+
+def restore_real_honors(pks):
+    from news.models import Honor
+
+    if pks:
+        Honor.objects.filter(pk__in=pks).update(is_public=True)
+        print(f"（已把 {len(pks)} 条真实荣誉放回墙上）")
+
+
 def wipe():
     from news.models import Honor, Post
 
@@ -168,6 +200,18 @@ def main() -> int:
     import dev_account
 
     user, password = dev_account.ensure(level=4)
+
+    # 先把真实荣誉从墙上临时拿下来，再造样例 —— 顺序不能反：`seed()` 里的
+    # `wipe()` 只清本脚本自己的记录，而下面的计数断言要求墙上只有样例。
+    #
+    # **用 atexit 而不是 try/finally**：还原必须在任何退出路径上都发生（断言失败
+    # 提前 return、Playwright 抛异常、Ctrl+C），而给这个 450 行的函数整体套一层
+    # try 要把里面全部重新缩进 —— 那种改动最容易在别处出错。
+    hidden = hide_real_honors()
+    if hidden:
+        print(f"（把 {len(hidden)} 条真实荣誉临时收起来，跑完还原）")
+    atexit.register(restore_real_honors, hidden)
+
     ids, story_pk = seed()
     want = expected_counts()
     print(f"已建 6 条记录（1 条不公开）；公开统计：国 {want['national']} 省 {want['provincial']} 校 {want['school']}")

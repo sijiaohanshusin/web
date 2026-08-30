@@ -127,7 +127,7 @@ def main() -> int:
     # ---------------- 正文两档 ----------------
     # 正文和标题的判据不一样：标题按模板取字（内容作者改不到标题字体），
     # 正文要承载站务以后随时写的公告与简介，所以判据是 **GB2312 一级字全集**。
-    print("\n正文两档：字表是 GB2312 一级字全集，不是模板用字")
+    print("\n正文两档：字表是 GB2312 全集（一级+二级），不是模板用字")
     print("（正文内容是站务以后写的，模板扫不到；一段话里混两种字形比标题缺字更难看）")
     from build_fonts import gb2312_hanzi
 
@@ -136,8 +136,12 @@ def main() -> int:
     if failures:
         return 1
 
-    level1 = gb2312_hanzi((1,))
-    check(len(level1) > 3700, "GB2312 一级字表取到了（不是空集合）", f"{len(level1)} 字")
+    # 判据从「一级字」换成「一级+二级全集」：二级字区（3008 个）就是人名用字区。
+    # 真踩到过 —— 导入 15 条获奖记录带进 5 个二级字（昊 晗 淏 琛 蹇），每个名字里
+    # 混一个系统黑体的字，而页面照常渲染、控制台干净。站上大量文字在数据库里
+    # （公告、作品简介、获奖记录的队员姓名），模板扫不到，用量不可预测。
+    level1 = gb2312_hanzi((1, 2))
+    check(len(level1) > 6700, "GB2312 全集字表取到了（不是空集合）", f"{len(level1)} 字")
     covs = {}
     for weight, path in BODY.items():
         cov = coverage(path)
@@ -145,8 +149,11 @@ def main() -> int:
         kb = path.stat().st_size / 1024
         miss1 = [ch for ch in level1 if ord(ch) not in cov]
         miss_tpl = [ch for ch in needed if ord(ch) not in cov]
-        check(kb <= 1200, f"{weight} 档体积在预算内（≤1200KB）", f"{kb:.0f} KB")
-        check(not miss1, f"{weight} 档覆盖 GB2312 一级字",
+        # 1200 → 2000：字表从一级字（3755）扩到 GB2312 全集（6763），实测每档
+        # 1841 / 1864KB。用户明确许可提高字体预算，理由是「任何中文姓名都可能
+        # 缺字」这一类静默故障值得这个体积 —— 而站点的既有取舍是展示效果优先。
+        check(kb <= 2000, f"{weight} 档体积在预算内（≤2000KB）", f"{kb:.0f} KB")
+        check(not miss1, f"{weight} 档覆盖 GB2312 全集（一级+二级）",
               f"缺 {len(miss1)} 字" if miss1 else f"{len(level1)} 字全覆盖")
         # 标题字体缺字时会退到正文档，所以正文必须是标题的超集
         check(not miss_tpl, f"{weight} 档覆盖模板用字（标题缺字时的退路）",
