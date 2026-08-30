@@ -13,11 +13,15 @@
    ============================================================ */
 .nf-hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
 
-/* ---------- 首屏氛围图（默认没有，值由下面一条规则给） ----------
+/* ---------- 首屏氛围图 ----------
    画在 `::before`，不写进 `.nf-hero` 自己的 `background` —— `.nf-dark` 用的是
    `background:` 简写，直接加会被它整个擦掉（全站硬约定：叠工具类时只写
    `background-color`）。用法和 `.nf-scope` 的 `--scope-art` 完全一致：
    只设一个变量，值是一个指向那张图的 CSS 图片引用。
+
+   值设在 `.nf-hero` 上而不是 `::before` 里：下面那条 `prefers-contrast: more`
+   要能把它整个摘掉，而伪元素上的声明没法被那样覆盖。**顺序即优先级** ——
+   赋值必须排在那条 media query 之前。
 
    **为什么垫在 `::before` 上就正好在粒子层下面**：`::before` 在所有子元素之前
    绘制，而 `.nf-hero-canvas` 是透明的（实测：把区块底色设成纯红，右侧中部量到
@@ -26,6 +30,7 @@
 
    构图的安全区不是拍脑袋的，就是 `.nf-hero-overlay` 那两道渐变留出来的窗口：
    横向 62%~100%、竖向 22%~72%。要求写进了 `check_artwork.py`。 */
+.nf-hero { --hero-art: url("../img/hero-home.webp"); }
 .nf-hero::before {
     content: ""; position: absolute; inset: 0; pointer-events: none;
     background-image: var(--hero-art, none);
@@ -33,6 +38,10 @@
     background-size: cover;
     background-repeat: no-repeat;
 }
+/* 竖屏要在图上再压一道、并把导语提亮一档 —— 那一组规则连同推导写在
+   `.nf-hero-sub` 下面（**必须放在它之后**：同特异性、后者胜，写在这里会被
+   下面那条 `color: var(--muted)` 直接盖掉，而页面照常渲染、控制台干净）。 */
+
 /* 高对比偏好下摘掉氛围图：它是气氛，而这里的诉求是让那条巨字最清楚。
    和 `.page-hero` 的氛围图、新生指南的章节头横幅同一个处理。 */
 @media (prefers-contrast: more) {
@@ -75,16 +84,66 @@
     color: var(--muted); font-size: var(--fs-lead); max-width: 480px; margin-bottom: 44px;
     font-family: var(--font-serif); font-weight: 600;
 }
+
+/* ---------- 竖屏：文字压在意象上，所以换构图而不是缩小桌面版 ----------
+   **断点是画框比例，不是宽度。** 图是 4:3，`cover` 之下画框比它扁就竖向裁、
+   比它高就横向裁 —— 而只有横向裁会把意象从「右侧」拖到屏幕中间、拖到文字底下。
+   所以判据只能是比例。
+
+   意象左缘在屏幕上的位置 = `1 − 0.333/C`（C 是画框比例；0.333 来自「意象左缘在
+   源图 75% 处」剩下的 25% 除以 4:3），导语右缘 = `480/W`。代进实机：
+     390x530  手机（hero 是 min-height:auto）  意象 54.7% vs 导语 92.0%  重叠
+     820x1180 iPad 竖屏                        意象 52.0% vs 导语 58.5%  重叠
+     768x1024 iPad 竖屏经典                    意象 55.6% vs 导语 62.5%  重叠
+     1440x900 桌面                             意象 75.0% vs 导语 40.3%  不重叠
+     1024x768 横屏平板                         意象 75.0% vs 导语 46.9%  不重叠
+   全部竖屏落在 C ≤ 0.75、全部横屏 ≥ 1.28，所以阈值取正中间的 1/1。
+   **只写 `max-width: 720px` 会漏掉竖屏平板** —— 那一段的导语照样压在意象上，
+   而在桌面尺寸下永远看不到。
+
+   两件事：
+   1. 在图上再压一道 .55。只压图 —— 粒子画在上面那层 canvas 上，不受影响。
+   2. 导语从 `--muted` 提到 `--text`。桌面上导语压在纯黑上，`--muted` 有
+      7.82:1；竖屏上它压在焊点高光上，就得换一档。实测（把文字
+      `visibility: hidden` 掉再量 sub 那一块的背景，取 p99 而不是极值，
+      和 `check_artwork.py` 里「量最暗 5%」同一个路子）：
+        --muted  2.40:1  超标面积 4.134%  最大连通块 24.1px 见方  ✗
+        --text   5.32:1  超标面积 0.298%  最大连通块  4.2px       ✓ 取这档
+        --white  6.25:1  超标面积 0.048%  最大连通块  2.3px
+      取 `--text` 而不是纯白：过 4.5:1 还有 18% 余量，且比巨字（纯白）低一档，
+      层级还在。**以后换一张更亮的图就换 `--white`**，那是下一级台阶。
+      导语是 18px 宋体 600 ≈ 13.5pt bold，**不到 WCAG 大字号那一档**，所以要
+      4.5:1 不是 3:1 —— 这一屏最紧的角色是它，不是巨字。
+   这组数和 `check_artwork.py` 里「意象区 99 分位 ≤118」是一对，改一个要重算
+   另一个。`check_hero.py` 里有一条断言现场重量这一块。 */
+@media (max-aspect-ratio: 1 / 1) {
+    .nf-hero::before {
+        background-image:
+            linear-gradient(rgba(5, 5, 6, .55), rgba(5, 5, 6, .55)),
+            var(--hero-art, none);
+    }
+    .nf-hero-sub { color: var(--text); }
+}
+
 .nf-hero-cta { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; color: var(--text); }
 
 .nf-hero-foot {
     position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center;
     padding-bottom: 30px; gap: 20px;
 }
-.nf-hero-note { color: #7b8494; font-size: var(--fs-xs); }
+/* 取色从字面值 `#7b8494` 换成 `--muted`（顺带清掉一处不走令牌的颜色）。
+   **理由是量出来的**：`#7b8494` 在纯黑上是 5.40:1，看着够；但这两处都压在粒子
+   波场上，实测最亮 1% 处只有 3.27~4.24:1（竖屏平板最差），**三个画框全部低于
+   4.5:1**。而 `check_a11y.py` 的对比度清单里压根没有这两个选择器，所以这件事
+   一直没人发现 —— 那个脚本量的是元素自己的 background-color，量不到粒子。
+   `--muted` 在纯黑上是 7.82:1，压在粒子上仍然过线。
+   不选 `--muted-dim`：它比这个字面值**更暗**（5.05:1），会让问题更严重。
+   层级靠字号撑（13px vs 导语 18px），不靠再压一档灰。
+   守卫是 check_hero.py 的「文字压着的背景到底有多亮」那一节。 */
+.nf-hero-note { color: var(--muted); font-size: var(--fs-xs); }
 .nf-scroll-cue {
     display: flex; align-items: center; gap: 10px;
-    font-family: var(--font-mono); font-size: var(--fs-3xs); letter-spacing: 3px; color: #7b8494;
+    font-family: var(--font-mono); font-size: var(--fs-3xs); letter-spacing: 3px; color: var(--muted);
 }
 .nf-scroll-cue span { display: block; width: 1px; height: 44px; background: linear-gradient(180deg, transparent, var(--accent)); animation: cue-drop 1.8s var(--ease-out) infinite; }
 @keyframes cue-drop { 0% { transform: scaleY(0); transform-origin: top; } 55% { transform: scaleY(1); transform-origin: top; } 56% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
@@ -529,21 +588,6 @@ html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
 
 @media (max-width: 720px) {
     .nf-hero { min-height: auto; }
-    /* 窄屏在氛围图上再压一道，桌面不压。
-       理由是量出来的：窄屏 hero 只有 530 高，而**文字铺满整宽**（实测
-       `.nf-hero-text` x 16~374 / 390）—— 巨字和导语是直接压在意象上的，
-       没有留白区可躲。桌面不存在这个问题：文字块右边缘在 57%，意象在 62% 之外。
-
-       为什么 .55 这一档：`.nf-hero-overlay` 的左暗渐变按百分比算，只压到屏幕
-       62%，右边 38% 几乎不压，所以图的亮度基本就是屏幕上的亮度。而这里最紧的
-       角色不是巨字而是**导语**（`--muted`，要 4.5:1 → 底色上限约 57），
-       巨字是大字号、3:1 就够（上限 149）。验收把意象区 99 分位卡在 118，
-       乘 .45 之后是 53，压在导语那条线以内。这两个数是一对，改一个要重算另一个。 */
-    .nf-hero::before {
-        background-image:
-            linear-gradient(rgba(5, 5, 6, .55), rgba(5, 5, 6, .55)),
-            var(--hero-art, none);
-    }
     .nf-hero-inner { padding: 100px 0 30px; }
     .nf-hero-cta { gap: 20px; }
     .nf-hero-foot { flex-direction: column; align-items: flex-start; gap: 8px; }

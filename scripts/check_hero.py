@@ -41,6 +41,184 @@ def check(cond, label, detail=""):
         failures.append(label)
 
 
+def note(label, detail=""):
+    print(f"  --   {label}" + (f"  {detail}" if detail else ""))
+
+
+# ---------------------------------------------------------------- 首屏氛围图
+#
+# 第一屏底下垫了一张氛围图（`.nf-hero::before` 的 `--hero-art`）。它带来一类
+# **check_a11y.py 结构上量不到**的故障：那个脚本量的是元素自己的
+# `background-color`、逐层向上找第一个不透明的底色，而图画在伪元素上，压根不在
+# 那条链上 —— 于是它永远量到 `--black`(5,5,6)、永远是绿的，而屏幕上文字可能正
+# 压在一片铜色高光上。
+#
+# 竖屏尤其严重：图是 4:3，画框比它高时按高度缩放、横向裁切，意象会从「右侧」被
+# 拖到屏幕中间、拖到文字底下（手机上放大约 2.9 倍）。桌面上看不到这件事。
+#
+# **判据是「超过底色上限的面积占比」，不是「最差那个像素的对比度」。**
+# 背景是纹理不是纯色：粒子是离散小点，它的 p99 很高但比笔画细得多，白字压上去
+# 照样是实心白；而粒子每帧都在动，单像素极值就是噪声。真正要问的是「有多少笔画
+# 面积落在过亮的底上」。这和 check_artwork.py 里「浅材质量最暗 5% 而不是最暗一个
+# 像素」是同一个路子。
+
+def _rel_lum(rgb):
+    import numpy as np
+
+    c = np.asarray(rgb, dtype=np.float64) / 255.0
+    c = np.where(c <= 0.03928, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    return 0.2126 * c[..., 0] + 0.7152 * c[..., 1] + 0.0722 * c[..., 2]
+
+
+def _bg_cap(fg_rgb, need):
+    """前景色要达到 need:1，底色最多多亮（返回 0~255 的灰度）。"""
+    lim = (float(_rel_lum(fg_rgb)) + 0.05) / need - 0.05
+    if lim <= 0:
+        return 0.0
+    v = (lim ** (1 / 2.4)) * 1.055 - 0.055
+    return max(0.0, min(255.0, v * 255))
+
+
+def _biggest_blob(mask):
+    """最大连通块的像素数。用来区分「几个孤立亮点」与「一片连续光晕」——
+    两者的分位数可能一样，可读性完全不同。不引 scipy，逐行并查集。"""
+    import numpy as np
+
+    parent = {}
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    h, w = mask.shape
+    for y in range(h):
+        row = mask[y]
+        for x in np.nonzero(row)[0]:
+            parent[(y, x)] = (y, x)
+            for nb in ((y, x - 1) if x and row[x - 1] else None,
+                       (y - 1, x) if y and mask[y - 1, x] else None):
+                if nb is not None:
+                    ra, rb = find(nb), find((y, x))
+                    if ra != rb:
+                        parent[rb] = ra
+    if not parent:
+        return 0
+    sizes = {}
+    for key in parent:
+        r = find(key)
+        sizes[r] = sizes.get(r, 0) + 1
+    return max(sizes.values())
+
+
+# 量哪几处。`.nf-hero-cta` 不在里面：它是一颗有自己底色的实心按钮 + 一个链接，
+# 「按钮底下的场景有多亮」不是一个有意义的问题。
+HERO_TEXT_PARTS = (".nf-eyebrow", ".nf-hero-title", ".nf-hero-sub", ".nf-hero-note")
+
+# 读出每一处的**实际**取色与字号，需要的对比度由它们现算 —— 不写死期望值，
+# 这样改了 CSS 的颜色或字号，要求会跟着变，而不是把一条过期的断言留在这里。
+HERO_TEXT_PROBE = """
+(sels) => {
+    const out = {};
+    for (const sel of sels) {
+        const el = document.querySelector(sel);
+        if (!el) { out[sel] = null; continue; }
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        const m = cs.color.match(/\\d+/g) || [255, 255, 255];
+        const size = parseFloat(cs.fontSize);
+        const weight = parseInt(cs.fontWeight) || 400;
+        out[sel] = {
+            box: [r.left, r.top, r.right, r.bottom],
+            rgb: [+m[0], +m[1], +m[2]],
+            size: size, weight: weight,
+            // WCAG 大字号：≥24px，或 ≥18.66px 且 bold。够大的只要 3:1。
+            need: (size >= 24 || (size >= 18.66 && weight >= 700)) ? 3.0 : 4.5,
+        };
+    }
+    return out;
+}
+"""
+
+# 只藏起来、**不要 display:none**：后者会重排，文字框的位置全变，量到的就不是
+# 文字原来压着的那一块了。
+HIDE_HERO_TEXT = """
+(sels) => {
+    for (const sel of sels) {
+        document.querySelectorAll(sel).forEach(el => { el.style.visibility = 'hidden'; });
+    }
+}
+"""
+
+
+def measure_hero_text(page, tag: str, vp_w: int) -> None:
+    """量首屏每一处文字实际压着的背景，按它自己的取色与字号现算达标线。
+
+    两条断言都刻意选了**稳定**的统计量（面积占比、最大连通块），把「最亮 1% 处
+    的对比度」只作为 note 打印 —— 粒子波场每帧都在动，那个数会飘 ±10 级灰度，
+    拿它当断言会时红时绿。
+    """
+    import numpy as np
+    from PIL import Image
+
+    parts = page.evaluate(HERO_TEXT_PROBE, list(HERO_TEXT_PARTS))
+    page.evaluate(HIDE_HERO_TEXT, list(HERO_TEXT_PARTS))
+    page.wait_for_timeout(150)
+    shot = SHOTS / f"hero-bg-{tag}.png"
+    page.screenshot(path=str(shot))
+
+    arr = np.asarray(Image.open(shot).convert("RGB")).astype(np.float64)
+    dpr = arr.shape[1] / vp_w
+    print(f"  {tag} {vp_w}x{page.viewport_size['height']}  比例 "
+          f"{vp_w / page.viewport_size['height']:.2f}  dpr {dpr:.0f}")
+
+    for sel in HERO_TEXT_PARTS:
+        info = parts.get(sel)
+        if not info:
+            note(f"{tag} {sel} 这一档不渲染，跳过")
+            continue
+        x0, y0, x1, y1 = info["box"]
+        if x1 - x0 < 4 or y1 - y0 < 4:
+            note(f"{tag} {sel} 盒子是空的，跳过", f"{x1 - x0:.0f}x{y1 - y0:.0f}")
+            continue
+        box = arr[max(0, int(y0 * dpr)):int(y1 * dpr), max(0, int(x0 * dpr)):int(x1 * dpr)]
+        if box.size == 0:
+            note(f"{tag} {sel} 落在视口外，跳过")
+            continue
+
+        lum = _rel_lum(box)
+        fg = float(_rel_lum(np.asarray(info["rgb"], dtype=np.float64)))
+        need = info["need"]
+        # 底色相对亮度上限，直接由「前景亮度 / 要求的对比度」反解
+        limit = (fg + 0.05) / need - 0.05
+        over = lum > limit
+        frac = float(over.sum()) / over.size
+        blob_css = _biggest_blob(over) / (dpr * dpr) if over.any() else 0.0
+        worst = float(np.percentile(lum, 99))
+        ratio = (fg + 0.05) / (worst + 0.05) if fg >= worst else (worst + 0.05) / (fg + 0.05)
+
+        name = f"{tag} {sel}"
+        cap = _bg_cap(np.asarray(info["rgb"], dtype=np.float64), need)
+        note(f"{name} {info['size']:.0f}px/{info['weight']} 要 {need}:1 → 底色 ≤{cap:.0f}",
+             f"最亮1% 处 {ratio:.2f}:1")
+        # 1.5% 是校准出来的：`--text` 实测 0.298%（5 倍余量），而退回 `--muted`
+        # 会跳到 4.134% —— 中间隔着一个数量级，不是贴着实测值划的线。
+        check(frac <= 0.015, f"{name} 压在过亮底色上的面积 ≤1.5%", f"{frac:.3%}")
+        # 面积小但集中成一坨照样盖住一个字，所以再看最大连通块。
+        #
+        # 300 CSS px²（≈17px 见方）这个数要分两种亮块来校准，**它们的连通块尺寸
+        # 相近而可读性完全不同**：
+        #   · 粒子的柔光晕：实测桌面导语那处 122px²，但最亮 1% 处仍有 6.97:1 ——
+        #     光晕边缘只是刚过线，中心并不亮。这种不该判红。
+        #   · 氛围图的硬铜色斑：窄屏导语退回 `--muted` 时 580px²，最亮 1% 处
+        #     只有 2.40:1。这种必须判红。
+        # 300 在两者中间，两边各留 2.4~2.5 倍余量。**不要按柔光那一侧收紧** ——
+        # 收到 100 就会把粒子光晕误判成故障（第一版就是这么红的）。
+        check(blob_css <= 300, f"{name} 最大连通亮块 ≤300 CSS px²",
+              f"{blob_css:.0f} px² (≈{blob_css ** .5:.1f}px 见方)")
+
+
 HERO_STATE = """
 () => {
     const line = document.querySelector('.nf-hero-title .line-reveal');
@@ -461,6 +639,26 @@ def main() -> int:
         check(cd and "报名截止" in cd["staticText"], "静态截止日期照常显示")
         check(cd and cd["clockHidden"] is True, "时钟保持隐藏，不露出一排 --")
         ctx.close()
+
+        # ---------------- 首屏氛围图：文字实际压着的背景 ----------------
+        # 三个画框，覆盖「横向不裁 / 横向裁得最狠 / 裁得刚够形成重叠」三种情况。
+        # 竖屏平板（820x1180）是刻意加的：只按 max-width 判断会漏掉它，而它的
+        # 导语照样压在意象上 —— 这一条就是那个漏洞的守卫。
+        print("\n首屏氛围图：文字压着的背景到底有多亮（check_a11y 结构上量不到这个）")
+        for tag, size in (("desktop", {"width": 1440, "height": 900}),
+                          ("tablet-portrait", {"width": 820, "height": 1180}),
+                          ("phone", {"width": 390, "height": 844})):
+            ctx = browser.new_context(viewport=size, device_scale_factor=2)
+            page = ctx.new_page()
+            page.goto(base, wait_until="load")
+            # 加载动画期间巨字是隐藏的，量出来会是「文字不在时的背景」——
+            # 那正好是我们要的，但动画没跑完时排版还在动，框会取错。等解锁 + 落定。
+            page.wait_for_function(
+                "() => !document.documentElement.classList.contains('esta-pre-lock')",
+                timeout=20000)
+            page.wait_for_timeout(1800)
+            measure_hero_text(page, tag, size["width"])
+            ctx.close()
 
         # ---------------- reduced-motion ----------------
         print("\nprefers-reduced-motion")
