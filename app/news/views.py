@@ -83,6 +83,13 @@ def honor_wall(request):
         "by_year": by_year,
         # 证书条带只放真的有照片的。一张都没有时模板整段不渲染 ——
         # 二十个空占位框堆在页面顶部比没有这条带糟得多。
-        "certificates": [h for h in honors if h.certificate][:8],
+        #
+        # **不截断。** 原来这里写的是 `[:8]`，于是 13 张证书里有 5 张存在库里、
+        # 站上任何地方都看不到 —— 年份清单那些行不显示证书（见 honor_row.html），
+        # 条带是唯一的出口。存了却看不见等于没存，而这件事不会以任何形式报错。
+        # 条带是 `auto-fill, minmax(220px, 1fr)` 的网格，会自己折行，十几张是三行。
+        # 真有一天多到读不过去，正确的做法是把它折起来（`<details>`）或者分等级，
+        # 不是悄悄砍掉尾巴。下面那条测试钉住这件事。
+        "certificates": [h for h in honors if h.certificate],
     }
     return render(request, "news/honors.html", context)

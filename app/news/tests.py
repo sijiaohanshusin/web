@@ -1,5 +1,7 @@
+import tempfile
+
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -347,6 +349,30 @@ class HonorWallViewTests(TestCase):
         resp = self.client.get(reverse("honors:wall"))
         self.assertEqual(resp.context["certificates"], [])
         self.assertNotContains(resp, "hn-cert-strip")
+
+    # 这条要真的落文件，所以换个临时 MEDIA_ROOT —— 默认那个是 app/media/，
+    # 测试往里写会留下一堆 cert-*.png。
+    @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="esta-test-honor-"))
+    def test_every_certificate_on_the_wall_is_actually_shown(self):
+        """存进库的证书必须都能在页面上看到，不能被条带的长度上限吃掉。
+
+        真发生过：这里原来写 `[:8]`，导入 13 张证书之后有 5 张只存在于数据库里 ——
+        年份清单那些行不显示证书（见 honor_row.html），条带是唯一的出口。而这件事
+        不报错、不掉图、页面完全正常，只是那几张谁都找不到。
+
+        断言拿「库里有几条带证书的」和「条带里有几张」比，不写死数字：写死的话
+        以后加记录这条就得跟着改，改的时候正好又会把上限问题重新引进来。
+        """
+        for i in range(10):
+            make_honor(title=f"带证书的第 {i} 个", year=2025 - i,
+                       certificate=make_cert(f"cert-{i}.png"))
+
+        resp = self.client.get(reverse("honors:wall"))
+        want = self.Honor.wall().exclude(certificate="").count()
+        self.assertGreater(want, 8, "种的数据要越过原来那个上限，否则这条空跑")
+        self.assertEqual(len(resp.context["certificates"]), want)
+        self.assertEqual(resp.content.decode().count('class="hn-cert"'), want,
+                         "模板渲染出来的证书张数也要对得上")
 
     def test_empty_wall_shows_a_designed_state_with_a_next_step(self):
         self.Honor.objects.all().delete()
