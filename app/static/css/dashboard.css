@@ -250,6 +250,25 @@
     line-height: var(--lh-snug); word-break: break-word;
 }
 .dash-detail-campaign { color: var(--muted); font-size: var(--fs-sm); }
+
+/* 多选分布：一列「标签 —— 计数」。刻意不画柱状条 —— 选项最多九项、数值最大也就
+   几十，一条条柱子在这个量级上比数字本身更难比大小，而且要再拖一个图表库进来。 */
+.dash-breakdowns { margin-top: 20px; }
+.dash-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.dash-bars li {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 6px 0; border-bottom: 1px solid var(--line-d);
+    color: var(--text); font-size: var(--fs-sm);
+}
+.dash-bars li:last-child { border-bottom: none; }
+.dash-bars li span { flex: 1; min-width: 0; }
+.dash-bars li b {
+    font-family: var(--font-num); font-size: var(--fs-md); color: var(--accent-2);
+    font-variant-numeric: tabular-nums;
+}
+/* 0 次的行压暗但**不隐藏**：「一个人都没选电源方向」是要看的信息 */
+.dash-bars li.is-zero { color: var(--muted); }
+.dash-bars li.is-zero b { color: var(--muted); }
 .dash-detail-sheet { margin-top: 16px; }
 .dash-detail-sheet h3 {
     color: #fff; font-size: var(--fs-md); font-weight: 700;

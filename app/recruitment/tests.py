@@ -307,6 +307,81 @@ class RecruitListPaginationTests(TestCase):
         rows = resp.content.decode("utf-8-sig").strip().splitlines()
         self.assertEqual(len(rows), self.total + 1, "导出行数应当是全量 + 一行表头")
 
+    def test_header_and_data_rows_are_the_same_width(self):
+        """**这一条守的是一个静默故障。**
+
+        表头和取值原来是两份平行的列表，加一列时很容易只改一处 —— 结果整份 CSV
+        从那一列起全部错位一格，而文件照常打开、Excel 里也不报错，站务照着一份
+        「学号列里是学院」的名单打印。现在两者由同一个列表定义，这条断言钉住它。
+        """
+        import csv
+        import io
+
+        resp = self.client.get(self.url, {"campaign": self.campaign.pk, "export": "csv"})
+        rows = list(csv.reader(io.StringIO(resp.content.decode("utf-8-sig"))))
+        header, first = rows[0], rows[1]
+        self.assertEqual(len(header), len(first),
+                         f"表头 {len(header)} 列，数据行 {len(first)} 列")
+        self.assertGreaterEqual(len(header), 18, "纸质表的字段应当都在导出里")
+
+    def test_the_paper_form_fields_all_reach_the_csv(self):
+        """加了字段却忘了加进导出，表现是站务打印出来**少一栏**而文件完全正常。"""
+        import csv
+        import io
+
+        app = Application.objects.get(user__username="pstu0")
+        app.interests = ["mcu", "other"]
+        app.interests_other = "电机控制"
+        app.heard_from = ["senior"]
+        app.first_impression = "看过一墙作品"
+        app.motto = "想做一台示波器"
+        app.save()
+        app.user.gender = "female"
+        app.user.birthday = date(2007, 3, 8)
+        app.user.save(update_fields=["gender", "birthday"])
+
+        resp = self.client.get(self.url, {"campaign": self.campaign.pk, "export": "csv"})
+        rows = list(csv.reader(io.StringIO(resp.content.decode("utf-8-sig"))))
+        header = rows[0]
+        row = next(r for r in rows[1:] if r[header.index("用户名")] == "pstu0")
+        cell = dict(zip(header, row))
+        self.assertEqual(cell["性别"], "女")
+        self.assertEqual(cell["出生日期"], "2007-03-08")
+        # 多选导出成中文标签，「其他」的补充接在后面 —— 和详情页同一份实现
+        self.assertEqual(cell["兴趣方向"], "单片机编程与设计、其他：电机控制")
+        self.assertEqual(cell["得知渠道"], "高年级学长学姐介绍")
+        self.assertEqual(cell["对协会的初步印象"], "看过一墙作品")
+        self.assertEqual(cell["对大学四年的寄语"], "想做一台示波器")
+
+    def test_breakdown_counts_match_a_recount(self):
+        """拿现场重新数一遍的结果比，而不是比写死的数字。"""
+        picks = {"pstu0": ["mcu", "power"], "pstu1": ["mcu"], "pstu2": ["unknown"]}
+        for name, keys in picks.items():
+            Application.objects.filter(user__username=name).update(interests=keys)
+
+        resp = self.client.get(self.url, {"campaign": self.campaign.pk})
+        got = dict(resp.context["interest_rows"])
+        expected = {
+            label: sum(1 for keys in picks.values() if value in keys)
+            for value, label in Application.Interest.choices
+        }
+        self.assertEqual(got, expected)
+        # 0 次的行必须还在 —— 「一个人都没选电源方向」是要看的信息
+        self.assertEqual(len(resp.context["interest_rows"]),
+                         len(Application.Interest.choices))
+        self.assertEqual(len(resp.context["channel_rows"]),
+                         len(Application.Channel.choices))
+
+    def test_breakdown_follows_the_status_filter(self):
+        """页面标题写的是「当前筛选」，那分布就得真的跟着筛选走。"""
+        Application.objects.filter(user__username="pstu0").update(
+            interests=["mcu"], status=Application.Status.FIRST_PASS)
+        Application.objects.filter(user__username="pstu1").update(interests=["mcu"])
+
+        resp = self.client.get(self.url, {
+            "campaign": self.campaign.pk, "status": "first_pass"})
+        self.assertEqual(dict(resp.context["interest_rows"])["单片机编程与设计"], 1)
+
     def test_export_still_follows_the_status_filter(self):
         Application.objects.filter(user__username="pstu0").update(
             status=Application.Status.FIRST_PASS)

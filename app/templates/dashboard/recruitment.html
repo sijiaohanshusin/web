@@ -103,6 +103,35 @@
 {% endcomment %}
 {% include "includes/pager.html" with page=page %}
 
+{% comment %}
+两组多选的分布。**按当前筛选算**，标题里写明了 —— 筛到「二面通过」时看录取的这批
+人对什么感兴趣，比看全批次有用。
+
+0 次的那几行**照样列出来**：「一个人都没选电源方向」本身就是要看的信息（那说明这
+一届的培训重点该往别处放），只列非零项会让那一行凭空消失、读者以为漏统计了。
+判据在 `Application._breakdown` 里，返回值就包含全部选项。
+{% endcomment %}
+{% if total_count %}
+<div class="dash-grid-2 dash-breakdowns">
+    <div class="dash-panel">
+        <h2>兴趣方向分布{% if status %}（当前筛选）{% endif %}</h2>
+        <ul class="dash-bars">
+            {% for label, n in interest_rows %}
+            <li{% if not n %} class="is-zero"{% endif %}><span>{{ label }}</span><b>{{ n }}</b></li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="dash-panel">
+        <h2>从哪儿知道我们的{% if status %}（当前筛选）{% endif %}</h2>
+        <ul class="dash-bars">
+            {% for label, n in channel_rows %}
+            <li{% if not n %} class="is-zero"{% endif %}><span>{{ label }}</span><b>{{ n }}</b></li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
 {% endif %}
 
 {% endblock %}

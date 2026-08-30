@@ -843,6 +843,37 @@ def event_checkin_qr(request, pk: int):
 
 # ---------------------------------------------------------------- 招新管理
 
+# 报名名单 CSV 的列。**一个列表同时定义表头与取值**，不写成两份平行的列表 ——
+# 那样加一列时很容易只改一处，结果整份 CSV 从那一列起全部错位一格，而文件照常
+# 打开、Excel 里也不报错。测试里有一条断言表头长度 == 数据行长度。
+#
+# 口径是纸质《会员申请表》：站务拿这份当打印底稿（线下仍然签纸质表）。
+# 两组多选走 `interests_display` / `channels_display` —— 它们已经把「其他」的补充
+# 接在后面了，所以不再单开「其他方向」「其他渠道」两列。
+_APPLICATION_CSV_COLUMNS = (
+    ("姓名", lambda a: a.user.real_name),
+    ("用户名", lambda a: a.user.username),
+    ("学号", lambda a: a.user.student_id),
+    ("学院", lambda a: a.user.college),
+    ("年级", lambda a: a.user.grade),
+    ("性别", lambda a: a.user.get_gender_display()),
+    ("出生日期", lambda a: a.user.birthday.strftime("%Y-%m-%d") if a.user.birthday else ""),
+    ("手机", lambda a: a.user.phone),
+    ("QQ", lambda a: a.user.qq),
+    ("邮箱", lambda a: a.user.email),
+    ("意向部门", lambda a: a.get_department_display()),
+    ("兴趣方向", lambda a: a.interests_display),
+    ("主要经历 / 兴趣爱好", lambda a: a.skills),
+    ("自我介绍", lambda a: a.self_intro),
+    ("对协会的初步印象", lambda a: a.first_impression),
+    ("对大学四年的寄语", lambda a: a.motto),
+    ("得知渠道", lambda a: a.channels_display),
+    ("进展", lambda a: a.get_status_display()),
+    ("面试备注", lambda a: a.interview_note),
+    ("报名时间", lambda a: a.created_at.astimezone().strftime("%Y-%m-%d %H:%M")),
+)
+
+
 # 面试结果动作 -> (报名状态, 目标等级或 None, 中文说明)
 _RECRUIT_RESULTS = {
     "first_pass": (Application.Status.FIRST_PASS, roles.LEVEL_PREPARATORY, "一面通过 · 晋升预备会员"),
@@ -905,6 +936,8 @@ def recruitment_manage(request):
     applications = []
     page = None
     status_tabs = []
+    interest_rows = []
+    channel_rows = []
     total_count = 0
     if campaign:
         base = campaign.applications.select_related("user", "user__position")
@@ -927,18 +960,23 @@ def recruitment_manage(request):
             filename = quote(f"{campaign.name}-报名名单.csv")
             response["Content-Disposition"] = f"attachment; filename*=UTF-8''{filename}"
             writer = csv.writer(response)
-            writer.writerow(["姓名", "用户名", "学号", "学院", "年级", "意向部门", "特长", "进展", "面试备注", "报名时间"])
+            writer.writerow([header for header, _ in _APPLICATION_CSV_COLUMNS])
             for a in applications:
-                writer.writerow([
-                    a.user.real_name, a.user.username, a.user.student_id, a.user.college, a.user.grade,
-                    a.get_department_display(), a.skills, a.get_status_display(),
-                    a.interview_note, a.created_at.astimezone().strftime("%Y-%m-%d %H:%M"),
-                ])
+                writer.writerow([get(a) for _, get in _APPLICATION_CSV_COLUMNS])
             return response
+
+        # 两组多选的分布。**按当前筛选算**（页面上的标题也这么写）—— 筛到
+        # 「二面通过」时看录取的这批人对什么感兴趣，比看全批次有用。
+        #
+        # 这里会把整个筛选结果取回内存（`_breakdown` 要遍历）。几百条的量级没问题，
+        # 而换成按项发 `contains` 查询是 9 + 6 = 15 次往返，反而更贵。
+        rows = list(applications)
+        interest_rows = Application.interest_breakdown(rows)
+        channel_rows = Application.channel_breakdown(rows)
 
         # **分页必须排在导出之后。** 反过来的话导出的 CSV 只有当前那一页 ——
         # 站务拿到一份 25 行的名单当成全部，而文件能正常打开、没有任何提示。
-        page = Paginator(applications, 25).get_page(request.GET.get("page"))
+        page = Paginator(rows, 25).get_page(request.GET.get("page"))
         applications = page
 
     context = {
@@ -949,6 +987,8 @@ def recruitment_manage(request):
         "page": page,
         "status": status,
         "status_tabs": status_tabs,
+        "interest_rows": interest_rows,
+        "channel_rows": channel_rows,
         "total_count": total_count,
         "is_admin": _is_admin(request.user),
     }
