@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -258,6 +259,140 @@ class ApplicationProgressTests(TestCase):
         self.assertEqual(len(Application.PROGRESS_STEPS), 3)
         keys = [k for k, _, _ in Application.PROGRESS_STEPS]
         self.assertNotIn(Application.Status.REJECTED, keys)
+
+
+class MultiChoiceFieldTests(TestCase):
+    """`interests` / `heard_from` 两个多选项。
+
+    它们存在 `JSONField` 里，而 **`JSONField` 对内容零校验** —— 往里塞任何 JSON
+    都能存进去，`clean()` 在 `save()` 时也压根不跑。所以这一批断言分三层守：
+      1. `full_clean()` 挡非法键（表单与 admin 走这条）
+      2. 显示时**静默跳过**认不出的键（挡已经进了库的脏数据，不炸页面）
+      3. 统计按固定顺序返回全部选项，包括 0 次的
+    """
+
+    def setUp(self):
+        self.campaign = make_campaign()
+
+    def _app(self, name="mc", **kw):
+        data = {
+            "campaign": self.campaign, "user": make_user(name),
+            "self_intro": "自我介绍够十个字了吧。",
+        }
+        data.update(kw)
+        return Application.objects.create(**data)
+
+    # ---- 第一层：full_clean 挡非法键 ----
+
+    def test_valid_keys_pass_full_clean(self):
+        app = self._app(
+            interests=[Application.Interest.MCU, Application.Interest.POWER],
+            heard_from=[Application.Channel.SENIOR],
+        )
+        app.full_clean()          # 不抛就算过
+
+    def test_unknown_key_is_rejected_by_full_clean(self):
+        app = self._app(interests=["mcu", "quantum_computing"])
+        with self.assertRaises(ValidationError) as caught:
+            app.full_clean()
+        self.assertIn("interests", caught.exception.error_dict)
+        self.assertIn("quantum_computing", str(caught.exception))
+
+    def test_non_list_value_is_rejected(self):
+        """`JSONField` 存字符串、字典都是合法 JSON，但语义上是坏数据。"""
+        for i, bad in enumerate(("mcu", {"mcu": True}, 42)):
+            with self.subTest(bad=bad):
+                app = self._app(f"mcnotlist{i}", heard_from=bad)
+                with self.assertRaises(ValidationError):
+                    app.full_clean()
+
+    def test_empty_is_allowed_at_the_model_layer(self):
+        """模型层允许留空（数据迁移与 admin 要能建半成品）。
+        「至少选一项」是**表单层**的要求，两层职责不同。"""
+        app = self._app()
+        app.full_clean()
+        self.assertEqual(app.interests, [])
+        self.assertEqual(app.heard_from, [])
+
+    # ---- 第二层：显示时跳过认不出的键 ----
+
+    def test_display_skips_keys_it_does_not_recognise(self):
+        """选项以后会退役（纸质表上原来还有「人人网」），历史数据仍留着旧键。
+        原样显示会冒出一个 `rr_net`，抛异常会让整页 500 —— 跳过是唯一不制造新
+        问题的选择。**这一条不能用 full_clean 造数据**，只能直接塞。"""
+        app = self._app(heard_from=["senior", "rr_net", "online"])
+        self.assertEqual(app.channels_display, "高年级学长学姐介绍、海报 / 官网 / QQ / 公众号")
+
+    def test_display_is_empty_for_blank_and_none(self):
+        app = self._app("mcblank")
+        self.assertEqual(app.interests_display, "")
+        self.assertEqual(app.channels_display, "")
+        # 老数据可能是 NULL 而不是 []
+        app.interests = None
+        self.assertEqual(app.interests_display, "")
+
+    def test_other_carries_its_supplement_into_the_display(self):
+        app = self._app(
+            "mcother",
+            interests=[Application.Interest.MCU, Application.Interest.OTHER],
+            interests_other="电机控制",
+        )
+        self.assertEqual(app.interests_display, "单片机编程与设计、其他：电机控制")
+
+    def test_other_without_a_supplement_still_reads_fine(self):
+        """选了「其他」但没写补充时不能出现一个孤零零的冒号。"""
+        app = self._app("mconly", interests=[Application.Interest.OTHER])
+        self.assertEqual(app.interests_display, "其他")
+
+    def test_display_follows_the_order_declared_in_the_data(self):
+        """按用户勾选存下来的顺序渲染，不重排 —— 重排会让确认页回显和详情页不一致。"""
+        app = self._app("mcorder", interests=["power", "mcu"])
+        self.assertEqual(app.interests_display, "电源开发与设计、单片机编程与设计")
+
+    # ---- 第三层：统计 ----
+
+    def test_breakdown_counts_match_a_recount_and_keep_zero_rows(self):
+        """拿现场重新数一遍的结果比，而不是比一个写死的数字。
+
+        「一个人都没选电源方向」本身就是要看的信息，所以 0 次的行必须还在 ——
+        只返回非零项会让那一行凭空消失、读者以为漏统计了。
+        """
+        picks = [
+            ["mcu", "power"],
+            ["mcu", "rf", "other"],
+            ["unknown"],
+            [],
+        ]
+        for i, keys in enumerate(picks):
+            self._app(f"mcb{i}", interests=keys)
+
+        apps = list(Application.objects.filter(campaign=self.campaign))
+        got = dict(Application.interest_breakdown(apps))
+
+        expected = {}
+        for value, label in Application.Interest.choices:
+            expected[label] = sum(1 for keys in picks if value in keys)
+        self.assertEqual(got, expected)
+
+        # 全部选项都在（含 0 次的），而且顺序跟着 choices
+        rows = Application.interest_breakdown(apps)
+        self.assertEqual(len(rows), len(Application.Interest.choices))
+        self.assertEqual([label for label, _ in rows],
+                         [label for _, label in Application.Interest.choices])
+        self.assertEqual(dict(rows)["模型控制类"], 0)
+
+    def test_breakdown_ignores_unknown_keys_without_crashing(self):
+        self._app("mcbad", heard_from=["senior", "rr_net"])
+        apps = list(Application.objects.filter(campaign=self.campaign))
+        rows = dict(Application.channel_breakdown(apps))
+        self.assertEqual(rows["高年级学长学姐介绍"], 1)
+        self.assertNotIn("rr_net", rows)
+
+    def test_breakdown_on_an_empty_queryset_still_lists_every_option(self):
+        """一条报名都没有时不能返回空表 —— 那一块会整个不渲染，看着像坏了。"""
+        rows = Application.channel_breakdown([])
+        self.assertEqual(len(rows), len(Application.Channel.choices))
+        self.assertEqual({n for _, n in rows}, {0})
 
 
 class RecruitmentPageStateTests(TestCase):
