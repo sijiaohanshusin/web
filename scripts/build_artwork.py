@@ -88,6 +88,11 @@ JOBS: dict[str, dict] = {
                                "src": "illustration-soldering-journey"},
     "illu-journey-2":         {"tile": False, "size": 1280, "q": 86},
     "illu-journey-3":         {"tile": False, "size": 1280, "q": 86},
+    # 首屏大氛围图（`.nf-hero::before` 的 --hero-art）。母图 2400x1800（4:3），
+    # 输出 1920 长边：第一屏最宽就是视口宽，柔光氛围没有要 1:1 的细节。
+    # 质量 88 比页头那批高一档 —— 这张有一片从近到远的连续渐变，86 会在纵深方向
+    # 起色带（页头那批是平的柔光，吃不到这个问题）。它照样只有几十 KB。
+    "hero-home":              {"tile": False, "size": 1920, "q": 88},
 }
 
 

@@ -62,6 +62,14 @@ LIGHT_TEX = ["tex-copper-light.webp"]
 # 第 1 张就是第一批那张 `illustration-soldering-journey`（改名而来，母图不用重生成），
 # 只需要再补 2 张对得上它的。
 ILLU = ["illu-journey-1.webp", "illu-journey-2.webp", "illu-journey-3.webp"]
+# 首屏大氛围图：走 `home.css` 里 `.nf-hero::before` 的 `--hero-art` 变量。
+# 安全区同样是算出来的：第一屏在桌面是 `min-height: 100vh`（= 视口，1.60~1.78:1）、
+# 窄屏是 `min-height: auto`（实测 390x530 = 0.74:1），比例跨度 2.5 倍。
+# 4:3 是同时满足两头的那一档，`cover` + `right center` 之下
+#   1.78 的屏看到竖向 12.5%~87.5%（整宽）、0.70 的竖屏看到横向 48%~100%（整高）
+# 再和 `.nf-hero-overlay` 那两道遮罩留出的窗口（横 62%~100% × 竖 22%~72%）取交集，
+# 就是「意象在右 38% × 竖中 50%」，左 58% 留给那条巨字（文字块右边缘在 57%）。
+HOME_HERO = "hero-home.webp"
 
 failures: list[str] = []
 notes: list[str] = []
@@ -209,6 +217,46 @@ def region(im, x0f, x1f, y0f=0.0, y1f=1.0):
             float(np.percentile(box, 99.9)))
 
 
+def bright_bbox(im, pct=99.5, trim=2.0):
+    """最亮那一小撮像素的外接框（比例坐标）+ 门槛亮度 + 命中像素数。
+
+    这一条是用来钉**构图**的。分区平均值量不出「主体跑到画面中间了」—— 主体在
+    正中间时，右区的平均亮度照样很低，六条亮度断言可以全绿而图是废的。而
+    「意象」在暗场氛围图里就是画面最亮的那一小块，所以直接量它在哪。
+
+    `trim` 是刻意的：柔光会在整幅画面上撒下零星几个够亮的像素，拿 min/max 取
+    外接框会被那几个点撑到全画幅。取 2~98 分位相当于问「亮的那堆**主体**在哪」，
+    而不是「有没有一个亮像素跑出去了」。
+    """
+    import numpy as np
+
+    a = np.asarray(im.convert("L"), dtype=np.float32)
+    thr = float(np.percentile(a, pct))
+    ys, xs = np.nonzero(a >= thr)
+    h, w = a.shape
+    if xs.size == 0:          # 全图同一个亮度，谈不上外接框
+        return 0.0, 1.0, 0.0, 1.0, thr, 0
+    return (float(np.percentile(xs, trim)) / w,
+            float(np.percentile(xs, 100 - trim)) / w,
+            float(np.percentile(ys, trim)) / h,
+            float(np.percentile(ys, 100 - trim)) / h,
+            thr, int(xs.size))
+
+
+def subject_lift(im, x0f=0.60) -> float:
+    """意象区的 99.9 分位亮度比全图中位数高多少。
+
+    回答的是「画面里到底有没有一个主体」。用分位数而不是最大值：最大值只要一个
+    亮像素就能满足，而 99.9 分位要求意象区里有千分之一的面积真的亮起来。
+    校准数据见 check_batch3 里那段注释。
+    """
+    import numpy as np
+
+    a = np.asarray(im.convert("L"), dtype=np.float32)
+    right = a[:, int(a.shape[1] * x0f):]
+    return float(np.percentile(right, 99.9) - np.median(a))
+
+
 def pending(name, label):
     print(f"  ..   {name} 待交付（{label}）")
 
@@ -307,6 +355,62 @@ def check_batch2(Image) -> None:
         check(False, "插画必须成套交付（宁缺勿滥）", f"只有 {len(got)}/{len(ILLU)} 张")
 
 
+def check_batch3(Image) -> None:
+    """首屏大氛围图。工单在 docs/美术资产清单.md 的「第三批」一节。
+
+    和第二批同样：**缺文件不算失败**，只打印「待交付」。
+    """
+    print("\n第三批 · 首屏大氛围图（意象在右 38% × 竖中 50%，左 58% 留给巨字）")
+    path = IMG / HOME_HERO
+    if not path.exists():
+        pending(HOME_HERO, "首页第一屏")
+        return
+    im = Image.open(path)
+    ratio = im.size[0] / im.size[1]
+    lmean, l99, _ = region(im, 0.0, 0.58)
+    rmean, r99, _ = region(im, 0.62, 1.0)
+    _, _, g999 = region(im, 0.0, 1.0)
+    bx0, bx1, by0, by1, thr, npx = bright_bbox(im)
+    cyan, copper, magenta = hue_split(im)
+    print(f"\n  {HOME_HERO}  {im.size[0]}x{im.size[1]}  首页第一屏")
+    check(1.30 <= ratio <= 1.37,
+          "比例 ≈4:3（0.70~1.78 两头都能裁到安全区的那一档）",
+          f"{ratio:.3f}  {im.size}")
+    check(l99 <= 30, "左 58% 干净（99 分位 ≤30，那是巨字的地盘）", f"{l99:.0f}")
+    check(lmean < rmean, "左侧比右侧暗", f"左 {lmean:.1f} vs 右 {rmean:.1f}")
+    # 窄屏上 hero 只有 530 高而文字铺满整宽（实测 x 16~374 / 390），巨字是直接
+    # 压在意象上的。所以这两条是无障碍守卫，不是审美判断 —— 同第二批页头。
+    check(rmean <= 25, "右 38% 整体仍是暗场（平均 ≤25，窄屏时巨字压在这一区上）",
+          f"{rmean:.1f}")
+    # 比第二批页头的 ≤140 紧一档，因为窄屏上这张图被放大约 2.9 倍（源 45%~100%
+    # 铺满 390 宽），意象会挤到屏幕中部、压在**导语**上 —— 而导语是 `--muted`，
+    # 要 4.5:1 就要求底色 ≤57，比巨字（大字号，3:1，上限 149）紧得多。
+    # 118 是「白字 4.5:1」那条线；配上窄屏那道 .55 压暗（见 home.css 的 720px 块）
+    # 落到 53，压在导语那条线以内。这两个数是一对。
+    check(r99 <= 118, "右 38% 没有大片过曝（99 分位 ≤118）", f"{r99:.0f}")
+    check(g999 <= 210, "全图 99.9 分位 ≤210（细高光可以，大面积不行）", f"{g999:.0f}")
+    # 先确认被测的东西真的出现了：一片均匀近黑能让上面每一条亮度断言都过 ——
+    # T4 阻焊哑光面就是那样交付的（压完只有 2KB，「极细微质感」被理解成纯黑）。
+    #
+    # 阈值是在**已上线的七张页头图（阳性）+ 人造废图（阴性）**上校准出来的，
+    # 不是拍脑袋（`.shots/calib.py` 那次量的）：
+    #   右区 p99.9 − 全图中位数   阳性 52~150   阴性 0~3    ← 用这个，间隔 49
+    #   最大值 − 中位数           阳性 154~253  阴性 0~4    间隔更大但只看单个像素，
+    #                                                     一个亮点就能骗过去
+    #   p95−p5（纹理那条的判据）  阳性 3~7      阴性 0~3    **间隔 0，完全无效**
+    # 最后一条要记住：氛围图 99% 的面积按设计就是黑的，跨度类统计量在这里没有
+    # 分辨力。别把纹理那条判据搬过来。
+    lift = subject_lift(im)
+    check(lift >= 30,
+          "**画面里真有一个意象**（右区 p99.9 比全图中位数高 ≥30）", f"高出 {lift:.0f}")
+    check(bx0 >= 0.55 and by0 >= 0.15 and by1 <= 0.80,
+          "**意象落在安全窗口内**（横 55%~100% × 竖 15%~80%）",
+          f"横 {bx0:.0%}~{bx1:.0%} · 竖 {by0:.0%}~{by1:.0%}")
+    check(magenta < 0.08, "没有紫红色相", f"紫红 {magenta:.1%}")
+    note("最亮 0.5%", f"{npx} 个像素")
+    note("色相分布", f"青 {cyan:.0%} · 铜 {copper:.0%}")
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -376,6 +480,7 @@ def main() -> int:
         note("色相分布", f"青 {cyan:.0%} · 铜 {copper:.0%}")
 
     check_batch2(Image)
+    check_batch3(Image)
 
     if args.dump:
         out = Path(args.dump)

@@ -12,6 +12,33 @@
    HERO（全屏粒子信号海洋）
    ============================================================ */
 .nf-hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+
+/* ---------- 首屏氛围图（默认没有，值由下面一条规则给） ----------
+   画在 `::before`，不写进 `.nf-hero` 自己的 `background` —— `.nf-dark` 用的是
+   `background:` 简写，直接加会被它整个擦掉（全站硬约定：叠工具类时只写
+   `background-color`）。用法和 `.nf-scope` 的 `--scope-art` 完全一致：
+   只设一个变量，值是一个指向那张图的 CSS 图片引用。
+
+   **为什么垫在 `::before` 上就正好在粒子层下面**：`::before` 在所有子元素之前
+   绘制，而 `.nf-hero-canvas` 是透明的（实测：把区块底色设成纯红，右侧中部量到
+   R=242，底色透上来了）。于是层序是「氛围图 → 粒子 → 遮罩 → 文字」——
+   粒子浮在氛围之上，而 `.nf-hero-overlay` 那两道渐变照样压得住图。
+
+   构图的安全区不是拍脑袋的，就是 `.nf-hero-overlay` 那两道渐变留出来的窗口：
+   横向 62%~100%、竖向 22%~72%。要求写进了 `check_artwork.py`。 */
+.nf-hero::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: var(--hero-art, none);
+    background-position: right center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+/* 高对比偏好下摘掉氛围图：它是气氛，而这里的诉求是让那条巨字最清楚。
+   和 `.page-hero` 的氛围图、新生指南的章节头横幅同一个处理。 */
+@media (prefers-contrast: more) {
+    .nf-hero { --hero-art: none; }
+}
+
 .nf-hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .nf-hero-overlay {
     position: absolute; inset: 0; pointer-events: none;
@@ -502,6 +529,21 @@ html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
 
 @media (max-width: 720px) {
     .nf-hero { min-height: auto; }
+    /* 窄屏在氛围图上再压一道，桌面不压。
+       理由是量出来的：窄屏 hero 只有 530 高，而**文字铺满整宽**（实测
+       `.nf-hero-text` x 16~374 / 390）—— 巨字和导语是直接压在意象上的，
+       没有留白区可躲。桌面不存在这个问题：文字块右边缘在 57%，意象在 62% 之外。
+
+       为什么 .55 这一档：`.nf-hero-overlay` 的左暗渐变按百分比算，只压到屏幕
+       62%，右边 38% 几乎不压，所以图的亮度基本就是屏幕上的亮度。而这里最紧的
+       角色不是巨字而是**导语**（`--muted`，要 4.5:1 → 底色上限约 57），
+       巨字是大字号、3:1 就够（上限 149）。验收把意象区 99 分位卡在 118，
+       乘 .45 之后是 53，压在导语那条线以内。这两个数是一对，改一个要重算另一个。 */
+    .nf-hero::before {
+        background-image:
+            linear-gradient(rgba(5, 5, 6, .55), rgba(5, 5, 6, .55)),
+            var(--hero-art, none);
+    }
     .nf-hero-inner { padding: 100px 0 30px; }
     .nf-hero-cta { gap: 20px; }
     .nf-hero-foot { flex-direction: column; align-items: flex-start; gap: 8px; }
