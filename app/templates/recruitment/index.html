@@ -151,14 +151,38 @@
 
         {% elif can_apply %}
             <h2>报名表</h2>
+
             {% comment %}
-            分步表单。**渐进增强**：这是一张完整的表单、一次 POST；三个 fieldset
+            身份回显：姓名/学号/学院/届别注册时已经填过，这里**只读展示**，不再问
+            一遍。它是上下文不是输入，所以刻意不占一段 —— 让第一段直接是可以动手
+            的题目。要改就去个人资料页，那是这些字段的唯一入口。
+            {% endcomment %}
+            <dl class="rec-identity">
+                <div><dt>姓名</dt><dd>{{ user.real_name|default:user.username }}</dd></div>
+                <div><dt>学号</dt><dd>{{ user.student_id|default:"—" }}</dd></div>
+                <div><dt>学院</dt><dd>{{ user.college|default:"—" }}</dd></div>
+                <div><dt>届别</dt><dd>{{ user.cohort_label|default:"—" }}</dd></div>
+            </dl>
+            <p class="rec-identity-note">
+                这几项来自你的账号。有误请先去<a href="{% url 'accounts:profile_edit' %}">改资料</a>。
+            </p>
+
+            {% comment %}
+            分步表单。**渐进增强**：这是一张完整的表单、一次 POST；五个 fieldset
             默认全部展开，没有 JS 也能填能交。form-enhance.js 给 form 加
             .is-stepped 之后才一次只显示一段。
 
             所以千万不要把「下一步」做成必经之路 —— 提交按钮始终在 DOM 里且可用。
             标记契约（data-step / data-review-for 等）见 form-enhance.js 文件头，
             注册表单用的是同一份实现。
+
+            **同一个 <form> 里有两张 ModelForm**：`form` 写 Application（答卷），
+            `profile_form` 写 User（性别与出生日期，跨批次稳定的账号档案）。
+            form-enhance.js 不关心字段来自哪张表 —— 它按 name 属性找值。
+
+            **段序为什么这样排**：第一段是三张卡片、一点就过，开局门槛最低；
+            「你是怎么知道我们的」排在最后，因为它是**给协会的反馈**、不是关于
+            申请人的（问卷惯例），和确认回显同段让最后一段仍然只有一个轻动作。
             {% endcomment %}
             <form method="post" action="{% url 'recruitment:apply' %}" class="rec-form" id="rec-form"
                   data-stepped-form>
@@ -166,6 +190,8 @@
 
                 <ol class="rec-progress" data-step-dots aria-hidden="true">
                     <li class="is-current"><span></span>选方向</li>
+                    <li><span></span>兴趣</li>
+                    <li><span></span>你的情况</li>
                     <li><span></span>说说你</li>
                     <li><span></span>确认</li>
                 </ol>
@@ -186,18 +212,69 @@
                     {% for error in form.department.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
                 </fieldset>
 
+                {% comment %}
+                多选组**不走 includes/field.html**。那份写的是
+                `<label for="{{ field.id_for_label }}">`，而 CheckboxSelectMultiple 的
+                `add_id_index` 是 False，`id_for_label` 返回一个**没有任何 input 拥有
+                的 id** —— `for` 指向不存在的元素、读屏软件念不出这一组叫什么，而
+                页面看起来完全正常。这一组的名字由外层 fieldset 的 legend 承担。
+                {% endcomment %}
                 <fieldset class="rec-step" data-step>
-                    <legend>说说你</legend>
-                    {% include "includes/field.html" with field=form.skills %}
-                    {% include "includes/field.html" with field=form.self_intro %}
+                    <legend>对什么感兴趣</legend>
+                    <p class="rec-step-hint">可以多选。真的还没想法就勾「目前还不了解」—— 这一项不筛人。</p>
+                    <div class="rec-check">
+                        {% for box in form.interests %}
+                        <label class="rec-check-item">
+                            {{ box.tag }}
+                            <span>{{ box.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% for error in form.interests.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
+                    {% comment %}
+                    「其他」的补充框**常显**，不做条件显隐：form-enhance.js 的
+                    `data-show-when` 读的是单个控件的 value，对多选组不成立；
+                    要支持就得改那份共用文件（注册表也在用）。常显的代价是多一个
+                    空框，收益是不碰共用件、也符合「没有 JS 时信息不丢」。
+                    {% endcomment %}
+                    {% include "includes/field.html" with field=form.interests_other %}
                 </fieldset>
 
                 <fieldset class="rec-step" data-step>
-                    <legend>确认提交</legend>
+                    <legend>你的情况</legend>
+                    <p class="rec-step-hint">性别与出生日期只填一次，之后跟着账号走。都可以不填。</p>
+                    {% include "includes/field.html" with field=profile_form.gender %}
+                    {% include "includes/field.html" with field=profile_form.birthday %}
+                    {% include "includes/field.html" with field=form.skills %}
+                </fieldset>
+
+                <fieldset class="rec-step" data-step>
+                    <legend>说说你</legend>
+                    {% include "includes/field.html" with field=form.self_intro %}
+                    {% include "includes/field.html" with field=form.first_impression %}
+                    {% include "includes/field.html" with field=form.motto %}
+                </fieldset>
+
+                <fieldset class="rec-step" data-step>
+                    <legend>最后一个问题</legend>
+                    <p class="rec-step-hint">这一项帮我们知道招新该往哪儿使劲。可以多选。</p>
+                    <div class="rec-check">
+                        {% for box in form.heard_from %}
+                        <label class="rec-check-item">
+                            {{ box.tag }}
+                            <span>{{ box.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% for error in form.heard_from.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
+                    {% include "includes/field.html" with field=form.heard_from_other %}
+
                     <dl class="rec-review">
                         <dt>方向</dt><dd data-review-for="department">—</dd>
-                        <dt>特长</dt><dd data-review-for="skills">—</dd>
+                        <dt>兴趣</dt><dd data-review-for="interests">—</dd>
+                        <dt>经历</dt><dd data-review-for="skills">—</dd>
                         <dt>自我介绍</dt><dd data-review-for="self_intro">—</dd>
+                        <dt>渠道</dt><dd data-review-for="heard_from">—</dd>
                     </dl>
                     <p class="rec-step-hint">提交后不能自己改。要改内容找站务，或在 QQ 群里说一声。</p>
                 </fieldset>

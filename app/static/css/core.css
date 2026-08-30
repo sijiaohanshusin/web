@@ -2110,7 +2110,38 @@ details.fold .fold-body { padding: 6px 22px 22px; border-top: 1px solid var(--li
 }
 .rec-choice-item:has(input:checked) .rec-choice-body strong { color: #fff; }
 
-.rec-review { margin: 0 0 14px; display: grid; grid-template-columns: 64px 1fr; gap: 8px 14px; }
+/* 多选组（感兴趣的方向 9 项、得知渠道 6 项）。
+   比方向卡片轻一档：**九个和三个不是一回事** —— 九张同样厚的卡片会把这一段撑成
+   一屏多，而方向那三张是「这一步就选一个」的主角。所以这里去掉描边、只留勾选框
+   与文字，靠 gap 分隔。
+   这一组的**名字由外层 fieldset 的 legend 承担**，所以模板里不走
+   includes/field.html（理由写在那儿：CheckboxSelectMultiple 的 id_for_label
+   指向一个不存在的 id，label 的 for 会落空）。 */
+.rec-check { display: grid; gap: 2px; margin-bottom: 12px; }
+.rec-check-item {
+    display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
+    padding: 7px 9px; border-radius: 9px; margin: 0 -9px;
+    color: var(--muted); font-size: var(--fs-sm); line-height: var(--lh-snug);
+    transition: background var(--t-fast), color var(--t-fast);
+}
+.rec-check-item:hover { background: rgba(255, 255, 255, .04); color: var(--text); }
+.rec-check-item input { accent-color: var(--accent); flex: none; margin-top: 2px; }
+/* 勾上的那几项提亮 —— 一屏九项时「我选了哪几个」要能扫一眼看出来。
+   不支持 :has 的浏览器只是少了这层提亮，原生勾选框照样表明状态。 */
+.rec-check-item:has(input:checked) { color: var(--text); }
+
+/* 身份回显：注册时填过的四项，只读。它是上下文不是输入，所以不套 .input 外观，
+   也刻意不占分步的一段。 */
+.rec-identity {
+    margin: 0 0 8px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 14px;
+    padding: 13px 15px; border-radius: 12px;
+    border: 1px solid var(--line-d); background: rgba(255, 255, 255, .02);
+}
+.rec-identity dt { color: var(--muted); font-size: var(--fs-3xs); letter-spacing: 1px; }
+.rec-identity dd { margin: 2px 0 0; color: var(--text); font-size: var(--fs-sm); font-weight: 600; word-break: break-all; }
+.rec-identity-note { color: var(--muted); font-size: var(--fs-xs); line-height: var(--lh-relaxed); margin: 0 0 18px; }
+
+.rec-review { margin: 14px 0; display: grid; grid-template-columns: 64px 1fr; gap: 8px 14px; }
 .rec-review dt { color: var(--muted); font-size: var(--fs-xs); }
 .rec-review dd { margin: 0; color: var(--text); font-size: var(--fs-sm); line-height: var(--lh-relaxed); word-break: break-word; }
 

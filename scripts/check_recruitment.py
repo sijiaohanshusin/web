@@ -47,7 +47,29 @@ PANEL = """
     const sub = form && form.querySelector('[data-step-submit]');
     const next = form && form.querySelector('[data-step-next]');
     const prev = form && form.querySelector('[data-step-prev]');
+    const dotBox = form && form.querySelector('[data-step-dots]');
     return {
+        dots: dotBox ? dotBox.children.length : 0,
+        // 停在第几段（0 起）。服务端退回错误时脚本应当落在出错的那一段上。
+        currentStep: steps.findIndex(s => !s.hidden),
+        stepErrors: steps.map(s => s.querySelectorAll('.form-error').length),
+        // 多选组：这一组有没有一个能被读屏软件念出来的名字。
+        // 名字由外层 fieldset 的 legend 承担 —— 而**典型故障是走了
+        // includes/field.html**：CheckboxSelectMultiple 的 id_for_label 返回一个
+        // 没有任何 input 拥有的 id，label 的 for 落空、这一组就没有名字了，
+        // 而页面看起来完全正常。所以顺带数一下有多少个 for 指向不存在的元素。
+        groups: [...document.querySelectorAll('.rec-check')].map(g => {
+            const fs = g.closest('fieldset');
+            const legend = fs && fs.querySelector('legend');
+            const labels = fs ? [...fs.querySelectorAll('label[for]')] : [];
+            return {
+                boxes: g.querySelectorAll('input[type=checkbox]').length,
+                groupName: legend ? legend.textContent.trim() : '',
+                danglingFor: labels
+                    .filter(l => !document.getElementById(l.getAttribute('for')))
+                    .map(l => l.getAttribute('for')),
+            };
+        }),
         heading: box ? (box.querySelector('h2') || {}).textContent || '' : '(no panel)',
         text: box ? box.textContent.replace(/\\s+/g, ' ').trim() : '',
         hasForm: !!form,
@@ -148,7 +170,10 @@ def main() -> int:
         ctx, page = open_page()
         st = page.evaluate(PANEL)
         check(st["hasForm"], "渲染了报名表")
-        check(st["totalSteps"] == 3, "表单分三段", f"{st['totalSteps']} 段")
+        check(st["totalSteps"] == 5, "表单分五段", f"{st['totalSteps']} 段")
+        check(st["dots"] == st["totalSteps"],
+              "步骤点数量和段数一致（对不上的话最后一段的点永远不亮，进度条在撒谎）",
+              f"{st['dots']} 点 / {st['totalSteps']} 段")
         check(st["stepped"], "脚本已接管（form 上有 .is-stepped）")
         check(st["visibleSteps"] == 1, "一次只显示一段", f"可见 {st['visibleSteps']} 段")
         check(st["submitHidden"] is True, "非最后一段时提交按钮收起")
@@ -156,7 +181,20 @@ def main() -> int:
               "第一段只有「下一步」")
         check(st["emptyStat"], "零报名时不显示「0 人已报名」而是换一句话")
 
-        # 走完三段
+        # 多选组的无障碍名字。这一条是新加的：多选组**不能**走
+        # includes/field.html，那份的 label[for] 会指向一个不存在的 id。
+        check(len(st["groups"]) == 2, "两个多选组都渲染了", f"{len(st['groups'])} 组")
+        for i, g in enumerate(st["groups"]):
+            check(bool(g["groupName"]), f"多选组 {i + 1} 有可访问的组名（fieldset 的 legend）",
+                  g["groupName"])
+            check(g["boxes"] >= 5, f"多选组 {i + 1} 的选项数对得上", f"{g['boxes']} 项")
+            check(not g["danglingFor"],
+                  f"多选组 {i + 1} 所在段里没有落空的 label[for]（读屏软件念不出组名的典型原因）",
+                  ",".join(g["danglingFor"]))
+
+        # ---- 走完五段 ----
+        # 每段的字段不同，所以逐段填。`page.fill` 填不了被藏起来的字段，
+        # 所以顺序必须跟着分步走。
         page.click('.rec-choice-item:has(input[value="hardware"]) input')
         page.click("[data-step-next]")
         page.wait_for_timeout(200)
@@ -164,20 +202,43 @@ def main() -> int:
         check(st["visibleSteps"] == 1 and st["prevHidden"] is False,
               "推进到第二段，出现「上一步」")
 
+        # 第二段：兴趣方向多选 + 其他补充
+        page.check('.rec-check-item:has(input[value="mcu"]) input')
+        page.check('.rec-check-item:has(input[value="dsp_fpga"]) input')
+        page.click("[data-step-next]")
+        page.wait_for_timeout(200)
+        check(page.evaluate(PANEL)["currentStep"] == 2, "推进到第三段")
+
+        # 第三段：性别 / 出生日期（写 User）+ 经历
+        page.select_option('[name="gender"]', "female")
+        page.fill('[name="birthday"]', "2007-11-23")
         page.fill('[name="skills"]', "焊过几块板子")
+        page.click("[data-step-next]")
+        page.wait_for_timeout(200)
+        check(page.evaluate(PANEL)["currentStep"] == 3, "推进到第四段")
+
+        # 第四段：三个开放题，只有自我介绍必填
         page.fill('[name="self_intro"]', "零基础但很想学，想跟着做电赛的题目练手。")
         page.click("[data-step-next]")
         page.wait_for_timeout(200)
         st = page.evaluate(PANEL)
         check(st["submitHidden"] is False and st["nextHidden"] is True,
               "最后一段出现提交按钮、隐藏「下一步」")
+
+        # 第五段：渠道多选 + 确认回显
+        page.check('.rec-check-item:has(input[value="senior"]) input')
+        page.wait_for_timeout(120)
         review = page.eval_on_selector(".rec-review",
                                        "el => el.textContent.replace(/\\s+/g,' ')")
         check("硬件部" in review and "焊过几块板子" in review,
-              "确认页回显了刚填的内容", review.strip()[:60])
+              "确认页回显了单选与文本框", review.strip()[:70])
+        # **多选的回显走 form-enhance.js 里 checkbox 那一支**（多个同名控件时
+        # 把勾上的 label 文字用「、」连起来）。它本来就支持，这里是钉住它没被改坏。
+        check("单片机编程与设计" in review and "DSP / FPGA 应用设计" in review,
+              "确认页把多选回显成中文标签（不是 mcu,dsp_fpga）", review.strip()[:70])
         page.screenshot(path=str(SHOTS / "recruitment-form.png"))
 
-        # 必填拦截：回到第二段清空自我介绍，应当推不动
+        # 必填拦截：回到第四段清空自我介绍，应当推不动
         page.click("[data-step-prev]")
         page.wait_for_timeout(150)
         page.fill('[name="self_intro"]', "")
@@ -185,6 +246,38 @@ def main() -> int:
         page.wait_for_timeout(200)
         st = page.evaluate(PANEL)
         check(st["submitHidden"] is True, "必填项没填时推不到最后一段（被拦住）")
+        ctx.close()
+
+        # ---- 多选的「至少选一项」只能靠服务端 ----
+        # Django 的 CheckboxSelectMultiple **刻意不发 `required` 属性**（对一组
+        # 复选框来说 `required` 的语义会变成「必须勾这一个」），所以
+        # form-enhance.js 的 `checkValidity()` 拦不住「一个都没勾」—— 它只能一路
+        # 放行到提交。于是这一条的可用性全靠「服务端退回的错误必须能被看见」：
+        # 脚本初始化时要停在**第一个带错误的那一段**上。
+        print("\n多选一个都没勾：服务端拦下来，且要停在出错的那一段")
+        ctx, page = open_page()
+        # 用 evaluate 灌值而不是 fill：后面几段此刻是隐藏的，fill 拒绝操作
+        # 不可见元素（30 秒超时）。
+        page.evaluate("""() => {
+            const f = document.getElementById('rec-form');
+            f.querySelector('input[name=department][value=hardware]').checked = true;
+            f.querySelector('[name=self_intro]').value = '零基础但很想学，想跟着做电赛的题目练手。';
+            f.querySelectorAll('input[name=interests]').forEach(b => { b.checked = false; });
+            f.querySelectorAll('input[name=heard_from]').forEach(b => { b.checked = false; });
+        }""")
+        with page.expect_navigation():
+            page.evaluate("() => document.getElementById('rec-form').submit()")
+        page.wait_for_timeout(500)
+        st = page.evaluate(PANEL)
+        check(st["hasForm"], "服务端退回后仍然是那张表（没有报名成功）")
+        check(sum(st["stepErrors"]) > 0, "页面上真的显示了错误", str(st["stepErrors"]))
+        first_bad = next((i for i, n in enumerate(st["stepErrors"]) if n), None)
+        check(st["currentStep"] == first_bad,
+              "**停在第一个带错误的那一段**（否则用户看到一张「没有任何问题」的表）",
+              f"停在第 {st['currentStep']} 段 / 出错的第一段是 {first_bad}")
+        check("至少选一项" in page.evaluate("() => document.body.innerText"),
+              "错误文案说清了要做什么")
+        wipe_applications()
         ctx.close()
 
         # ---------------- 没有 JS：三段全展开 ----------------
@@ -199,8 +292,11 @@ def main() -> int:
         page.wait_for_timeout(600)
         st = page.evaluate(PANEL)
         check(st["hasForm"] and not st["stepped"], "脚本没接管")
-        check(st["visibleSteps"] == 3, "三段全部展开", f"可见 {st['visibleSteps']} 段")
+        check(st["visibleSteps"] == 5, "五段全部展开", f"可见 {st['visibleSteps']} 段")
         check(st["submitHidden"] is False, "提交按钮可用（没有 JS 也能交）")
+        # 没有 JS 时多选组照样能填、也照样有名字（组名来自 legend，不依赖脚本）
+        check(all(g["groupName"] for g in st["groups"]),
+              "没有 JS 时多选组仍然有组名", str([g["groupName"] for g in st["groups"]]))
         ctx.close()
 
         # ---------------- 已报名：进度时间线 ----------------

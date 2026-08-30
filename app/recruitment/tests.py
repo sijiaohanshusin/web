@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -32,6 +32,31 @@ def make_user(name="stu", level=roles.LEVEL_APPLICANT):
     return u
 
 
+def apply_payload(**over):
+    """一份合法的报名 POST 体（含 ApplicantProfileForm 那两项）。
+
+    **集中一处**：报名表的必填项会随纸质表口径变，散在各处的 POST 字典每加一个
+    必填项就要挨个去改 —— 漏一个的表现是那条测试莫名开始 assert「表单不合法」，
+    而它测的压根是别的东西。
+    """
+    data = {
+        "department": "hardware",
+        "interests": ["mcu"],
+        "interests_other": "",
+        "skills": "会一点 C",
+        "self_intro": "我是新生，非常想加入硬件部学习焊接。",
+        "first_impression": "",
+        "motto": "",
+        "heard_from": ["senior"],
+        "heard_from_other": "",
+        # ApplicantProfileForm（写 User，同一次 POST）
+        "gender": "",
+        "birthday": "",
+    }
+    data.update(over)
+    return data
+
+
 class CampaignModelTests(TestCase):
     def test_is_open_window(self):
         now = timezone.now()
@@ -57,46 +82,40 @@ class ApplyFlowTests(TestCase):
         self.assertIn("no-cache", resp.headers["Cache-Control"])
 
     def test_apply_creates_application(self):
-        resp = self.client.post(reverse("recruitment:apply"), {
-            "department": "hardware",
-            "skills": "会一点 C",
-            "self_intro": "我是新生，非常想加入硬件部学习焊接。",
-        })
+        resp = self.client.post(reverse("recruitment:apply"), apply_payload())
         self.assertEqual(resp.status_code, 302)
         app = Application.objects.get(user=self.user, campaign=self.campaign)
         self.assertEqual(app.status, Application.Status.SUBMITTED)
         self.assertEqual(app.department, "hardware")
 
     def test_short_intro_rejected(self):
-        resp = self.client.post(reverse("recruitment:apply"), {
-            "department": "software", "skills": "", "self_intro": "太短",
-        })
+        resp = self.client.post(reverse("recruitment:apply"),
+                                apply_payload(department="software", self_intro="太短"))
         self.assertFalse(Application.objects.filter(user=self.user).exists())
         self.assertContains(resp, "自我介绍太短")
 
     def test_duplicate_apply_blocked(self):
         Application.objects.create(campaign=self.campaign, user=self.user, self_intro="第一次报名的自我介绍内容")
-        self.client.post(reverse("recruitment:apply"), {
-            "department": "hardware", "skills": "", "self_intro": "重复报名应当被拦截掉的内容",
-        })
+        self.client.post(reverse("recruitment:apply"),
+                         apply_payload(self_intro="重复报名应当被拦截掉的内容"))
         self.assertEqual(Application.objects.filter(user=self.user).count(), 1)
 
     def test_pending_user_promoted_to_applicant_on_apply(self):
         pending = User.objects.create_user(username="p0", password="Str0ngPass!2025", is_active=True)
         pending.set_level(roles.LEVEL_PENDING)
         self.client.login(username="p0", password="Str0ngPass!2025")
-        self.client.post(reverse("recruitment:apply"), {
-            "department": "undecided", "skills": "", "self_intro": "零基础但很想学，请给我机会。",
-        })
+        self.client.post(reverse("recruitment:apply"),
+                         apply_payload(department="undecided", skills="",
+                                       self_intro="零基础但很想学，请给我机会。"))
         pending.refresh_from_db()
         self.assertEqual(pending.member_level, roles.LEVEL_APPLICANT)
 
     def test_formal_member_cannot_apply(self):
         formal = make_user("formal", roles.LEVEL_FORMAL)
         self.client.login(username="formal", password="Str0ngPass!2025")
-        resp = self.client.post(reverse("recruitment:apply"), {
-            "department": "hardware", "skills": "", "self_intro": "我已经是科协会员了还来报名。",
-        }, follow=True)
+        resp = self.client.post(reverse("recruitment:apply"),
+                                apply_payload(self_intro="我已经是科协会员了还来报名。"),
+                                follow=True)
         self.assertFalse(Application.objects.filter(user=formal).exists())
         self.assertContains(resp, "已经是科协会员")
 
@@ -259,6 +278,132 @@ class ApplicationProgressTests(TestCase):
         self.assertEqual(len(Application.PROGRESS_STEPS), 3)
         keys = [k for k, _, _ in Application.PROGRESS_STEPS]
         self.assertNotIn(Application.Status.REJECTED, keys)
+
+
+class ApplyWritesTwoModelsTests(TestCase):
+    """一次 POST 写两个模型：答卷进 `Application`，性别与出生日期进 `User`。"""
+
+    def setUp(self):
+        Campaign.objects.update(is_active=False)
+        self.campaign = make_campaign()
+        self.user = make_user()
+        self.client.login(username="stu", password="Str0ngPass!2025")
+
+    def _post(self, **over):
+        return self.client.post(reverse("recruitment:apply"), apply_payload(**over))
+
+    def test_a_full_answer_sheet_lands_in_both_models(self):
+        resp = self._post(
+            interests=["mcu", "dsp_fpga", "other"], interests_other="电机控制",
+            first_impression="在实验室门口看到过一墙作品。",
+            motto="想做出一台自己的示波器。",
+            heard_from=["senior", "online"],
+            gender="female", birthday="2007-11-23",
+        )
+        self.assertEqual(resp.status_code, 302)
+
+        app = Application.objects.get(user=self.user, campaign=self.campaign)
+        self.assertEqual(app.interests, ["mcu", "dsp_fpga", "other"])
+        self.assertEqual(app.interests_other, "电机控制")
+        self.assertEqual(app.heard_from, ["senior", "online"])
+        self.assertEqual(app.first_impression, "在实验室门口看到过一墙作品。")
+        self.assertEqual(app.motto, "想做出一台自己的示波器。")
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.gender, "female")
+        self.assertEqual(self.user.birthday, date(2007, 11, 23))
+
+    def test_the_two_multi_selects_are_required(self):
+        """断言表单状态而不是页面文字：这两个字段渲染成什么样是模板的事，
+        由 scripts/check_recruitment.py 在真浏览器里验。"""
+        for field in ("interests", "heard_from"):
+            with self.subTest(field=field):
+                resp = self._post(**{field: []})
+                self.assertFalse(Application.objects.filter(user=self.user).exists())
+                self.assertIn("至少选一项", str(resp.context["form"].errors[field]))
+
+    def test_nobody_gets_stuck_on_the_required_multi_selects(self):
+        """两项都必填，但都留了出口：兴趣里有「目前还不了解」，渠道里有「其他」。
+        只选出口项也必须能提交完 —— 否则「必填」就变成一道劝退的墙。"""
+        resp = self._post(interests=["unknown"], heard_from=["other"], heard_from_other="路过看到的")
+        self.assertEqual(resp.status_code, 302)
+        app = Application.objects.get(user=self.user)
+        self.assertEqual(app.interests, ["unknown"])
+        self.assertEqual(app.channels_display, "其他：路过看到的")
+
+    def test_picking_other_without_a_supplement_errors_on_the_supplement_field(self):
+        """错误要挂在**补充字段**上 —— 那才是用户要动手的地方。挂在多选字段上的
+        后果是提示出现在一排复选框下面，而光标该去的输入框旁边一片干净。"""
+        resp = self._post(interests=["other"], interests_other="")
+        self.assertFalse(Application.objects.filter(user=self.user).exists())
+        form = resp.context["form"]
+        self.assertIn("interests_other", form.errors)
+        self.assertNotIn("interests", form.errors)
+
+    def test_a_leftover_supplement_is_dropped_when_other_is_unchecked(self):
+        """勾掉了「其他」却留着上次填的字，不该把它存进库 —— 那会在详情页上冒出
+        一句没有归属的话。"""
+        resp = self._post(interests=["mcu"], interests_other="上次填的残留")
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(Application.objects.get(user=self.user).interests_other, "")
+
+    def test_both_forms_report_their_errors_in_one_go(self):
+        """**这一条守的是 `and` 短路。**
+
+        `form.is_valid() and profile_form.is_valid()` 会让第一张不合法时第二张
+        压根不校验，于是它的错误一条都不显示 —— 用户改完第一处再提交，又冒出一批
+        新错误，来回好几趟才知道到底有几个问题。所以断言的是「两张表的错误同时
+        出现」，而不是「提交失败了」。
+        """
+        resp = self._post(self_intro="太短", birthday="不是日期")
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(Application.objects.filter(user=self.user).exists())
+        self.assertTrue(resp.context["form"].errors, "答卷那张表该有错误")
+        self.assertTrue(resp.context["profile_form"].errors, "档案那张表也该有错误")
+        self.assertContains(resp, "自我介绍太短")
+
+    def test_a_bad_profile_field_does_not_leave_a_half_written_record(self):
+        """原子性：档案不合法时报名也不能落库，否则会留下「资料改了但没报上名」。"""
+        self._post(birthday="2007-13-45")
+        self.assertFalse(Application.objects.filter(user=self.user).exists())
+        self.user.refresh_from_db()
+        self.assertIsNone(self.user.birthday)
+
+    def test_the_profile_pair_is_optional(self):
+        resp = self._post(gender="", birthday="")
+        self.assertEqual(resp.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.gender, "")
+        self.assertIsNone(self.user.birthday)
+
+    def test_the_failed_submission_still_carries_the_live_stats(self):
+        """校验失败重渲染时 context 原来漏了 stats —— 模板有 {% if %} 兜着所以
+        不报错，但统计块会走空态分支，页面上的「N 人已报名」凭空变没了。"""
+        Application.objects.create(campaign=self.campaign, user=make_user("other1"),
+                                   self_intro="别人先报了一个名。")
+        resp = self._post(self_intro="太短")
+        self.assertEqual(resp.context["stats"]["total"], 1)
+        self.assertIn("progress_steps", resp.context)
+
+    def test_the_form_is_prefilled_with_what_the_account_already_knows(self):
+        """已经填过生日的人不该再填一遍 —— 报名表打开时就带着现有的值。
+
+        这里只验表单绑到了账号（`instance=request.user`）。「渲染出来的 value 是不是
+        ISO」那一条在 accounts 侧有专门的测试钉着（不是 ISO 的话浏览器显示空框，
+        用户一保存就把生日清掉了）。
+        """
+        self.user.gender = "male"
+        self.user.birthday = date(2006, 5, 4)
+        self.user.save(update_fields=["gender", "birthday"])
+        resp = self.client.get(reverse("recruitment:index"))
+        profile_form = resp.context["profile_form"]
+        self.assertEqual(profile_form.initial["birthday"], date(2006, 5, 4))
+        self.assertEqual(profile_form.initial["gender"], "male")
+
+    def test_anonymous_visitors_do_not_get_a_profile_form(self):
+        self.client.logout()
+        resp = self.client.get(reverse("recruitment:index"))
+        self.assertIsNone(resp.context["profile_form"])
 
 
 class MultiChoiceFieldTests(TestCase):
@@ -427,11 +572,18 @@ class RecruitmentPageStateTests(TestCase):
         resp = self.client.get(self.url)
         self.assertTrue(resp.context["can_apply"])
         self.assertContains(resp, 'id="rec-form"')
-        # 三段 fieldset —— 分步是前端的事，但段落划分在模板里。
+        # 五段 fieldset —— 分步是前端的事，但段落划分在模板里。
         # 属性名是 form-enhance.js 的通用契约（注册表单也用同一套）。
         body = resp.content.decode()
-        self.assertEqual(body.count("data-step>"), 3)
+        self.assertEqual(body.count("data-step>"), 5)
         self.assertIn("data-stepped-form", body)
+        # 两张 ModelForm 在同一个 <form> 里：答卷进 Application，档案进 User。
+        # 少渲染一个必填项的后果是**谁都交不上表**，而错误提示挂在一个看不见的
+        # 字段上 —— 用户只看到点了提交没反应。
+        for name in ("interests", "heard_from", "gender", "birthday"):
+            self.assertIn(f'name="{name}"', body, f"{name} 没有渲染出来")
+        # 步骤点数量与段数是否一致由 scripts/check_recruitment.py 用 DOM 查询验
+        # （这里用字符串数 <li> 会把页面上别处的列表一起数进来）。
 
     def test_formal_member_gets_no_form(self):
         self._login(roles.LEVEL_FORMAL)
