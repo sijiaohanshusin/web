@@ -253,6 +253,30 @@ html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
 .nf-substat strong { display: block; font-family: var(--font-num); font-size: var(--fs-dsp-2); font-weight: 700; color: #fff; }
 .nf-substat > span { color: var(--muted); font-size: var(--fs-sm); letter-spacing: 2px; }
 
+/* ---- 大数字段末尾的整宽合影带（素材槽 home.legacy.group）----
+   全出血靠的是「这一块在 .container 外面」：`.nf-section` 的左右内边距是 0，
+   横向留白全由容器给。所以这里一个负 margin 都不用。
+
+   照片保持原亮度、不叠图注、不加底纹。理由写在 home.html 那段注释里，一句话是：
+   这一格的全部内容就是六十张脸，任何压暗都在毁它 —— 图注因此落在照片下方的
+   纯黑底上（--muted 在 --black 上 7.82:1），不用去和照片抢对比度。 */
+.nf-legacy-band { margin-top: clamp(56px, 7vw, 96px); }
+.nf-legacy-photo {
+    /* 覆盖 .slot 的 14px 圆角。全出血的东西不能带圆角 —— 左右两个圆角会在
+       屏幕边缘各露出一小块黑三角，看着像卡片没铺满。 */
+    border-radius: 0;
+    /* 只压上下两条发丝线。不描四边：左右已经到屏幕边缘了，竖线会读成
+       「一张被截断的卡片」。 */
+    border-block: 1px solid var(--line-d);
+}
+.nf-legacy-cap {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px;
+    margin-top: 16px;
+    font-family: var(--font-mono); font-size: var(--fs-xs);
+    letter-spacing: 1.5px; color: var(--muted);
+}
+.nf-legacy-where { color: var(--muted-dim); letter-spacing: 1px; }
+
 /* ============================================================
    白色区：三大方向
    ============================================================ */
@@ -607,8 +631,18 @@ html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
     .nf-reasons li { padding-left: 58px; }
     .nf-gallery-head { flex-direction: column; align-items: flex-start; }
     /* 窄屏同样定高（= 旧版 78vw 宽的 4:3 高度），宽度继续由比例决定。
-       写 `width: 78vw` 会让 12:5 的合影那格缩到 250px 高，胶片条就参差了。 */
+       写 `width: 78vw` 会让比例不是 4:3 的那几格高矮不一，胶片条就参差了 ——
+       走廊曾经有一格 12:5 的宽幅合影，那张在 78vw 下只有 250px 高。
+       （那张现在有自己的整宽带，见 .nf-legacy-band；但这条约束照旧，
+       下一张非 4:3 的照片随时会进来。） */
     .nf-tile { height: 58.5vw; }
+    /* 整宽合影带在窄屏**刻意不加高**。390px 宽下 3.2:1 只有 122px，确实薄；
+       但把它改成定高（比如 46vw）之后 `object-fit: cover` 会从两侧各裁掉三成，
+       而这张照片两端就是人 —— 加高的代价是从画面里删掉十几个人。
+       薄一点但一个不少，比厚一点却切掉两端要好。
+       （能改也不该改：aspect-ratio 是 {% slot %} 的内联 style，它负责图片
+       下载完成前占住高度；`height` 是另一个属性、会直接盖过它，所以这里是
+       「有办法但决定不用」，不是「做不到」。） */
     .nf-bignum { gap: 16px; }
     .nf-news-row { grid-template-columns: 1fr; }
 }

@@ -227,6 +227,30 @@
             </div>
         </div>
     </div>
+    {% comment %}
+    整宽合影带。刻意放在 `.container` **外面** —— `.nf-section` 的左右内边距是 0，
+    容器才有，所以 section 的直接子元素天生是全出血的。
+
+    这张照片原来是走廊里的一格。走廊是等高胶片条，一格只有 432 CSS px 宽，
+    60 个人挤进去每张脸约 7px —— 而这是招新页面最想让人看清的一张。搬到这里
+    是因为这一段讲的正是「一届届人」：大数字说了 31 年，照片说了这 31 年攒下
+    多少人。
+
+    **不压暗、不加底纹、图注不叠在照片上。** 图注要 4.5:1 的话，压在照片上就得
+    把照片亮度砍到两成，六十张脸全糊 —— 而这一格的全部内容就是那六十张脸。
+    所以图注放在照片下面的纯黑底上（--muted 在 --black 上是 7.82:1），照片保持
+    原亮度。这也是这一段没用 `.surf-*` 底纹的原因：`.nf-scope` 的示波器网格已经
+    占了 `::before`，一个区块只能有一层。
+    {% endcomment %}
+    <div class="nf-legacy-band reveal">
+        {% slot "home.legacy.group" css_class="nf-legacy-photo" %}
+        <div class="container">
+            <p class="nf-legacy-cap">
+                <span>科协全员合影</span>
+                <span class="nf-legacy-where">· 电工电子国家级实验教学示范中心</span>
+            </p>
+        </div>
+    </div>
 </section>
 
 <!-- ============ 白色区：三大方向 ============ -->
@@ -493,7 +517,12 @@ includes/honor_row.html，和荣誉墙是同一份。
             <a class="nf-res-row" href="{{ forum_url }}" target="_blank" rel="noopener">
                 <span class="res-branch" aria-hidden="true">├─</span>
                 <span class="res-name">会员论坛</span>
-                <span class="res-desc">提问、晒作品、找队友，主站账号直接登录</span>
+                {% comment %}
+                判据与导航、页脚共用 `user.is_member`（= SSO 门槛 roles.is_member）。
+                原文案对所有人写「主站账号直接登录」，而招新成员（等级 1）拿不到
+                SSO Cookie —— 登录再跳回来仍然是游客，控制台干净、页面正常。
+                {% endcomment %}
+                <span class="res-desc">{% if user.is_member %}提问、晒作品、找队友，主站账号直接登录{% else %}提问、晒作品、找队友；公开可读，一面通过后即可发帖{% endif %}</span>
                 <span class="res-go">进入论坛 <span>→</span></span>
             </a>
             <a class="nf-res-row" href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">

@@ -99,6 +99,69 @@ STATE_JS = """
 }
 """
 
+# 「胶片条的宽度是从比例算出来的」——**直接量机制，不靠现有照片的比例去证。**
+# 原来这件事是用「六格宽度不全相同」证的，而那时走廊里有一格 12:5 的宽幅合影。
+# 那张合影搬去了分镜 02 的整宽带之后六格同为 4:3，宽度本来就该全相同，那条断言
+# 从「守着一件事」直接变成「必然失败」。
+# 现在的判据：临时把第一格的 aspect-ratio 改成 2/1，宽度应当按比例跟着变。
+# 写死宽度的话它一动不动 —— 那正是要拦的退步（下一张非 4:3 的照片会被压扁，
+# 上下多出天花板和地砖，而页面照常渲染、控制台干净）。
+# 量完把 style 属性**原样**摆回去：后面的断言和截图不能看到被改过的版面。
+WIDTH_DERIVED_JS = """
+(sel) => {
+  const el = document.querySelector(sel);
+  if (!el) return { ok: false };
+  const style = el.getAttribute('style');
+  const m = (style || '').match(/aspect-ratio:\\s*([\\d.]+)\\s*\\/\\s*([\\d.]+)/);
+  if (!m) return { ok: false };
+  const before = el.getBoundingClientRect().width;
+  el.style.aspectRatio = '2 / 1';
+  const after = el.getBoundingClientRect().width;
+  if (style === null) el.removeAttribute('style'); else el.setAttribute('style', style);
+  return {
+    ok: true,
+    ratio: m[1] + '/' + m[2],
+    before: Math.round(before),
+    after: Math.round(after),
+    want: before * 2 / (Number(m[1]) / Number(m[2])),
+    restored: Math.round(el.getBoundingClientRect().width),
+  };
+}
+"""
+
+# 分镜 02 末尾的整宽合影带。这一格和走廊里的格子性质不同，所以单独量：
+# 它是 section 的直接子元素（靠 `.nf-section` 左右内边距为 0 实现全出血），
+# 而且**刻意不压暗、图注不叠在照片上** —— 那两件事一旦被「顺手统一成和走廊
+# 一样」，页面照常渲染，只是六十张脸糊掉了。
+BAND_JS = """
+() => {
+  const el = document.querySelector('[data-slot-key="home.legacy.group"]');
+  if (!el) return { found: false };
+  const r = el.getBoundingClientRect();
+  const img = el.querySelector('img');
+  const cap = document.querySelector('.nf-legacy-cap');
+  const m = ((el.getAttribute('style') || '')
+      .match(/aspect-ratio:\\s*([\\d.]+)\\s*\\/\\s*([\\d.]+)/) || []).slice(1).map(Number);
+  return {
+    found: true,
+    filled: el.classList.contains('is-filled'),
+    w: Math.round(r.width), h: Math.round(r.height),
+    left: Math.round(r.left), bottom: Math.round(r.bottom),
+    viewport: document.documentElement.clientWidth,
+    ratio: m,
+    radius: getComputedStyle(el).borderTopLeftRadius,
+    opacity: img ? parseFloat(getComputedStyle(img).opacity) : 0,
+    filter: img ? getComputedStyle(img).filter : '',
+    naturalWidth: img ? img.naturalWidth : 0,
+    hasCap: !!cap,
+    // 图注在照片**里面**就意味着它叠在照片上，那就得把照片压暗才够对比度
+    capInsidePhoto: cap ? el.contains(cap) : null,
+    capTop: cap ? Math.round(cap.getBoundingClientRect().top) : 0,
+    capColor: cap ? getComputedStyle(cap).color : '',
+  };
+}
+"""
+
 # 懒加载图默认要等进视口才下载，而走廊是横向滚动的，右边那几张永远等不到。
 # 直接把它们改成 eager 再等 complete —— load 事件照样会触发，所以淡入那条
 # 链路依然在被检验。
@@ -173,14 +236,21 @@ def main() -> int:
               "每一格都带着自己的 data-slot-key",
               f"实际 {sorted({s['key'] for s in slots})}")
 
-        # 等高胶片条：高度必须一致，宽度必须**不**一致（合影那格是 12:5 的宽幅）。
-        # 少了后半条，`width: auto` 哪天被谁改回固定宽度就查不出来了 —— 宽幅照片
-        # 会被压成 4:3，上下多出天花板和地砖，而页面照常渲染。
+        # 等高胶片条：高度必须一致，宽度由各自的比例算出来（判据见 WIDTH_DERIVED_JS
+        # 上面那段 —— 不拿「现在的六张照片比例正好不同」当证据）。
         heights = {s["h"] for s in slots if s["h"] > 0}
         check(len(heights) == 1, "走廊各格等高（胶片条）", f"高度集合 {sorted(heights)}")
-        widths = {s["key"]: s["w"] for s in slots}
-        check(len(set(widths.values())) > 1,
-              "宽幅照片确实更宽（宽度由自己的比例算出来）", f"宽度 {widths}")
+        probe = page.evaluate(WIDTH_DERIVED_JS, STRIP)
+        check(probe.get("ok"), "抠到了第一格的 aspect-ratio（不然下面两条空跑）",
+              probe.get("ratio", "没抠到"))
+        if probe.get("ok"):
+            check(abs(probe["after"] - probe["want"]) <= 2,
+                  "**宽度是从 aspect-ratio 算出来的**（不是写死的）",
+                  f"把 {probe['ratio']} 临时改成 2/1：宽 {probe['before']} → "
+                  f"{probe['after']}，应为 {probe['want']:.0f}")
+            check(probe["restored"] == probe["before"],
+                  "量完把比例摆回去了（后面的断言看的是原版面）",
+                  f"{probe['restored']} == {probe['before']}")
         print()
         check_ratios(slots[: len(keys_order)])
 
@@ -198,6 +268,50 @@ def main() -> int:
         check(not any(s["cta"] for s in slots), "匿名访客看不到上传入口")
 
         page.screenshot(path=str(SHOTS / "slots-gallery.png"))
+
+        # ------------------------------------------------------------------
+        # 分镜 02 末尾的整宽合影带
+        # ------------------------------------------------------------------
+        print("\n分镜 02 末尾的整宽合影带（home.legacy.group）")
+        BAND = '[data-slot-key="home.legacy.group"]'
+        page.evaluate(FORCE_LOAD_JS, BAND)
+        try:
+            page.wait_for_function(ALL_COMPLETE_JS, arg=BAND, timeout=15000)
+        except Exception:
+            pass
+        page.wait_for_timeout(800)
+        b = page.evaluate(BAND_JS)
+        check(b["found"], "整宽带渲染了")
+        if b["found"]:
+            check(b["filled"], "带子里有图（兜底图或站务上传的）",
+                  f"naturalWidth={b['naturalWidth']}")
+            # 全出血：这一块刻意放在 .container 外面。哪天被谁包进容器里，
+            # 版面照常渲染 —— 只是两侧多出 100px 留白、"整宽"这件事没了。
+            check(b["left"] == 0 and abs(b["w"] - b["viewport"]) <= 1,
+                  "**左右都到屏幕边缘**（放在 .container 外面才有的效果）",
+                  f"left={b['left']} 宽 {b['w']} / 视口 {b['viewport']}")
+            check(b["ratio"] == [16, 5], "比例是 16/5", f"实际 {b['ratio']}")
+            if b["ratio"]:
+                want_h = b["w"] * b["ratio"][1] / b["ratio"][0]
+                check(abs(b["h"] - want_h) <= 2, "高度按比例占住了",
+                      f"宽 {b['w']} → 实测高 {b['h']}，应为 {want_h:.0f}")
+            check(b["radius"] == "0px",
+                  "没有圆角（全出血的东西带圆角会在屏幕边缘露出黑角）",
+                  f"border-radius {b['radius']}")
+            # 下面两条守的是同一个决定：这一格的全部内容就是六十张脸，
+            # 任何压暗都在毁它。所以图注放在照片**外面**的纯黑底上。
+            check(b["opacity"] == 1 and b["filter"] in ("none", ""),
+                  "**照片保持原亮度**（没被压暗去给图注让对比度）",
+                  f"opacity={b['opacity']} filter={b['filter'] or 'none'}")
+            check(b["hasCap"] and b["capInsidePhoto"] is False
+                  and b["capTop"] >= b["bottom"] - 1,
+                  "**图注在照片下面，不叠在照片上**",
+                  f"图注顶 {b['capTop']} / 照片底 {b['bottom']}，"
+                  f"在照片内={b['capInsidePhoto']}")
+        page.evaluate("(sel) => document.querySelector(sel)"
+                      ".scrollIntoView({block: 'center', behavior: 'instant'})", BAND)
+        page.wait_for_timeout(400)
+        page.screenshot(path=str(SHOTS / "slots-legacy-band.png"))
 
         # ------------------------------------------------------------------
         # 空焊盘量在新生指南上：首页六格已经全部补齐照片，那里再没有空态可量。
@@ -268,8 +382,8 @@ def main() -> int:
         print(f"{len(failures)} 项未通过：" + "、".join(failures))
         return 1
     print("素材槽契约全部通过")
-    print(f"截图在 {SHOTS.relative_to(REPO)}/ ："
-          "slots-gallery.png、slots-guide-empty.png、slots-guide-filled.png")
+    print(f"截图在 {SHOTS.relative_to(REPO)}/ ：slots-gallery.png、"
+          "slots-legacy-band.png、slots-guide-empty.png、slots-guide-filled.png")
     return 0
 
 
