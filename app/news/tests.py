@@ -350,6 +350,38 @@ class HonorWallViewTests(TestCase):
         self.assertEqual(resp.context["certificates"], [])
         self.assertNotContains(resp, "hn-cert-strip")
 
+    def test_imported_awardees_are_all_masked(self):
+        """`import_honors` 那份 HONORS 里的获奖人必须全部脱敏。
+
+        这个仓库是**公开的**（而且已经被 fork 过），`ops/deploy.sh` 也是靠公开
+        tarball 拉代码。所以真名一旦写进那个文件就等于发布了 —— 渲染时脱敏只能挡住
+        网页那一层，挡不住 git。真名只留在 `.artsrc/honors-names.txt`（不入库）。
+
+        判据在这里**自己重写一遍**，刻意不 import `scripts/mask_names.py`：
+        拿同一个函数去验同一个函数的输出，等于什么都没验。这里问的是最朴素的
+        那个问题 —— 「有没有哪一段看着像人名，却一个星号都没有」。
+        """
+        from news.management.commands.import_honors import HONORS
+
+        self.assertGreater(len(HONORS), 10, "记录太少，这条断言没测到东西")
+        offenders = []
+        for row in HONORS:
+            awardee = row[4]
+            for one in awardee.split("、"):
+                one = one.strip()
+                if not one:
+                    continue
+                # 罗马字名的姓整段保留（Wang C*****o），所以只看姓之后的部分
+                parts = one.split()
+                for tok in (parts[1:] if len(parts) > 1 else parts):
+                    if len(tok) >= 2 and "*" not in tok:
+                        offenders.append(f"{row[0]} {row[1]} → {one}")
+        self.assertFalse(
+            offenders,
+            "这些获奖人还是真名（仓库是公开的，改成 首*末 的形式，"
+            f"规则见 scripts/mask_names.py）：{offenders}",
+        )
+
     # 这条要真的落文件，所以换个临时 MEDIA_ROOT —— 默认那个是 app/media/，
     # 测试往里写会留下一堆 cert-*.png。
     @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="esta-test-honor-"))

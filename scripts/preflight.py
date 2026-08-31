@@ -249,8 +249,34 @@ def check_fonts_in_sync():
           "" if r.returncode == 0 else "跑 python scripts/check_fonts.py --list 看缺哪些字")
 
 
+# ---------------------------------------------------------------- 10. 真名泄漏
+def check_no_real_names():
+    """**这个仓库是公开的**（`sijiaohanshusin/web`，而且已经被 fork 过），
+    `deploy.sh` 也是靠公开 tarball 拉代码的。所以「有没有把真名写进仓库」是一条
+    上线前必查项，而不是代码风格问题 —— 推上去就撤不回来了。
+
+    判据拿 `.artsrc/honors-names.txt`（真名底稿，不入库）去扫全仓。底稿只在本机
+    存在，所以别的机器上这一项是**跳过**而不是失败 —— 把真名清单放进仓库来
+    「方便检查有没有泄漏真名」，本身就是泄漏。
+    """
+    print("\n10. 真名没有漏进仓库（公开仓库，推上去就撤不回来）")
+    if not (REPO / ".artsrc" / "honors-names.txt").exists():
+        warn(False, "本机没有真名底稿，跳过这一项",
+             "有底稿的机器上跑 python scripts/mask_names.py --scan")
+        return
+    r = subprocess.run([sys.executable, "scripts/mask_names.py", "--scan"],
+                       cwd=REPO, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    check(r.returncode == 0, "仓库里没有未脱敏的姓名",
+          "" if r.returncode == 0 else
+          "跑 python scripts/mask_names.py --scan 看是哪几处，--redact 就地替换")
+
+
 # ---------------------------------------------------------------- 只能人工确认
 MANUAL = [
+    "**证书图片里的姓名区域遮没遮**：脱敏只管住了文字字段，证书照片上印着真名，"
+    "图一贴上去等于没脱敏。遮罩坐标在 scripts/build_certs.py 里逐张标，"
+    "改完要自己看图确认（这一步没法自动验 —— 程序不知道姓名在哪）",
     "服务器上 /opt/heuesta/.env 已按 ops/env.example 填好（尤其 DJANGO_SECRET_KEY "
     "是长随机值、EMAIL_HOST_USER 配了真邮箱 —— 不配的话验证码只打进 docker 日志）",
     "本次改了 ops/nginx/heuesta.cn.conf（gzip_types / Cache-Control / "
@@ -279,6 +305,7 @@ def main() -> int:
     check_deploy_files()
     check_tracked_assets()
     check_fonts_in_sync()
+    check_no_real_names()
 
     print("\n只能人工确认的（这里不假装检查过）：")
     for i, item in enumerate(MANUAL, 1):
