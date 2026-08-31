@@ -26,7 +26,12 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.dev")
 from shoot import PORT, DevServer, do_login  # noqa: E402
 
 SHOTS = REPO / ".shots"
-KEY = "home.gallery.lab"        # 拿一个默认没有兜底图的槽位做实验
+# 拿走廊里的一格做端到端实验：它在首页上，公开侧一眼就能看到。
+# **它现在在登记表里有静态兜底**（img/photo/lab-debug.webp，2024 TI 杯赛场调试），
+# 所以这个脚本验的是「站务上传的那份盖过静态兜底、删掉之后回落到兜底」，
+# 不是「占位框变成照片」。空焊盘那一态由 check_slots 在 /recruit/ 上验
+# （recruit.training.session 是登记表里唯一一个真的没有兜底的图片槽）。
+KEY = "home.gallery.lab"
 failures = []
 
 
@@ -34,6 +39,27 @@ def check(cond, label, detail=""):
     print(f"  {'OK  ' if cond else 'FAIL'} {label}" + (f"  {detail}" if detail else ""))
     if not cond:
         failures.append(label)
+
+
+def slot_state(ppage, key):
+    """公开页面上那一格的实况：填没填、图到底是哪一份。
+
+    **判据要看「引的是哪个文件」，不能看「有没有 data-slot-key」。** 那个钩子
+    三种状态都发（语义是「这一格是哪个槽位」），拿它当「填没填」的判据，一个方向
+    必然失败、另一个方向必然通过 —— 这个脚本原来两条都踩了。
+    """
+    return ppage.evaluate(
+        """(key) => {
+            const el = document.querySelector('[data-slot-key="' + key + '"]');
+            if (!el) return null;
+            const img = el.querySelector('img');
+            return {
+              empty: el.classList.contains('is-empty'),
+              filled: el.classList.contains('is-filled'),
+              src: img ? img.getAttribute('src') : '',
+              alt: img ? img.getAttribute('alt') : '',
+            };
+        }""", key)
 
 
 def make_sample() -> Path:
@@ -165,13 +191,22 @@ def main() -> int:
         check("/media/slots/" in (after or {}).get("src", ""),
               "图存到了 media/slots/ 下（公开可访问的目录）")
 
-        # 官网那一格必须同步变成照片 —— 这一步同时验证了缓存失效
+        # 官网那一格必须同步变成刚上传的那张 —— 这一步同时验证了缓存失效
         public = browser.new_context(viewport={"width": 1440, "height": 900})
         ppage = public.new_page()
         ppage.goto(f"{base}/", wait_until="domcontentloaded")
-        html = ppage.content()
-        check("自动化上传的实验室照片" in html, "官网那一格已经变成照片（缓存已失效）")
-        check(f'data-slot-key="{KEY}"' not in html, "该位置不再渲染占位框")
+        st = slot_state(ppage, KEY)
+        check(st is not None, "官网上找得到这一格", KEY)
+        check(bool(st) and st["alt"] == "自动化上传的实验室照片",
+              "官网那一格已经变成刚上传的那张（缓存已失效）", (st or {}).get("alt", ""))
+        # 这里原来写的是「HTML 里不再出现 data-slot-key」。那条判据只在
+        # `data-slot-key` 还**只由空态模板发出**的年代成立 —— 这个钩子后来改成
+        # 三种状态都发（语义是「这一格是哪个槽位」，和填没填图无关），于是它从此
+        # 必然失败。而没人发现，因为这个脚本在那次改动之后一直没被跑过。
+        # 现在验真正该验的那件事：**上传的那份盖过了登记表里的静态兜底**。
+        check(bool(st) and st["src"].startswith("/media/slots/") and not st["empty"],
+              "**上传的那份盖过了静态兜底**（取用优先级：数据库 → 登记表 → 空焊盘）",
+              (st or {}).get("src", ""))
         public.close()
 
         # ---------------- 点预览设焦点 ----------------
@@ -200,8 +235,8 @@ def main() -> int:
         # 截出来也读不了。要看全貌用 crop.py --rows 切片。
         page.screenshot(path=str(SHOTS / "media-center.png"))
 
-        # ---------------- 删除，恢复占位 ----------------
-        print("\n删除 → 回到占位")
+        # ---------------- 删除，回落到静态兜底 ----------------
+        print("\n删除 → 回落到登记表里的静态兜底")
         page.once("dialog", lambda d: d.accept())
         with page.expect_navigation():
             page.click(f'[data-slot-card="{KEY}"] button[value="delete"]')
@@ -210,8 +245,14 @@ def main() -> int:
         public = browser.new_context(viewport={"width": 1440, "height": 900})
         ppage = public.new_page()
         ppage.goto(f"{base}/", wait_until="domcontentloaded")
-        check(f'data-slot-key="{KEY}"' in ppage.content(),
-              "官网那一格回到占位框")
+        st = slot_state(ppage, KEY)
+        # 这里原来写的是「HTML 里还有 data-slot-key」。那个钩子三种状态都发，
+        # 所以那条断言在「什么都没发生」时同样成立 —— 等于没写，而且一路绿灯。
+        check(bool(st) and "/media/slots/" not in st["src"],
+              "删掉之后官网不再引用上传的那份", (st or {}).get("src", ""))
+        check(bool(st) and "lab-debug" in st["src"] and not st["empty"],
+              "**回落到登记表里的静态兜底**（这一格有兜底，不该变成空焊盘）",
+              (st or {}).get("src", ""))
         public.close()
 
         print("\n运行时")
