@@ -64,9 +64,20 @@ def post_detail(request, pk: int):
 # ============================================================
 
 
+# 证书条带常显几张。
+#
+# 10 = 桌面上正好**两整行**：网格是 `auto-fill minmax(220px, 1fr)`，1240 容器下
+# 每行 5 张。先试的 8 在桌面上是 5+3，第二行右边空一块，看着像图没加载出来。
+#
+# 每行几张随视口变（窄一点就是 4 张），所以没有哪个数在所有宽度下都是整行 ——
+# 按桌面 1240 那一档取整，那是这一页的主视图。
+CERT_STRIP_VISIBLE = 10
+
+
 def honor_wall(request):
     """荣誉墙：统计 + 证书条带 + 按年分组的完整清单。"""
     honors = list(Honor.wall())
+    certs = [h for h in honors if h.certificate]
 
     # 按年分组。用 Python 而不是数据库分组：这一页一次全取（几十条），而模板要的
     # 是「年份 → 该年列表」的嵌套结构，SQL 给不了。顺序已经由 Meta.ordering 定好，
@@ -81,15 +92,21 @@ def honor_wall(request):
     context = {
         "summary": Honor.summary(),
         "by_year": by_year,
-        # 证书条带只放真的有照片的。一张都没有时模板整段不渲染 ——
-        # 二十个空占位框堆在页面顶部比没有这条带糟得多。
+        # 证书条带：**精选常显 + 其余折起来**，两段加起来是全部。
         #
-        # **不截断。** 原来这里写的是 `[:8]`，于是 13 张证书里有 5 张存在库里、
-        # 站上任何地方都看不到 —— 年份清单那些行不显示证书（见 honor_row.html），
-        # 条带是唯一的出口。存了却看不见等于没存，而这件事不会以任何形式报错。
-        # 条带是 `auto-fill, minmax(220px, 1fr)` 的网格，会自己折行，十几张是三行。
-        # 真有一天多到读不过去，正确的做法是把它折起来（`<details>`）或者分等级，
-        # 不是悄悄砍掉尾巴。下面那条测试钉住这件事。
-        "certificates": [h for h in honors if h.certificate],
+        # 演进记录（两次都是真问题）：
+        #   1. 原来写 `[:8]`，于是 13 张证书里有 5 张只存在数据库里 —— 年份清单
+        #      那些行不显示证书（见 honor_row.html），条带是唯一的出口。
+        #      存了却看不见等于没存，而这件事不会以任何形式报错。
+        #   2. 于是改成全放。可扩到 35 张之后，条带在页面上占了七行约 2400px，
+        #      把「全部记录」整段挤到了首屏之外 —— 而那一段才是这一页的主体。
+        #
+        # 所以拆两段：前 8 张常显（够证明「这是真的」），其余进一个默认收起的
+        # `<details class="fold">`（core.css 的共用件）。**两段不重叠、加起来是全部**，
+        # 那条「每张证书都要能在页面上看到」的断言照旧成立。
+        # 顺序由 Meta.ordering 定（年份降序 + 等级），所以常显的自然是最近、
+        # 最高等级的那几张。
+        "certificates": certs[:CERT_STRIP_VISIBLE],
+        "certificates_more": certs[CERT_STRIP_VISIBLE:],
     }
     return render(request, "news/honors.html", context)

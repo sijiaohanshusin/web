@@ -386,25 +386,38 @@ class HonorWallViewTests(TestCase):
     # 测试往里写会留下一堆 cert-*.png。
     @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="esta-test-honor-"))
     def test_every_certificate_on_the_wall_is_actually_shown(self):
-        """存进库的证书必须都能在页面上看到，不能被条带的长度上限吃掉。
+        """存进库的证书必须都能在页面上找到，一张都不能漏。
 
-        真发生过：这里原来写 `[:8]`，导入 13 张证书之后有 5 张只存在于数据库里 ——
-        年份清单那些行不显示证书（见 honor_row.html），条带是唯一的出口。而这件事
-        不报错、不掉图、页面完全正常，只是那几张谁都找不到。
+        两次真问题都在这条上：
+          1. 视图原来写 `[:8]`，导入 13 张之后有 5 张只存在于数据库里 —— 年份清单
+             那些行不显示证书（见 honor_row.html），条带是唯一的出口。
+          2. 于是改成全放，扩到 35 张之后条带占了七行、把「全部记录」挤出首屏。
+             现在拆成「常显 8 张 + 其余折叠」两段。
 
-        断言拿「库里有几条带证书的」和「条带里有几张」比，不写死数字：写死的话
-        以后加记录这条就得跟着改，改的时候正好又会把上限问题重新引进来。
+        所以断言问的是**可达性**而不是「在条带里」：拿库里每一条带证书记录的
+        文件 URL 去页面 HTML 里找。这样版面怎么改都不用动这条 —— 而它要防的
+        「存了却看不见」一直被守着。
         """
         for i in range(10):
             make_honor(title=f"带证书的第 {i} 个", year=2025 - i,
                        certificate=make_cert(f"cert-{i}.png"))
 
         resp = self.client.get(reverse("honors:wall"))
-        want = self.Honor.wall().exclude(certificate="").count()
-        self.assertGreater(want, 8, "种的数据要越过原来那个上限，否则这条空跑")
-        self.assertEqual(len(resp.context["certificates"]), want)
-        self.assertEqual(resp.content.decode().count('class="hn-cert"'), want,
-                         "模板渲染出来的证书张数也要对得上")
+        body = resp.content.decode()
+        with_cert = list(self.Honor.wall().exclude(certificate=""))
+        self.assertGreater(len(with_cert), 8,
+                           "种的数据要越过常显的那 8 张，否则这条空跑")
+
+        missing = [h.title for h in with_cert if h.certificate.url not in body]
+        self.assertFalse(missing, f"这些记录的证书在页面上找不到：{missing}")
+
+        # 两段不重叠、加起来是全部 —— 少了这条，「折叠里那段」可以悄悄变成空列表
+        # 而上面那条断言照样过（常显那 8 张的 URL 仍然在页面上）。
+        shown = resp.context["certificates"]
+        folded = resp.context["certificates_more"]
+        self.assertEqual(len(shown) + len(folded), len(with_cert))
+        self.assertFalse(set(shown) & set(folded), "两段不该有重复")
+        self.assertEqual(body.count('class="hn-cert"'), len(with_cert))
 
     def test_empty_wall_shows_a_designed_state_with_a_next_step(self):
         self.Honor.objects.all().delete()

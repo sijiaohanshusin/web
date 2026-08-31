@@ -61,18 +61,33 @@
     {% comment %}
     证书条带。**只有真的有照片时才出现** —— 一张都没有时渲染一排空占位框，等于把
     「我们连证书都没拍」放在这一页最显眼的位置。
+
+    **分成常显与折叠两段**，理由在 news/views.py 的 `certificates` 那段注释里：
+    35 张全部常显时这一块占七行约 2400px，把下面「全部记录」整段挤出首屏，
+    而那一段才是这一页的主体。两段不重叠、加起来是全部。
+
+    图的标记两段一样，所以抽成 includes/honor_cert.html —— 复制第二份的话，
+    「防 CLS 的 width/height」「首图 eager 其余 lazy」这些细节迟早在一处漂掉。
     {% endcomment %}
     <h2 class="hn-sub">证书</h2>
     <div class="hn-cert-strip">
         {% for honor in certificates %}
-        <figure class="hn-cert">
-            <img src="{{ honor.certificate.url }}" alt="{{ honor.title }} 证书"
-                 {% if honor.cert_w %}width="{{ honor.cert_w }}" height="{{ honor.cert_h }}"{% endif %}
-                 loading="{% if forloop.first %}eager{% else %}lazy{% endif %}" decoding="async">
-            <figcaption>{{ honor.year }} · {{ honor.title }}</figcaption>
-        </figure>
+            {% include "includes/honor_cert.html" with honor=honor eager=forloop.first %}
         {% endfor %}
     </div>
+
+    {% if certificates_more %}
+    <details class="fold hn-cert-fold">
+        <summary>还有 {{ certificates_more|length }} 张证书</summary>
+        <div class="fold-body">
+            <div class="hn-cert-strip">
+                {% for honor in certificates_more %}
+                    {% include "includes/honor_cert.html" with honor=honor %}
+                {% endfor %}
+            </div>
+        </div>
+    </details>
+    {% endif %}
     {% endif %}
 
     {% if by_year %}

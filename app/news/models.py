@@ -109,7 +109,13 @@ class Honor(models.Model):
     )
     year = models.PositiveSmallIntegerField("年份", db_index=True)
     awardee = models.CharField("获奖人 / 队伍", max_length=120, blank=True)
-    note = models.CharField("补充说明", max_length=200, blank=True)
+    note = models.CharField(
+        "补充说明", max_length=200, blank=True,
+        help_text="**会显示在公开页面上**，只写给访客看的话（届次、作品名、"
+                  "指导教师、证书编号）。「这张照片是从哪来的、为什么没有证书图」"
+                  "这类考证过程写进 docs/，不要写在这里 —— 这个字段不过 Markdown，"
+                  "写了 ** 会原样印出来。",
+    )
     certificate = models.ImageField(
         "证书照片", upload_to="honors/%Y/%m/", blank=True,
         width_field="cert_w", height_field="cert_h",

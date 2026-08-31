@@ -1,0 +1,20 @@
+{% comment %}
+荣誉墙证书条带里的一张。两处复用：常显那八张、折叠里的其余那些。
+
+参数：
+  honor  Honor 实例（调用方保证 honor.certificate 有值）
+  eager  是否不加 loading="lazy"（只有整页第一张该给）
+
+**为什么抽出来**：这一格上有三个容易在复制时漂掉的细节 ——
+  - `width`/`height` 属性防 CLS，但**必须配 CSS 的 `height: auto`**，
+    否则宽高都是确定值时 `aspect-ratio: 4/3` 会被忽略，一张 600x450 的证书
+    按 450px 高渲染，一张就占掉半屏（core.css 的 `.hn-cert img` 那里写着这条）；
+  - 只有第一张 eager，其余 lazy —— 35 张证书合起来 2.3MB；
+  - alt 要带奖项名，不能只写「证书」。
+{% endcomment %}
+<figure class="hn-cert">
+    <img src="{{ honor.certificate.url }}" alt="{{ honor.title }} 证书"
+         {% if honor.cert_w %}width="{{ honor.cert_w }}" height="{{ honor.cert_h }}"{% endif %}
+         loading="{% if eager %}eager{% else %}lazy{% endif %}" decoding="async">
+    <figcaption>{{ honor.year }} · {{ honor.title }}</figcaption>
+</figure>
