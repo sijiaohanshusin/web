@@ -133,7 +133,11 @@ def main() -> int:
 
     for path in BODY.values():
         check(path.exists(), f"{path.name} 存在")
-    if failures:
+    # 只有「正文字体文件本身不在」才没法往下查（下面每一步都要打开它们读 cmap）。
+    # 原来这里写的是 `if failures: return 1` —— 上游任何一项失败都会在这里中断，
+    # 于是标题字体缺字时整个脚本提前收工，末尾那段 `--list` 的缺字明细压根不打印：
+    # 报告说「缺 1 字」，而想知道是哪个字只能自己另写代码去算。
+    if any(not path.exists() for path in BODY.values()):
         return 1
 
     # 判据从「一级字」换成「一级+二级全集」：二级字区（3008 个）就是人名用字区。

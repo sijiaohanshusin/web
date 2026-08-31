@@ -152,9 +152,17 @@
                     `aspect-ratio` 会被忽略 —— 补这两个属性反而会把占位搞坏。
                     这一张不 lazy：它在第二屏，是那一段的主体。
                     {% endcomment %}
-                    <img src="{% static 'img/carousel/pcb.webp' %}" alt="协会成员制作的 PCB"
+                    {% comment %}
+                    这一格是全页视觉权重最高的一处（549x686、还骑跨黑白分界线）。
+                    原来放的是 `img/carousel/pcb.webp` —— 而那张同时是走廊第一格的
+                    兜底图，走廊又被 cloneNode 复制过一份，于是同一个文件在一屏
+                    首页上出现三次。换成协会实验台的实拍（4:5 竖裁，母图与裁切
+                    参数见 scripts/build_photos.py 的 bench-wide）。
+                    {% endcomment %}
+                    <img src="{% static 'img/photo/bench-wide.webp' %}"
+                         alt="协会实验台：焊台、示波器与一整套成员自制的射频模块"
                          decoding="async">
-                    <figcaption>成员作品 · PCB 实物</figcaption>
+                    <figcaption>实验台一角 · 成员自制的射频链路</figcaption>
                 </figure>
             </div>
             <div class="nf-split-text">
@@ -232,7 +240,15 @@
             <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#hardware">
                 <figure>
                     {# 占位靠 `.nf-dir-card figure` 的 aspect-ratio: 16/10，同样不写 width/height #}
-                    <img src="{% static 'img/recruit/oscilloscope.webp' %}" alt="示波器与硬件实验台"
+                    {% comment %}
+                    三张卡原来有两张用的是 `img/recruit/` 下的器材图鉴（元件棚拍与
+                    软件界面截图，同一文件在新生指南里当参考图），第三张和走廊的
+                    兜底图重复。而这一段讲的是「在这里，你可以成为」—— 配产品图
+                    说不了这件事。三张全换成协会自己拍的实物与赛场照。
+                    判据就是 core/slots.py 那条：「这里缺一张我们自己的照片吗」。
+                    {% endcomment %}
+                    <img src="{% static 'img/photo/rf-modules-board.webp' %}"
+                         alt="木板上的射频系统：TI 开发板与多块成员自制模块用 SMA 串起来"
                          loading="lazy" decoding="async">
                     {% comment %}
                     元件符号：三张卡构成「元件 → 芯片 → 整板」的递进。
@@ -249,7 +265,8 @@
             </a>
             <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#software">
                 <figure>
-                    <img src="{% static 'img/recruit/board-stm32.webp' %}" alt="STM32 开发板"
+                    <img src="{% static 'img/photo/rf-amp-lcd.webp' %}"
+                         alt="运行中的射频宽带放大器：屏上显示实时参数，一排指示灯亮着"
                          loading="lazy" decoding="async">
                     <span class="nf-dir-sym">{% include "includes/icon.html" with name="mcu" %}</span>
                 </figure>
@@ -262,7 +279,8 @@
             </a>
             <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#training">
                 <figure>
-                    <img src="{% static 'img/carousel/etched-board.webp' %}" alt="自制蚀刻电路板"
+                    <img src="{% static 'img/photo/contest-inspect.webp' %}"
+                         alt="电赛赛场上，两名队员在检视一块自制电路板"
                          loading="lazy" decoding="async">
                     <span class="nf-dir-sym">{% include "includes/icon.html" with name="board" %}</span>
                 </figure>

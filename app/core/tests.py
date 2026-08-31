@@ -775,6 +775,31 @@ class MediaSlotRenderTests(TestCase):
         obj.delete()
         self.assertIsNone(cache.get(MEDIA_SLOT_CACHE_KEY))
 
+    def test_no_image_file_is_used_twice_on_the_home_page(self):
+        """首页上同一个图片文件不许出现在两个分镜里。
+
+        真发生过，而且是两处：`img/carousel/pcb.webp` 既硬编码在「3 个理由」那张
+        549x686 的主图上、又是走廊第一格 `home.gallery.pcb` 的兜底；
+        `img/carousel/etched-board.webp` 既在方向卡 03 上、又是 `home.gallery.etched`
+        的兜底。而走廊被 `cloneNode` 复制过一份做无缝循环，所以那两个文件在**一屏
+        首页**上各出现三次 —— 页面照常渲染、图也没碎，只是读起来像素材不够。
+
+        判据拿渲染出来的 HTML 数：`{% static %}` 会带哈希名，所以不能拿源路径比。
+        走廊那份克隆是 JS 在运行时做的，服务端 HTML 里每格只有一份，正好。
+        """
+        import re as _re
+
+        body = self.client.get(reverse("core:home")).content.decode()
+        srcs = _re.findall(r'<img[^>]+src="([^"]+\.(?:webp|png|jpe?g))"', body)
+        self.assertGreater(len(srcs), 6, "首页图片太少，这条断言没测到东西")
+
+        dupes = {s for s in srcs if srcs.count(s) > 1}
+        self.assertFalse(
+            dupes,
+            "这些图片在首页上出现了不止一次 —— 换掉其中一处，别复用："
+            f"{sorted(dupes)}",
+        )
+
     def test_home_gallery_renders_every_declared_slot(self):
         body = self.client.get(reverse("core:home")).content.decode()
         from core.views import GALLERY_SLOT_KEYS

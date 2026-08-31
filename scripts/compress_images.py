@@ -53,17 +53,29 @@ RECRUIT_MAP = {
     "逻辑分析仪.avif": "logic-analyzer", "USB转串口.avif": "usb-ttl",
 }
 
-# 首页轮播兜底图（大尺寸）
+# 首页素材槽的兜底图（大尺寸）。
+# 只列**真的有槽位在用**的那几张：这些文件是 `core/slots.py` 里 `fallback=` 指着的，
+# 删一条就等于把那个槽位的兜底抽掉（槽位空着时显示占位框，不报错）。
+# 原来还有 oscilloscope / breadboard 两条，是给「首页轮播」那个已被素材槽取代的
+# 组件准备的，从来没有槽位引用它们 —— 产物连同这两条一起删掉了。
+# 加新条目之前先确认 slots.py 里有 fallback 指着它，否则跑完只是多两个没人读的文件。
 CAROUSEL_MAP = {
-    "PCB1.jpg": "pcb",
-    "示波器.png": "oscilloscope",
-    "烙铁.png": "soldering",
-    "腐蚀板1.jpg": "etched-board",
-    "面包板.jpg": "breadboard",
+    "PCB1.jpg": "pcb",              # home.gallery.pcb
+    "烙铁.png": "soldering",         # home.gallery.soldering
+    "腐蚀板1.jpg": "etched-board",   # home.gallery.etched
 }
 
 RECRUIT_MAX = 1100
-CAROUSEL_MAX = 1600
+
+# 走廊（首页素材槽的胶片条）是**等高**布局：`.nf-tile` 固定高 324 CSS px，
+# 每格的宽度由它自己的比例算出来，4:3 的那几格就是 432 —— 而且这个数不随视口变，
+# 因为高度是钉死的。DPR2 要 864，取 900 留一点余量（DPR 2.08）。
+# 原来是 1600：那是「首页轮播」时代的尺寸，轮播是整宽大图。搬到胶片条之后这个数
+# 一直没跟着改，于是 432px 宽的一格下了一张 1600px 的图 —— 屏幕上完全看不出区别，
+# 只是首页白下 145KB（pcb 132KB + etched 122KB 两张就占了首页图片量的三成）。
+# 唯一的例外是 12/5 那格宽幅合影（778 CSS px，DPR2 要 1556），它由
+# build_photos.py 出图、按 1600 长边导出，不走这里。
+CAROUSEL_MAX = 900
 QUALITY = 82
 
 

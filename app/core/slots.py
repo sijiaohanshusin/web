@@ -183,6 +183,10 @@ SLOTS: tuple[SlotSpec, ...] = (
         brief="屏幕上是代码或串口输出，桌上板子接着调试器/示波器探头，手在键盘上。"
               "要拍出「软件方向也在和硬件打交道」这件事。",
         group="新生指南 · 现场照",
+        # 手持探头在测 FPGA 开发板，Tektronix 屏上是方波，板上七段管在跑 ——
+        # brief 要的三件事（屏上有输出 / 板子接着探头 / 手在画面里）都对上了。
+        # 来源与裁切见 scripts/build_photos.py 的 probe-fpga。
+        fallback="img/photo/probe-fpga.webp",
         priority=14,
     ),
 )

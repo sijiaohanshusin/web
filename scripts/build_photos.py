@@ -16,28 +16,81 @@
 母图在 `.artsrc/photos/`（不入库，同美术资产的约定），来源见 docs/荣誉数据来源.md。
 """
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 SRC = REPO / ".artsrc" / "photos"
 OUT = REPO / "app" / "static" / "img" / "photo"
 
-# (输出名, 源文件, 目标比例, 竖向锚点, 说明)
-#
-# 竖向锚点 0=顶 .5=中 1=底，只在需要裁掉高度时用得上（源比目标"高"的时候）。
+@dataclass(frozen=True)
+class Photo:
+    """一张照片的裁切指令。"""
+
+    name: str
+    """输出名（不含扩展名）。`core/slots.py` 的 fallback 与模板里引用的就是它。
+
+    **按内容命名，不按用在哪一格命名**（`bench-wide` 而不是 `reason-photo`）——
+    照片会换位置，槽位不会跟着改名。
+    """
+
+    src: str
+    """源文件名。PPT 里的内嵌图编号，保留它是为了能回溯（见 docs/PPT素材清单.md）。"""
+
+    ratio: float
+    """目标宽高比。要和用它那一格的 CSS `aspect-ratio` 一致。"""
+
+    anchor_y: float = .5
+    """源图比目标「高」时，裁掉的高度怎么分。0=保留顶部 .5=居中 1=保留底部。"""
+
+    anchor_x: float = .5
+    """源图比目标「宽」时，裁掉的宽度怎么分。0=保留左边 .5=居中 1=保留右边。
+
+    **这个是后加的。** 原来只有竖向锚点，因为前四张都是横构图裁上下。
+    首页「3 个理由」那一格是 4:5 竖版，从 4:3 的源图裁过去要砍掉四成宽度 ——
+    居中砍会把左边的信号源和右边的自制板各切一半，正好把这张照片的内容切没了。
+    """
+
+    why: str = ""
+    """为什么这么裁。下一个人要改构图时能对着看。"""
+
+
 PHOTOS = [
-    ("group-2024", "image1.jpeg", 12 / 5, .583,
-     "全员合影：约 60 人排成一条横带（源图里人从 x=82 铺到 1862，两端几乎没有"
-     "余量），所以只能裁上下、不能裁两侧。锚点 .583 把 1288 高里多出来的 484px "
-     "按 282 上 / 202 下分掉 —— 天花板与地砖各留约 130px，人和背景板占满其余部分。"
-     "槽位比例同步改成 12/5，走廊是等高胶片条，见 home.css 的 .nf-tile"),
-    ("award-ti-2024", "image41.jpeg", 4 / 3, .5,
-     "颁奖台合影：横幅上「2024 年 TI 杯…二等奖」要留住，所以只从两侧裁"),
-    ("lab-debug", "image42.jpeg", 4 / 3, .5,
-     "赛场调试：老师 + 三名队员围着示波器。人都在中间"),
-    ("bench-scopes", "image26.jpg", 16 / 9, .42,
-     "工作台：两台示波器在上、开发板在下。锚点略偏上 —— "
-     "居中裁会把下排板子切掉一半，而「有在用的痕迹」全在那排板子上"),
+    Photo("group-2024", "image1.jpeg", 12 / 5, anchor_y=.583, why=
+          "全员合影：约 60 人排成一条横带（源图里人从 x=82 铺到 1862，两端几乎没有"
+          "余量），所以只能裁上下、不能裁两侧。锚点 .583 把 1288 高里多出来的 484px "
+          "按 282 上 / 202 下分掉 —— 天花板与地砖各留约 130px，人和背景板占满其余部分。"
+          "槽位比例同步改成 12/5，走廊是等高胶片条，见 home.css 的 .nf-tile"),
+    Photo("award-ti-2024", "image41.jpeg", 4 / 3, why=
+          "颁奖台合影：横幅上「2024 年 TI 杯…二等奖」要留住，所以只从两侧裁"),
+    Photo("lab-debug", "image42.jpeg", 4 / 3, why=
+          "赛场调试：老师 + 三名队员围着示波器。人都在中间"),
+    Photo("bench-scopes", "image26.jpg", 16 / 9, anchor_y=.42, why=
+          "工作台：两台示波器在上、开发板在下。锚点略偏上 —— "
+          "居中裁会把下排板子切掉一半，而「有在用的痕迹」全在那排板子上"),
+
+    # ---- 第二批：换掉首页上那几张不是我们自己拍的图（见 docs/PPT素材清单.md）----
+    Photo("bench-wide", "image25.jpg", 4 / 5, why=
+          "实验台全景（信号源、936B 焊台、烙铁、铜垫板、一整套自制射频板、元件盒、"
+          "钳镊）。去首页「3 个理由」那一格 —— 549x686、骑跨黑白分界线，是全页"
+          "视觉权重最高的一处，原来放的是和走廊重复的那张 pcb.webp。"
+          "**4:5 要从 4:3 的源图砍掉四成宽度**，所以锚点是这一张最要紧的参数"),
+    Photo("rf-modules-board", "image23.jpeg", 16 / 10, why=
+          "木板上的射频系统：TI LaunchPad + 多块自制模块 + SMA 互联 + 手写标注。"
+          "去三大方向卡 01「硬件工程师」，替掉 img/recruit/oscilloscope.webp"
+          "（那是器材图鉴里的棚拍，不是我们自己拍的）"),
+    Photo("rf-amp-lcd", "image24.jpeg", 16 / 10, why=
+          "亚克力板上的射频宽带放大器：LCD 上有实时参数、一排 LED 亮着、STM32 核心板。"
+          "去卡 02「嵌入式开发者」，替掉 img/recruit/board-stm32.webp（源文件就叫"
+          " STM32.png，是产品图）—— 屏上有参数才读得出「板子真的在跑」"),
+    Photo("contest-inspect", "image43.jpeg", 16 / 10, why=
+          "赛场上两名队员在看一块自制 PCB，TI 队服，专业摄影。去卡 03「电赛选手」，"
+          "替掉 img/carousel/etched-board.webp（那张同时是走廊 home.gallery.etched "
+          "的兜底，一图两用）"),
+    Photo("probe-fpga", "image27.jpeg", 16 / 9, why=
+          "手持探头在测 FPGA 开发板，Tektronix 屏上是方波。去新生指南的"
+          " recruit.software.debug —— 那一格的 brief 要「屏幕上是输出、桌上板子接着"
+          "探头、手在画面里」，这张三条都对上了，而它一直是空焊盘"),
 ]
 
 # q78 是逐张对比过的：和 q84 在 3 倍放大下看不出差别（这几张都是室内实拍，
@@ -56,36 +109,52 @@ def main() -> int:
         print("需要 Pillow：python -m pip install pillow（开发工具，不进 requirements）")
         return 2
 
-    missing = [s for _, s, _, _, _ in PHOTOS if not (SRC / s).exists()]
+    missing = [p.src for p in PHOTOS if not (SRC / p.src).exists()]
     if missing:
         print(f"源目录 {SRC}")
-        for name, src, _, _, _ in PHOTOS:
-            print(f"  {'OK ' if (SRC / src).exists() else '缺 '} {name:16s} ← {src}")
+        for p in PHOTOS:
+            print(f"  {'OK ' if (SRC / p.src).exists() else '缺 '} {p.name:18s} ← {p.src}")
         print(f"\n缺 {len(missing)} 个源文件")
+        print("（母图从 PPT 里挖：python scripts/dump_pptx.py，"
+              "然后按 docs/PPT素材清单.md 把用到的复制进 .artsrc/photos/）")
         return 1
 
     OUT.mkdir(parents=True, exist_ok=True)
-    for name, src, ratio, anchor, why in PHOTOS:
-        im = Image.open(SRC / src).convert("RGB")
+    bad = []
+    for p in PHOTOS:
+        im = Image.open(SRC / p.src).convert("RGB")
         w, h = im.size
         cur = w / h
-        if cur > ratio:                      # 源更宽 → 裁两侧（居中）
-            new_w = round(h * ratio)
-            left = (w - new_w) // 2
+        if cur > p.ratio:                    # 源更宽 → 裁两侧，按横向锚点
+            new_w = round(h * p.ratio)
+            left = round((w - new_w) * p.anchor_x)
             im = im.crop((left, 0, left + new_w, h))
-        elif cur < ratio:                    # 源更高 → 裁上下（按锚点）
-            new_h = round(w / ratio)
-            top = round((h - new_h) * anchor)
+        elif cur < p.ratio:                  # 源更高 → 裁上下，按竖向锚点
+            new_h = round(w / p.ratio)
+            top = round((h - new_h) * p.anchor_y)
             im = im.crop((0, top, w, top + new_h))
         if im.width > MAX_W:
-            im = im.resize((MAX_W, round(MAX_W / ratio)), Image.LANCZOS)
+            im = im.resize((MAX_W, round(MAX_W / p.ratio)), Image.LANCZOS)
 
-        dest = OUT / f"{name}.webp"
+        dest = OUT / f"{p.name}.webp"
         im.save(dest, "WEBP", quality=QUALITY, method=6)
-        print(f"  {name:16s} {w}x{h} ({cur:.2f}) → {im.size[0]}x{im.size[1]} "
-              f"({im.width / im.height:.2f})  {dest.stat().st_size / 1024:5.0f} KB")
-        print(f"                   {why}")
-    print(f"\n写到 {OUT.relative_to(REPO)}")
+
+        # **产物比例必须真的等于声明的比例。** 这不是形式检查：`object-fit: cover`
+        # 会把不匹配的部分再裁一次，于是「我以为已经按锚点裁好的构图」在页面上
+        # 又被从中心切了一刀 —— 而页面照常渲染、图也没碎，只是构图不是你定的那个。
+        got = im.width / im.height
+        if abs(got - p.ratio) > 0.01:
+            bad.append(f"{p.name}：声明 {p.ratio:.3f}，产物 {got:.3f}")
+
+        print(f"  {p.name:18s} {w}x{h} ({cur:.2f}) → {im.size[0]}x{im.size[1]} "
+              f"({got:.2f})  {dest.stat().st_size / 1024:5.0f} KB")
+        if p.why:
+            print(f"                     {p.why}")
+
+    print(f"\n写到 {OUT.relative_to(REPO)}（{len(PHOTOS)} 张）")
+    if bad:
+        print("\n**产物比例和声明不一致**：" + "；".join(bad))
+        return 1
     return 0
 
 
