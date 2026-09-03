@@ -1,0 +1,39 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}设计我的展示 | HEU ESTA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/showcase.css' %}"><link rel="stylesheet" href="{% static 'css/showcase-editor.css' %}">{% endblock %}
+{% block content %}<div class="container se-shell" id="showcase-editor" data-action="{% url 'accounts:showcase_action' %}" data-upload="{% url 'accounts:showcase_upload' %}">
+<div class="sc-heading"><div><p class="sc-label">YOUR SPACE / YOUR EXPRESSION</p><h1>把自己，介绍给大家。</h1><p>先选择一个起点，再留下自己的表达。模板只改变排版，不会清空内容。</p></div><a href="{% url 'accounts:profile' %}">返回个人中心</a></div>
+{% if showcase.blocked %}<p class="se-notice">展示已被下架：{{ showcase.moderation_reason }}。可以继续编辑草稿，需管理员解除限制后才能重新发布。</p>{% elif showcase.withdrawal_reason %}<p class="se-notice">{{ showcase.withdrawal_reason }}</p>{% endif %}
+<noscript><p class="se-notice">请启用浏览器 JavaScript 后使用实时编辑器。公开展示不会因此发生变化。</p></noscript>
+<div class="se-status"><span id="showcase-state">{% if showcase.published %}已有公开版本{% else %}私有草稿 · 尚未公开{% endif %}</span><a id="public-link" href="{{ public_url }}" {% if not showcase.published %}hidden{% endif %} target="_blank" rel="noopener">查看公开版本 ↗</a></div>
+<div class="se-layout">
+<form id="design-form" novalidate>{% csrf_token %}
+<section class="se-panel"><h2><span class="sc-label">01</span> 公开身份</h2><p class="form-help">昵称独立于入会档案。官方职位与任期由任命记录提供，不能自行填写。</p>
+<label>公开昵称<input name="nickname" maxlength="30" required autocomplete="off"><small>最多 30 字；不建议填写学号或联系方式。</small></label>
+<div class="se-pair"><label>公开入学届别<select name="cohort"><option value="">不显示</option>{% for year in cohorts %}<option value="{{ year }}">{{ year }} 级</option>{% endfor %}</select></label><label>公开方向<select name="direction">{% for value,label in directions.items %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label></div>
+<label>公开方向说明<input name="direction_detail" maxlength="40"><small>仅“自定义”方向展示此说明，不改变账号档案。</small></label></section>
+<section class="se-panel"><h2><span class="sc-label">02</span> 选择你的版式</h2>
+<div class="se-tabs" role="tablist" aria-label="设计目标"><button type="button" role="tab" id="tab-card" aria-selected="true" aria-controls="design-card" data-target="card">成员卡片</button><button type="button" role="tab" id="tab-page" aria-selected="false" aria-controls="design-page" data-target="page" tabindex="-1">个人页面</button></div>
+<div id="design-card" role="tabpanel" aria-labelledby="tab-card"></div><div id="design-page" role="tabpanel" aria-labelledby="tab-page" hidden></div>
+<p class="form-help">卡片最多 2 个模块，个人页最多 8 个。拖动排序，也可用上移、下移按钮。长文字将截断，不挤压身份信息。</p></section>
+<section class="se-panel"><h2><span class="sc-label">03</span> 写下你的内容</h2><p class="form-help">内容共用，显示哪些模块由各自版式决定。支持分段换行，不支持 HTML 或嵌入代码。</p>
+<label>卡片短介绍<textarea name="intro" maxlength="60" rows="3"></textarea><small>最多 60 字；文字档案模板更适合一句有态度的介绍。</small></label>
+<label>技能标签<input name="tags" maxlength="60" placeholder="例如：嵌入式，开源，摄影"><small>逗号分隔，最多 4 个，每个最多 12 字。</small></label>
+<details><summary>自我介绍与技能兴趣</summary><label>自我介绍<textarea name="about" maxlength="2400" rows="7"></textarea><small>最多 2400 字</small></label><label>技能兴趣<textarea name="skills" maxlength="600" rows="4"></textarea></label></details>
+<details><summary>精选作品 <span class="sc-label">MAX 6</span></summary><div id="works-list"></div><button type="button" data-add="works" class="se-add">＋ 添加作品</button></details>
+<details><summary>图片集 <span class="sc-label">MAX 6</span></summary><div id="gallery-list"></div><button type="button" data-add="gallery" class="se-add">＋ 添加图片</button></details>
+<details><summary>外部链接 <span class="sc-label">HTTPS ONLY</span></summary><div id="links-list"></div><button type="button" data-add="links" class="se-add">＋ 添加链接</button></details></section>
+<section class="se-panel"><h2><span class="sc-label">04</span> 独立素材库</h2><p class="form-help">此处的头像和图片不影响账号头像。草稿图片仅本人可见，发布后只有当前展示实际使用的图片可公开访问。</p>
+<label>展示头像<select name="avatar" data-asset-select></select></label><label>作品橱窗封面<select name="cover" data-asset-select></select></label>
+<label>上传图片<input type="file" id="image-upload" accept="image/jpeg,image/png,image/webp"><small>静态 JPEG / PNG / WebP，5MB、800 万像素以内。最多 20 张，上传会移除 EXIF。</small></label>
+<button type="button" id="copy-avatar" class="se-add">复制当前账号头像作为素材</button><div id="asset-library" class="se-assets"></div></section>
+<section class="se-panel"><h2><span class="sc-label">05</span> 预览与发布</h2><p class="form-help">昵称、所选届别和方向、图片、自填文字和链接将面向互联网公开。手机号、邮箱、QQ、学号、生日和性别不会自动公开。请勿在自填内容中放入敏感信息。个人页暂不主动请求搜索引擎收录，但这不代表保密。</p>
+<label class="se-consent"><input type="checkbox" id="publish-consent"><span>我已预览，并同意将这一版展示面向互联网公开。</span></label><p class="form-help">可以随时撤回；撤回后停止提供新的页面与图片访问，但无法收回他人已下载的内容。</p>
+<div class="se-actions"><button type="button" data-action="save" class="btn btn-ghost">保存草稿</button><button type="button" data-action="publish" class="btn btn-primary" {% if showcase.blocked %}disabled{% endif %}>发布展示</button><button type="button" data-action="withdraw" class="se-add">撤回公开</button></div>
+</section></form>
+<aside class="se-preview"><div class="se-preview-tools"><strong id="preview-label">成员卡片预览</strong><div role="group" aria-label="预览尺寸"><button type="button" data-device="desktop" aria-pressed="true">桌面</button><button type="button" data-device="mobile" aria-pressed="false">手机</button></div><button type="button" id="refresh-preview">更新预览</button></div><p class="form-help">与正式展示使用同一渲染组件，预览不会改变公开版本。</p><div id="preview-container"><iframe id="preview-frame" title="我的展示实时预览" sandbox="allow-same-origin" referrerpolicy="no-referrer"></iframe></div></aside>
+</div><div class="se-message" id="editor-message" role="status" aria-live="polite">正在准备预览。</div>
+{{ bootstrap|json_script:'showcase-bootstrap' }}
+<select id="project-options" hidden><option value="">不关联站内作品</option>{% for project in public_projects %}<option value="{{ project.pk }}">{{ project.name }}</option>{% endfor %}</select>
+</div>{% endblock %}
+{% block extra_js %}<script src="{% static 'js/showcase-editor.js' %}" defer></script>{% endblock %}

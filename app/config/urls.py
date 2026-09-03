@@ -2,8 +2,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from showcase.views import deny_direct_asset
 
 urlpatterns = [
+    path("media/showcase/<path:path>", deny_direct_asset),
+    path("showcase/", include("showcase.urls")),
     path("", include("core.urls")),
     path("accounts/", include("accounts.urls")),
     path("resources/", include("files.urls")),
@@ -31,10 +34,12 @@ admin.site.site_title = "HEU ESTA"
 admin.site.index_title = "站点管理"
 
 if settings.DEBUG:
+    from showcase.demo import samples
     from django.views.static import serve
 
     # 开发环境下模拟 nginx：直接服务 learn/ 学习中心与 media/
     urlpatterns += [
+        path("team/design-demo/", samples),
         path(
             "learn/<path:path>",
             serve,

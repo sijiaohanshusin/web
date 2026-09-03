@@ -1,0 +1,11 @@
+<div class="sc-identity">
+    <div class="sc-avatar sc-avatar--{{ design.avatar_shape }}">
+        <span aria-hidden="true">{{ member.initial }}</span>
+        {% if member.avatar %}<img src="{{ member.avatar }}" alt="" loading="lazy" decoding="async">{% endif %}
+    </div>
+    <div class="sc-identity-text">
+        <h2 class="sc-name">{{ member.nickname }}</h2>
+        <p class="sc-meta">{% if member.cohort %}{{ member.cohort }} 级 <span aria-hidden="true">/</span> {% endif %}{{ member.direction|default:"探索中" }}</p>
+    </div>
+</div>
+{% if member.position %}<p class="sc-official"><span class="sc-official-label">官方任职</span><strong>{{ member.position.name }}</strong><span>现任 · {{ member.position.term }}</span></p>{% endif %}

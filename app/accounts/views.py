@@ -311,33 +311,7 @@ class PasswordChangeDoneView(auth_views.PasswordChangeDoneView):
     template_name = "accounts/password_change_done.html"
 
 
-# ---------------------------------------------------------------- 公开团队页
-
+# Compatibility import for callers of the former team view.
 def team_wall(request):
-    """`/team/` —— 现任团队。公开页面，路由在 `accounts/team_urls.py`。
-
-    上墙口径只有 `User.team()` 一处（激活 + 本人勾了公开展示 + 当前有职位）。
-
-    **一栏网格，职位画在卡片上，不按职位分节。** 最初是按职位分组的，截图之后
-    推翻了：协会的职位大多一人一个（一个主席、一个硬件主席……），于是五个人变成
-    五个只装一张卡的分节，每张卡缩在 1240px 容器的左上角，整页读起来又空又长。
-    职位改成卡片上的一枚彩色徽章，密度和信息量都对了，而且不管 3 个人还是 30 个
-    人都成立。
-    """
-    members = list(User.team())
-
-    # 站务才看的那句提示：有几个人已任命但还没勾公开展示。任命和上墙是两件事，
-    # 没有这个数字的话，站务任命完只会以为页面坏了。多出来的这条查询只对站务跑。
-    pending_optin = 0
-    if roles.is_officer(request.user):
-        pending_optin = User.objects.filter(
-            is_active=True, position__isnull=False, show_on_team=False,
-        ).count()
-
-    context = {
-        "members": members,
-        "member_count": len(members),
-        "summary": User.team_summary(),
-        "pending_optin": pending_optin,
-    }
-    return render(request, "accounts/team.html", context)
+    from showcase.views import wall
+    return wall(request)

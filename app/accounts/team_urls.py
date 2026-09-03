@@ -8,10 +8,11 @@
 """
 from django.urls import path
 
-from . import views
+from showcase import views
 
 app_name = "team"
 
 urlpatterns = [
-    path("", views.team_wall, name="wall"),
+    path("", views.wall, name="wall"),
+    path("<uuid:public_id>/", views.detail, name="detail"),
 ]

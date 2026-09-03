@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}协会成员 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}认识哈尔滨工程大学电子科技协会的成员。不同届别，不同方向，共同把想法变成作品。{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/showcase.css' %}">{% endblock %}
+{% block content %}<div class="container sc-wall">
+<div class="sc-heading"><div><p class="sc-label">HEU ESTA / PEOPLE WHO MAKE</p><h1>一起，把想法做出来。</h1><p>这里是协会成员自愿公开的展示空间。无论是否担任职位，每一份热爱都有自己的表达方式。</p></div>{% if can_design %}<a class="btn btn-primary" href="{% url 'accounts:showcase' %}">设计我的展示 ↗</a>{% endif %}</div>
+<form class="sc-filters" method="get" role="search" aria-label="筛选公开成员">
+<label>昵称或公开标签<input type="search" name="q" value="{{ filters.q }}" maxlength="80" placeholder="认识谁，或探索一个方向"></label>
+<label>入学届别<select name="cohort"><option value="">全部届别</option>{% for year in cohorts %}<option value="{{ year }}" {% if filters.cohort == year %}selected{% endif %}>{{ year }} 级</option>{% endfor %}</select></label>
+<label>方向<select name="direction"><option value="">全部方向</option>{% for value,label in directions.items %}<option value="{{ value }}" {% if filters.direction == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+<label>现任职位<select name="position"><option value="">全部成员</option>{% for item in positions %}<option value="{{ item.pk }}" {% if filters.position == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></label><button class="btn btn-primary">查找</button><a href="{% url 'team:wall' %}">重置</a>
+</form>
+<p class="sc-label">{{ page.paginator.count }} MEMBERS / 按入学届别与公开昵称排列</p>
+<div class="sc-grid">{% for member in members %}{% include 'showcase/card.html' with member=member only %}{% empty %}<div class="sc-empty"><h2>相遇，从一张名片开始。</h2><p>暂无符合条件的公开展示。展示由成员本人选择，不公开不影响会员身份。</p>{% if can_design %}<a href="{% url 'accounts:showcase' %}">做第一张属于自己的名片 ↗</a>{% endif %}</div>{% endfor %}</div>
+{% if page.has_other_pages %}<nav class="sc-pagination" aria-label="成员分页">{% if page.has_previous %}<a href="?{{ querystring }}&page={{ page.previous_page_number }}">上一页</a>{% endif %}<span>{{ page.number }} / {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a href="?{{ querystring }}&page={{ page.next_page_number }}">下一页</a>{% endif %}</nav>{% endif %}
+{% if user.is_officer %}<p class="form-help"><a href="{% url 'showcase:moderation' %}">展示内容管理</a> · 管理员只能下架违规内容，不能代替成员公开。</p>{% endif %}
+</div>{% endblock %}

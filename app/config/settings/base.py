@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "core",
     "accounts",
+    "showcase",
     "files",
     "dashboard",
     "notify",
@@ -43,6 +44,7 @@ SIMPLEUI_LOGO = "/static/img/logo.png"
 SIMPLEUI_DEFAULT_THEME = "layui.css"
 
 MIDDLEWARE = [
+    "showcase.middleware.ShowcasePrivacyMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",

@@ -242,8 +242,8 @@ PROFILE_BASIC_FIELDS = (
     "real_name", "college", "grade", "gender", "birthday",
     "specialty", "specialty_custom", "qq", "phone", "avatar",
 )
-# 公开团队页那一组。只对**当前担任职位**的人显示（见 ProfileForm.__init__）。
-PROFILE_TEAM_FIELDS = ("show_on_team", "public_bio")
+# Legacy field group stays empty: account edits cannot publish a showcase.
+PROFILE_TEAM_FIELDS = ()  # Publication is managed only by the dedicated owner editor.
 
 
 class ProfileForm(forms.ModelForm):
@@ -264,21 +264,7 @@ class ProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # 没有职位的人根本不会出现在团队页上（口径见 User.team()），给他们看这个
-        # 开关就是一格「勾了也没反应」的死界面。有职位的人下次打开这一页就看到了。
-        #
-        # 顺带这也是**唯一**能改 show_on_team 的入口 —— 公开自己的姓名和照片是
-        # 本人的同意，注册时那份隐私同意书里没有这一条，站务不能代勾。
-        if not getattr(self.instance, "position_id", None):
-            for name in PROFILE_TEAM_FIELDS:
-                self.fields.pop(name, None)
-        else:
-            self.fields["show_on_team"].label = "在公开团队页展示我"
-            self.fields["show_on_team"].help_text = (
-                "勾选后，你的姓名、头像、届别、擅长方向和下面这句介绍会出现在官网"
-                "的公开团队页上。手机号、邮箱、学号一律不展示。随时可以取消。"
-            )
-        _style(self.fields, skip=("avatar", "show_on_team"))
+        _style(self.fields, skip=("avatar",))
 
     @property
     def basic_fields(self):

@@ -36,9 +36,9 @@
     </p>
     <p class="dash-muted">
         <a href="{% url 'team:wall' %}" target="_blank" rel="noopener">公开团队页 →</a>
-        只列出<strong>本人勾选了「在公开团队页展示我」</strong>的在任成员。
-        请受任成员登录本人账号，进入<a href="{% url 'accounts:profile_edit' %}#public-team">个人中心 → 编辑资料 → 公开团队页</a>设置并保存。
-        {% if awaiting_optin %}现在有 <strong>{{ awaiting_optin }}</strong> 位在任成员还没勾，需要去提醒本人。{% endif %}
+        展示<strong>本人预览并发布</strong>的科协会员，不要求担任职位。
+        成员可登录本人账号，进入<a href="{% url 'accounts:showcase' %}">个人中心 → 设计我的展示</a>，预览后自行发布；无职位的科协会员同样可以展示。
+        {% if awaiting_optin %}现在有 <strong>{{ awaiting_optin }}</strong> 位在任成员尚未公开展示，是否公开由本人决定。{% endif %}
     </p>
 </div>
 
@@ -223,10 +223,10 @@
                         {% endcomment %}
                         {% if not u.is_active %}
                             <span class="badge">账号已停用</span>
-                        {% elif u.show_on_team %}
+                        {% elif u.showcase_is_public %}
                             <span class="badge badge-green" data-optin="on">已公开</span>
                         {% else %}
-                            <span class="badge" data-optin="off">本人未勾选</span>
+                            <span class="badge" data-optin="off">尚未公开展示</span>
                         {% endif %}
                     </td>
                     <td>

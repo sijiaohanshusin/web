@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from . import roles
 from .choices import position_term_choices, position_term_label
+from .managers import MemberManager
 
 
 class Position(models.Model):
@@ -34,6 +35,7 @@ class Position(models.Model):
 
 class User(AbstractUser):
     """协会成员账号。member_level 为等级单一事实来源。"""
+    objects = MemberManager()
 
     class RegistrationChannel(models.TextChoices):
         NEW = "new", "新会员通道"
@@ -120,6 +122,14 @@ class User(AbstractUser):
         return self.display_name
 
     def save(self, *args, **kwargs):
+        using = kwargs.get("using") or router.db_for_write(type(self), instance=self)
+        with transaction.atomic(using=using):
+            result = self._save_with_appointments(*args, **kwargs)
+            from showcase.services import revoke_ineligible
+            revoke_ineligible(type(self).objects.using(using).filter(pk=self.pk), using)
+            return result
+
+    def _save_with_appointments(self, *args, **kwargs):
         fields = kwargs.get("update_fields")
         if fields is not None and not {"position", "position_id", "position_term_start"}.intersection(fields):
             return super().save(*args, **kwargs)
@@ -230,19 +240,12 @@ class User(AbstractUser):
 
     @classmethod
     def team(cls):
-        """「谁会出现在公开团队页上」的唯一口径。
-
-        三个条件同时成立才上墙：账号已激活、本人勾了公开展示、且**当前担任职位**。
-        要求有职位不是偷懒 —— 这一页回答的是「带我的人是谁」，一份两百人的会员
-        名册对访客只是一串陌生名字，对协会则是一份没必要背的隐私负担。
-
-        position 只表示现任职位；历任存放在 PositionAppointment，不参与公开现任名单。
-        """
+        """Compatibility queryset for eligible, currently published member showcases."""
         return (
-            cls.objects.filter(is_active=True, show_on_team=True, position__isnull=False)
+            cls.objects.filter(pk__in=cls._public_showcases().values("user_id"))
             .select_related("position")
             .prefetch_related("medals__medal")
-            .order_by("position__sort_order", "position_id", "-grade", "real_name", "username")
+            .order_by("-showcase__public_cohort", "showcase__public_name", "showcase__id")
         )
 
     @classmethod
@@ -265,6 +268,20 @@ class User(AbstractUser):
             "colleges": row["colleges"] if (row["colleges"] or 0) >= 2 else 0,
             "cohorts": row["cohorts"] if (row["cohorts"] or 0) >= 2 else 0,
         }
+
+    @classmethod
+    def _public_showcases(cls):
+        from showcase.models import Showcase
+        return Showcase.objects.visible()
+
+    @property
+    def can_design_showcase(self):
+        from showcase.models import eligible
+        return eligible(self)
+
+    @property
+    def showcase_is_public(self):
+        return self._public_showcases().filter(user_id=self.pk).exists()
 
     # ---- 「凭一个手打的标识把人找出来」的唯一口径 ----
 

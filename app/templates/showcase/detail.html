@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}{{ member.nickname }}的展示 | HEU ESTA{% endblock %}
+{% block extra_head %}<meta name="robots" content="noindex,nofollow,noarchive"><link rel="stylesheet" href="{% static 'css/showcase.css' %}">{% endblock %}
+{% block content %}<div class="container"><a class="sc-back" href="{% url 'team:wall' %}">← 回到成员墙</a>{% include 'showcase/page.html' with member=member only %}<p class="form-help">内容由成员自行发布；仅“官方任职”与官方勋章来自协会记录。<a href="{% url 'core:feedback' %}">反馈不当内容</a></p></div>{% endblock %}

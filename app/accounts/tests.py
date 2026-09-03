@@ -388,6 +388,14 @@ def make_team_member(username, position, *, show=True, **extra):
     for key, value in defaults.items():
         setattr(user, key, value)
     user.save()
+    from showcase.models import eligible
+    from showcase.services import get_showcase, change, preview_ticket
+    if show and eligible(user):
+        sc = get_showcase(user)
+        data = sc.draft
+        data["nickname"] = user.real_name or username
+        data["content"]["intro"] = user.public_bio[:60]
+        change(user, "publish", sc.revision, data, True, preview_ticket(sc, data))
     return user
 
 
@@ -473,24 +481,24 @@ class TeamQuerysetTests(TestCase):
         user = make_team_member("t3", self.chair, is_active=False)
         self.assertNotIn(user, User.team())
 
-    def test_member_without_position_is_excluded(self):
+    def test_member_without_position_is_included(self):
         """墙上是「现任团队」，不是会员名册 —— 没有职位就不在这一页上。"""
         user = make_team_member("t4", None)
-        self.assertNotIn(user, User.team())
+        self.assertIn(user, User.team())
 
-    def test_losing_the_position_removes_from_wall_without_touching_consent(self):
+    def test_losing_the_position_keeps_showcase_and_consent(self):
         user = make_team_member("t5", self.chair)
         user.position = None
         user.save(update_fields=["position"])
-        self.assertNotIn(user, User.team())
+        self.assertIn(user, User.team())
         user.refresh_from_db()
-        self.assertTrue(user.show_on_team, "解除职位不该顺手改掉本人的同意状态")
+        self.assertTrue(user.showcase_is_public, "解除职位不该撤回本人的展示")
 
-    def test_ordered_by_position_sort_order(self):
+    def test_ordered_by_public_name_not_position(self):
         """主席 sort_order=10 排在硬件主席 20 前面。按含金量排，不按注册顺序。"""
         hw = make_team_member("t6", self.hw)
         chair = make_team_member("t7", self.chair)
-        self.assertEqual(list(User.team()), [chair, hw])
+        self.assertEqual(list(User.team()), [hw, chair])
 
     def test_initial_plate_falls_back_for_blank_names(self):
         user = make_team_member("t8", self.chair, real_name="")
@@ -539,192 +547,96 @@ class TeamWallViewTests(TestCase):
         self.chair = Position.objects.get(name="主席")
         self.hw = Position.objects.get(name="硬件主席")
 
-    def test_wall_lists_opted_in_holders_with_their_position_on_the_card(self):
-        """职位是卡片上的一枚徽章，不是分节标题 —— 协会的职位大多一人一个，
-        按职位分节的话几个人就变成几个只装一张卡的分节，整页又空又长。"""
+    def test_members_and_official_badges_share_one_wall(self):
         make_team_member("w1", self.chair, real_name="陈主席", public_bio="统筹整体方向")
-        make_team_member("w2", self.hw, real_name="王硬件")
-        resp = self.client.get(reverse("team:wall"))
-        self.assertEqual(resp.status_code, 200)
-        body = resp.content.decode()
-        self.assertIn("陈主席", body)
-        self.assertIn("王硬件", body)
-        self.assertIn("统筹整体方向", body)
-        self.assertEqual(body.count('class="tm-card"'), 2)
-        self.assertEqual(body.count('class="tm-pos"'), 2)
+        make_team_member("w2", None, real_name="王同学")
+        response = self.client.get(reverse("team:wall"))
+        self.assertContains(response, "陈主席")
+        self.assertContains(response, "王同学")
+        self.assertContains(response, "统筹整体方向")
+        self.assertContains(response, 'class="sc-card sc-card--', count=2)
+        self.assertContains(response, 'class="sc-official"', count=1)
 
-    def test_card_falls_back_to_the_position_blurb_when_no_bio(self):
-        """本人没写介绍时退回职位的「这个职位做什么」，卡片不会只剩一个名字。"""
-        self.hw.blurb = "带硬件方向的周常培训"
+    def test_missing_intro_does_not_invent_content(self):
+        self.hw.blurb = "未选择公开的职位说明"
         self.hw.save(update_fields=["blurb"])
         make_team_member("w9", self.hw, real_name="王硬件")
-        body = self.client.get(reverse("team:wall")).content.decode()
-        self.assertIn("带硬件方向的周常培训", body)
-        self.assertIn("tm-bio-role", body)
+        self.assertNotContains(self.client.get(reverse("team:wall")), self.hw.blurb)
 
-    def test_hero_does_not_promise_people_when_the_wall_is_empty(self):
-        """Hero 结尾那句必须跟着有没有人变，否则它在指着一个空区块说「下面这些人」。"""
-        make_team_member("w10", None, college="集成电路学院", grade="2025")
-        body = self.client.get(reverse("team:wall")).content.decode()
-        self.assertNotIn("下面这些", body)
-
-        make_team_member("w11", self.chair, real_name="陈主席")
-        body = self.client.get(reverse("team:wall")).content.decode()
-        self.assertIn("下面这些", body)
+    def test_empty_wall_does_not_promise_visible_members(self):
+        make_team_member("w10", None, show=False)
+        response = self.client.get(reverse("team:wall"))
+        self.assertContains(response, "暂无符合条件的公开展示")
+        self.assertNotContains(response, "下面这些")
 
     def test_wall_never_leaks_contact_details(self):
-        """这一页的隐私边界：姓名可以（本人同意过），联系方式和学号一律不出现。
+        make_team_member("w3", self.chair, real_name="李隐私", phone="13800001234",
+                         email="leak@example.cn", student_id="2025999888", qq="998877665",
+                         gender=User.Gender.FEMALE, birthday=date(2005, 12, 31))
+        response = self.client.get(reverse("team:wall"))
+        self.assertContains(response, "李隐私")
+        for secret in ("13800001234", "leak@example.cn", "2025999888", "998877665", "2005-12-31", "2005年12月31日", "female"):
+            self.assertNotContains(response, secret)
 
-        隐私说明里写的是「公开页面不会展示手机号、邮箱或完整学号」，而这一页是
-        全站唯一一个把成员逐个列出来的公开页面 —— 泄漏在这里最可能发生，而且
-        页面照常渲染、没有任何报错。
+    def test_no_avatar_has_a_designed_fallback(self):
+        make_team_member("w4", None, real_name="赵无头像")
+        response = self.client.get(reverse("team:wall"))
+        self.assertContains(response, 'class="sc-avatar sc-avatar--')
+        self.assertNotContains(response, '/media/avatars/')
 
-        性别与出生日期也在这里守：它们是招新报名表带进来的档案，隐私说明写的是
-        「报名答卷、性别与出生日期不出现在任何公开页面上」。**`User` 上每加一个
-        字段，这一条就要跟着加一个探针** —— 卡片模板改一行就可能把它渲染出来。
-        """
-        make_team_member(
-            "w3", self.chair, real_name="李隐私",
-            phone="13800001234", email="leak@example.cn",
-            student_id="2025999888", qq="998877665",
-            gender=User.Gender.FEMALE, birthday=date(2005, 12, 31),
-        )
-        body = self.client.get(reverse("team:wall")).content.decode()
-        self.assertIn("李隐私", body)
-        for secret in ("13800001234", "leak@example.cn", "2025999888", "998877665"):
-            self.assertNotIn(secret, body, f"团队页泄漏了 {secret}")
-        # 日期要搜**多种渲染**，不能只搜一种：`{{ u.birthday }}` 在 zh-hans 下是
-        # 「2005年12月31日」、`|date:"Y-m-d"` 是「2005-12-31」、`|date:"Y"` 只剩
-        # 「2005」。单搜年份能一网打尽，另外几条是为了让失败信息说得清是哪种写法。
-        # （测试用的是明文静态路径，没有十六进制哈希，所以搜「2005」不会误命中。）
-        for probe in ("2005", "2005-12-31", "2005年12月31日", "12月31日"):
-            self.assertNotIn(probe, body, f"团队页泄漏了出生日期（{probe}）")
-        # 性别存的是 "female"，渲染出来是「女」—— 两个都要搜。
-        # 已确认 base.html / includes / team_wall.html 里没有「女」字，不会误报。
-        for probe in ("female", "女"):
-            self.assertNotIn(probe, body, f"团队页泄漏了性别（{probe}）")
+    def test_empty_wall_explains_privacy(self):
+        self.assertContains(self.client.get(reverse("team:wall")), "不公开不影响会员身份")
 
-    def test_member_without_avatar_gets_an_initial_plate_not_a_broken_image(self):
-        make_team_member("w4", self.chair, real_name="赵无头像")
-        body = self.client.get(reverse("team:wall")).content.decode()
-        self.assertIn('class="tm-initial"', body)
-        self.assertNotIn('class="tm-avatar"', body)
+    def test_summary_counts_public_profiles_only(self):
+        make_team_member("w5", None, show=False)
+        make_team_member("w6", None, show=True)
+        self.assertContains(self.client.get(reverse("team:wall")), "1 MEMBERS")
 
-    def test_empty_wall_explains_why_and_gives_a_next_step(self):
-        """一个人都没勾时不能是白板：说清原因，并给出「现在怎么找人」。"""
-        body = self.client.get(reverse("team:wall")).content.decode()
-        self.assertIn("empty-state", body)
-        self.assertNotIn('class="tm-group"', body)
-        self.assertIn(reverse("core:recruit"), body)
-
-    def test_summary_line_survives_an_empty_wall(self):
-        """墙是空的，但在册人数照常显示 —— 这是这一页在零 opt-in 时的全部内容。"""
-        make_team_member("w5", None, college="集成电路学院", grade="2025")
-        make_team_member("w6", None, college="计算机科学与技术学院", grade="2024")
-        body = self.client.get(reverse("team:wall")).content.decode()
-        self.assertIn("empty-state", body)
-        self.assertIn("在册", body)
-        self.assertIn(">2<", body)
-
-    def test_officer_sees_the_optin_reminder_and_visitors_do_not(self):
-        make_team_member("w7", self.chair, show=False)
-        body = self.client.get(reverse("team:wall")).content.decode()
-        self.assertNotIn("tm-officer-note", body)
-
-        officer = User.objects.create_user(username="w8", password="x")
-        officer.set_level(roles.LEVEL_OFFICER)
-        self.client.login(username="w8", password="x")
-        body = self.client.get(reverse("team:wall")).content.decode()
-        self.assertIn("tm-officer-note", body)
-        self.assertIn(reverse("dashboard:positions"), body)
+    def test_moderation_entry_is_officer_only(self):
+        self.assertNotContains(self.client.get(reverse("team:wall")), "/showcase/moderation/")
+        officer = User.objects.create_user(username="w8", password="x", member_level=roles.LEVEL_OFFICER)
+        self.client.force_login(officer)
+        self.assertContains(self.client.get(reverse("team:wall")), "/showcase/moderation/")
 
     def test_wall_is_reachable_without_login(self):
-        """公开页面。挂在 accounts 里但不在 /accounts/ 下，就是为了不被账号门槛拦住。"""
         self.assertEqual(self.client.get("/team/").status_code, 200)
 
 
 class ProfileTeamOptInTests(TestCase):
-    """公开展示是本人的同意，入口只有一个：自己的个人资料页。"""
-
-    def setUp(self):
-        self.chair = Position.objects.get(name="主席")
-
-    def _login(self, user):
-        user.set_password("Str0ngPass!2025")
-        user.save()
-        self.client.login(username=user.username, password="Str0ngPass!2025")
-
-    def test_optin_fields_hidden_for_members_without_a_position(self):
-        """没有职位的人不会上墙，给他一个勾了也没反应的开关等于坏界面。"""
+    def test_all_formal_members_get_editor_entry(self):
         user = make_team_member("p1", None, show=False)
-        self._login(user)
-        body = self.client.get(reverse("accounts:profile_edit")).content.decode()
-        self.assertNotIn("show_on_team", body)
-        self.assertNotIn("pf-team", body)
-        self.assertIn("当前账号尚未任命职位", body)
-        self.assertIn('id="public-team"', body)
-        self.assertNotIn(reverse("dashboard:positions"), body)
+        self.client.force_login(user)
+        for url in ("accounts:profile", "accounts:profile_edit"):
+            self.assertContains(self.client.get(reverse(url)), reverse("accounts:showcase"))
 
-    def test_unappointed_admin_gets_a_link_to_position_management(self):
-        user = make_team_member("profileadmin", None, show=False, is_staff=True)
-        self._login(user)
-        response = self.client.get(reverse("accounts:profile_edit"))
-        self.assertContains(response, reverse("dashboard:positions"))
-        self.assertContains(response, "管理员身份不等于协会职位")
-        self.assertNotContains(response, 'name="show_on_team"')
-
-    def test_optin_fields_appear_for_position_holders(self):
-        user = make_team_member("p2", self.chair, show=False)
-        self._login(user)
-        body = self.client.get(reverse("accounts:profile_edit")).content.decode()
-        self.assertIn("show_on_team", body)
-        self.assertIn("public_bio", body)
-
-    def test_profile_links_directly_to_the_optin_section(self):
-        user = make_team_member("profilelink", self.chair, show=False)
-        self._login(user)
-        target = reverse("accounts:profile_edit") + "#public-team"
-        self.assertContains(self.client.get(reverse("accounts:profile")), f'href="{target}"')
+    def test_original_anchor_stays_reachable(self):
+        user = make_team_member("p2", None, show=False)
+        self.client.force_login(user)
         self.assertContains(self.client.get(reverse("accounts:profile_edit")), 'id="public-team"')
 
-    def test_profile_does_not_link_to_a_missing_optin_section(self):
-        user = make_team_member("profilenopos", None, show=False)
-        self._login(user)
-        self.assertNotContains(self.client.get(reverse("accounts:profile")), "#public-team")
+    def test_position_holder_uses_same_dedicated_editor(self):
+        user = make_team_member("p3", Position.objects.get(name="主席"), show=False)
+        self.client.force_login(user)
+        response = self.client.get(reverse("accounts:profile_edit"))
+        self.assertContains(response, "设计我的展示")
+        self.assertNotContains(response, 'name="show_on_team"')
 
-    def test_member_can_opt_in_and_out(self):
-        user = make_team_member("p3", self.chair, show=False, real_name="孙同意",
-                                college="集成电路学院", grade="2025")
-        self._login(user)
-        payload = {
-            "real_name": "孙同意", "college": "集成电路学院", "grade": "2025",
-            "specialty": "hardware", "specialty_custom": "", "qq": "", "phone": "",
-            "show_on_team": "on", "public_bio": "负责硬件培训",
-        }
-        self.client.post(reverse("accounts:profile_edit"), payload)
-        user.refresh_from_db()
-        self.assertTrue(user.show_on_team)
-        self.assertEqual(user.public_bio, "负责硬件培训")
-
-        payload.pop("show_on_team")
-        self.client.post(reverse("accounts:profile_edit"), payload)
-        user.refresh_from_db()
-        self.assertFalse(user.show_on_team)
-
-    def test_a_member_without_a_position_cannot_smuggle_the_flag_through_the_form(self):
-        """字段被摘掉之后，POST 里带上它也没有用 —— 否则「只对有职位的人显示」
-        就只是界面上的装饰，任何人 curl 一下都能把自己标成已同意。"""
-        user = make_team_member("p4", None, show=False, real_name="周越权",
-                                college="集成电路学院", grade="2025")
-        self._login(user)
+    def test_old_form_cannot_publish_even_with_position(self):
+        user = make_team_member("p4", Position.objects.get(name="主席"), show=False)
+        self.client.force_login(user)
         self.client.post(reverse("accounts:profile_edit"), {
             "real_name": "周越权", "college": "集成电路学院", "grade": "2025",
             "specialty": "hardware", "specialty_custom": "", "qq": "", "phone": "",
-            "show_on_team": "on", "public_bio": "偷偷加的",
+            "show_on_team": "on", "public_bio": "不能绕过预览发布",
         })
         user.refresh_from_db()
         self.assertFalse(user.show_on_team)
-        self.assertEqual(user.public_bio, "")
+        self.assertFalse(user.showcase_is_public)
+
+    def test_preparatory_member_cannot_open_editor(self):
+        user = make_team_member("p5", None, show=False, member_level=roles.LEVEL_PREPARATORY)
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(reverse("accounts:showcase")).status_code, 403)
 
 
 class ProfileApplicantFieldsTests(TestCase):

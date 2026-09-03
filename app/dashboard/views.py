@@ -708,7 +708,7 @@ def positions(request):
         "assignment_value": request.POST.get("user_id", "") if request.POST.get("form") == "assign" else "",
         "assignment_position": request.POST.get("position_id", "") if request.POST.get("form") == "assign" else "",
         # 任命 ≠ 上墙。没有这个数字，站务任命完只会以为团队页坏了。
-        "awaiting_optin": sum(1 for u in holders if not u.show_on_team),
+        "awaiting_optin": sum(1 for u in holders if not u.showcase_is_public),
     }
     return render(request, "dashboard/positions.html", context)
 

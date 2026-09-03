@@ -1,10 +1,11 @@
-from django.urls import path
+from django.urls import include, path
 
 from . import views
 
 app_name = "accounts"
 
 urlpatterns = [
+    path("showcase/", include("showcase.account_urls")),
     path("register/", views.register, name="register"),
     path("register/new/", views.register_new, name="register_new"),
     path("register/returning/", views.register_returning, name="register_returning"),
