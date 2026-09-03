@@ -15,7 +15,7 @@ from django.utils import timezone
 from accounts.models import User
 from projects.models import Project
 from .models import ModerationEvent, Showcase, ShowcaseAsset, eligible
-from .schema import empty_design, referenced_assets, validate_design
+from .schema import empty_design, referenced_assets, validate_design, upgrade_design
 
 
 class Conflict(Exception):
@@ -51,7 +51,7 @@ def validate_owned(showcase, raw, publishing=False):
 
 
 def digest(data):
-    return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=True).encode()).hexdigest()
+    return hashlib.sha256(json.dumps(upgrade_design(data), sort_keys=True, ensure_ascii=True).encode()).hexdigest()
 
 
 def preview_ticket(showcase, data):

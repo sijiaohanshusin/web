@@ -87,9 +87,10 @@ def editor(request):
         return render(request, "showcase/ineligible.html", status=403)
     sc = services.get_showcase(request.user)
     options = {"templates": schema.TEMPLATES, "palettes": schema.PALETTES, "textures": schema.TEXTURES,
-               "focus": schema.FOCUS, "shapes": schema.SHAPES, "cardModules": schema.CARD_MODULES, "pageModules": schema.PAGE_MODULES}
+               "focus": schema.FOCUS, "shapes": schema.SHAPES, "cardModules": schema.CARD_MODULES, "pageModules": schema.PAGE_MODULES,
+               "backgrounds": schema.BACKGROUNDS, "presets": schema.PRESETS, "blurs": schema.BLURS, "masks": schema.MASKS}
     return render(request, "showcase/editor.html", {
-        "showcase": sc, "bootstrap": {"draft": sc.draft, "revision": sc.revision, "options": options, "assets": asset_list(sc),
+        "showcase": sc, "bootstrap": {"draft": schema.upgrade_design(sc.draft), "revision": sc.revision, "options": options, "assets": asset_list(sc),
                                       "published": sc.published is not None, "blocked": sc.blocked},
         "cohorts": range(timezone.localdate().year, 1994, -1), "directions": schema.DIRECTIONS,
         "public_projects": Project.public(), "preview_card": render_member(sc, sc.draft),

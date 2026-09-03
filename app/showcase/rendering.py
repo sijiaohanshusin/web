@@ -5,7 +5,7 @@ from django.urls import reverse
 from accounts.choices import position_term_label
 from projects.models import Project
 
-from .schema import DIRECTIONS, PAGE_MODULES
+from .schema import DIRECTIONS, PAGE_MODULES, upgrade_design
 
 
 def asset_url(value, size="small"):
@@ -13,6 +13,7 @@ def asset_url(value, size="small"):
 
 
 def public_member(showcase, data):
+    data = upgrade_design(data)
     c = data["content"]
     account = showcase.user
     position = None
@@ -37,9 +38,12 @@ def public_member(showcase, data):
     return {
         "url": reverse("team:detail", args=[showcase.pk]),
         "nickname": data["nickname"] or "我的公开昵称", "initial": (data["nickname"] or "我")[0].upper(),
-        "cohort": data["cohort"], "direction": data["direction_detail"] if data["direction"] == "custom" else DIRECTIONS[data["direction"]],
+        "cohort": data["cohort"], "direction": DIRECTIONS[data["direction"]],
+        "direction_detail": data["direction_detail"] if data["direction"] == "custom" else "",
         "position": position, "card": data["card"], "page": data["page"],
         "avatar": asset_url(c["avatar"]), "cover": asset_url(c["cover"], "large"),
+        "background": asset_url(data["card"]["background"]["image"], "large") if data["card"]["background"]["mode"] == "photo" else "",
+        "background_small": asset_url(data["card"]["background"]["image"]) if data["card"]["background"]["mode"] == "photo" else "",
         "intro": c["intro"], "about": c["about"], "tags": c["tags"], "skills": c["skills"],
         "works": works, "gallery": [{"image": asset_url(g["image"], "large"), "caption": g["caption"]} for g in c["gallery"] if g["image"]],
         "links": c["links"], "history": history, "medals": medals,

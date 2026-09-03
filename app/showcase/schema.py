@@ -1,5 +1,6 @@
 """Versioned, closed content schema. No presentation code or remote media is accepted."""
 import copy
+import math
 import re
 import uuid
 from urllib.parse import urlsplit
@@ -16,12 +17,36 @@ SHAPES = {"square": "圆角方形", "round": "圆形"}
 CARD_MODULES = {"intro": "短介绍", "tags": "技能标签", "work": "精选作品"}
 PAGE_MODULES = {"intro": "自我介绍", "skills": "技能兴趣", "works": "作品", "gallery": "图片集", "links": "外部链接", "history": "官方任职经历", "medals": "官方勋章"}
 DIRECTIONS = {"hardware": "硬件", "software": "软件", "custom": "自定义"}
+BACKGROUNDS = {"gradient": "设计师渐变", "photo": "我的工作照", "solid": "纯色"}
+PRESETS = {"graphite": "深海石墨", "copper": "暖铜微光", "ivory": "米白青灰"}
+BLURS = {"none": "无模糊", "soft": "轻微模糊", "medium": "柔和模糊"}
+MASKS = {"balanced": "均衡", "deep": "深色", "strong": "强遮罩"}
+
+
+def default_background():
+    return {"mode": "gradient", "preset": "graphite", "image": "", "x": 50, "y": 50,
+            "zoom": 1, "blur": "none", "mask": "balanced"}
+
+
+def upgrade_design(raw):
+    """Read old snapshots without changing stored content or publication consent."""
+    data = copy.deepcopy(raw)
+    if isinstance(data, dict) and type(data.get("version")) is int and data["version"] == 1:
+        card = obj(data.get("card"), ("template", "palette", "texture", "focus", "avatar_shape", "modules"), "设计")
+        background = default_background()
+        background["preset"] = "copper" if card["palette"] == "copper" else "graphite"
+        if card["template"] == "gallery" and data.get("content", {}).get("cover"):
+            background.update(mode="photo", image=data["content"]["cover"])
+            background.update({"top": {"y": 0}, "bottom": {"y": 100}, "left": {"x": 0}, "right": {"x": 100}}.get(card["focus"], {}))
+        card["background"] = background
+        data["version"] = 2
+    return data
 
 
 def empty_design():
     return {
-        "version": 1, "nickname": "", "cohort": "", "direction": "hardware", "direction_detail": "",
-        "card": {"template": "plate", "palette": "cyan", "texture": "grid", "focus": "center", "avatar_shape": "square", "modules": ["intro", "tags"]},
+        "version": 2, "nickname": "", "cohort": "", "direction": "hardware", "direction_detail": "",
+        "card": {"template": "plate", "palette": "cyan", "texture": "grid", "focus": "center", "avatar_shape": "round", "modules": ["intro", "tags"], "background": default_background()},
         "page": {"template": "plate", "palette": "cyan", "texture": "grid", "focus": "center", "avatar_shape": "square", "modules": ["intro", "skills", "works"]},
         "content": {"intro": "", "about": "", "tags": [], "skills": "", "avatar": "", "cover": "", "works": [], "gallery": [], "links": []},
     }
@@ -75,10 +100,10 @@ def https_url(value):
 
 
 def validate_design(raw, *, publishing=False):
-    data = copy.deepcopy(raw)
+    data = upgrade_design(raw)
     defaults = empty_design()
     obj(data, defaults, "展示")
-    if type(data["version"]) is not int or data["version"] != 1:
+    if type(data["version"]) is not int or data["version"] != 2:
         fail("不支持的展示版本，请刷新页面。")
     data["nickname"] = text(data["nickname"], 30, "公开昵称")
     if publishing and not data["nickname"]:
@@ -90,7 +115,7 @@ def validate_design(raw, *, publishing=False):
     if not isinstance(data["direction"], str) or data["direction"] not in DIRECTIONS:
         fail("请选择有效方向。")
     data["direction_detail"] = text(data["direction_detail"], 40, "公开方向说明")
-    for target, modules, maximum in (("card", CARD_MODULES, 2), ("page", PAGE_MODULES, 8)):
+    for target, modules, maximum in (("card", CARD_MODULES, 3), ("page", PAGE_MODULES, 8)):
         design = obj(data[target], defaults[target], "设计")
         for key, choices in (("template", TEMPLATES), ("palette", PALETTES), ("texture", TEXTURES), ("focus", FOCUS), ("avatar_shape", SHAPES)):
             if not isinstance(design[key], str) or design[key] not in choices:
@@ -98,6 +123,16 @@ def validate_design(raw, *, publishing=False):
         chosen = sequence(design["modules"], maximum, "内容模块")
         if any(not isinstance(m, str) or m not in modules for m in chosen) or len(set(chosen)) != len(chosen):
             fail("模块类型无效或重复。")
+    background = obj(data["card"]["background"], default_background(), "卡片背景")
+    for key, choices in (("mode", BACKGROUNDS), ("preset", PRESETS), ("blur", BLURS), ("mask", MASKS)):
+        if not isinstance(background[key], str) or background[key] not in choices:
+            fail("请选择编辑器提供的背景、渐变和遮罩。")
+    background["image"] = asset_id(background["image"])
+    for key, low, high in (("x", 0, 100), ("y", 0, 100), ("zoom", 1, 1.5)):
+        value = background[key]
+        if type(value) not in (int, float) or not math.isfinite(value) or not low <= value <= high:
+            fail("图片焦点或缩放超出允许范围。")
+        background[key] = round(value, 2)
     content = obj(data["content"], defaults["content"], "内容")
     for field, limit, label in (("intro", 60, "卡片短介绍"), ("about", 2400, "自我介绍"), ("skills", 600, "技能兴趣")):
         content[field] = text(content[field], limit, label)
@@ -126,9 +161,13 @@ def validate_design(raw, *, publishing=False):
 
 
 def referenced_assets(data, *, visible_only=False):
+    data = upgrade_design(data)
     c = data["content"]
     refs = {c["avatar"]}
-    if not visible_only or data["card"]["template"] == "gallery" or data["page"]["template"] == "gallery":
+    bg = data["card"]["background"]
+    if not visible_only or bg["mode"] == "photo":
+        refs.add(bg["image"])
+    if not visible_only or data["page"]["template"] == "gallery":
         refs.add(c["cover"])
     works = c["works"]
     if not visible_only or "works" in data["page"]["modules"]:
