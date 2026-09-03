@@ -201,7 +201,7 @@
     {% block content %}{% endblock %}
 </main>
 
-<footer class="site-footer surf-weave grain">
+{% block footer %}<footer class="site-footer surf-weave grain">
     <svg class="footer-wave" viewBox="0 0 1440 40" preserveAspectRatio="none" aria-hidden="true">
         <path d="M0,20 C60,4 120,4 180,20 C240,36 300,36 360,20 C420,4 480,4 540,20 C600,36 660,36 720,20 C780,4 840,4 900,20 C960,36 1020,36 1080,20 C1140,4 1200,4 1260,20 C1320,36 1380,36 1440,20"
               fill="none" stroke="currentColor" stroke-width="1.5"/>
@@ -255,7 +255,7 @@
             </span>
         </div>
     </div>
-</footer>
+</footer>{% endblock %}
 
 {% comment %}
 动效链路：GSAP 三件套与 Lenis 是 UMD 全局，motion-core 负责装配。

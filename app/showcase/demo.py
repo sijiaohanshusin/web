@@ -1,25 +1,82 @@
-"""Fictional layout fixtures; mounted only in DEBUG, never a public member record."""
+"""Independent fictional fixtures. These routes and photos exist only in DEBUG."""
+from pathlib import Path
+from types import SimpleNamespace
+
+from django.conf import settings
+from django.core.paginator import Paginator
+from django.http import FileResponse, Http404
 from django.shortcuts import render
-from .schema import empty_design, PALETTES
+from django.utils.cache import patch_vary_headers
+
+from .schema import DIRECTIONS, empty_design
+
+PHOTO_NAMES = {"soldering", "maker", "signal", "builder"}
+
+
+def fixtures():
+    members = []
+    for index, (name, year, direction, template, photo, intro, tags) in enumerate([
+        ("林序", "2025", "hardware", "gallery", "soldering", "把想法，焊进现实。", ["嵌入式", "电路设计"]),
+        ("陈知远", "2024", "hardware", "gallery", "maker", "从原理图，到第一声回应。", ["硬件开发"]),
+        ("苏禾", "2024", "software", "type", "", "保持好奇，\n让想法发生。", ["开源", "交互设计"]),
+        ("周屿", "2023", "software", "gallery", "signal", "让每一次尝试，都有回响。", ["嵌入式", "开源硬件"]),
+        ("许知微", "2023", "custom", "gallery", "builder", "在技术与日常之间，\n找到新的可能。", []),
+        ("顾行", "2022", "software", "plate", "", "记录、拆解，\n再重新创造。", ["Linux", "工具开发"]),
+    ]):
+        design = empty_design()
+        design["card"].update(template=template, texture="none" if photo else "grid")
+        design["card"]["background"].update(mode="photo" if photo else "gradient", preset="ivory" if index == 2 else "graphite")
+        if index == 3:
+            design["card"]["modules"] = ["intro", "work", "tags"]
+        url = f"/team/design-demo/photos/{photo}/" if photo else ""
+        members.append({"url": f"/team/design-demo/member-{index}/", "nickname": name, "initial": name[0], "cohort": year,
+            "direction": DIRECTIONS[direction], "direction_key": direction, "direction_detail": "设计与技术" if index == 4 else "",
+            "position": {"name": "硬件副主席", "term": "2025–2026 届"} if index == 1 else None,
+            "card": design["card"], "page": design["page"], "background": url, "background_small": url,
+            "avatar": f"/team/design-demo/photos/{'maker' if index == 0 else photo}/" if index in {0, 1, 3} else "",
+            "cover": url, "intro": intro, "about": intro, "tags": tags, "skills": " / ".join(tags),
+            "works": [{"title": "桌面信号发生器", "url": "", "image": "", "description": "虚构作品示例"}] if index == 3 else [],
+            "gallery": [], "links": [], "history": [], "medals": [], "page_modules": [{"kind": "intro", "label": "自我介绍"}]})
+    return members
 
 
 def samples(request):
-    palette = request.GET.get("palette", "cyan")
-    if palette not in PALETTES:
-        palette = "cyan"
-    members = []
-    for index, (template, name, intro) in enumerate([
-        ("plate", "林序", "把一块电路板，从纸上的想法变成桌上的作品。"),
-        ("gallery", "陈知远", "写一点代码，让复杂的问题变得清晰。"),
-        ("type", "苏禾", "保持好奇。\n让每一次尝试都有回响。"),
-        ("plate", "这是一个用于验证换行与截断效果的很长的公开昵称", "这是用于验证长介绍的虚构文字，排版不应挤压成员的昵称与官方身份信息。"),
-        ("gallery", "无头像成员", "每一个认真做东西的人，都值得被看见。"),
-        ("type", "周屿", "不急着定义方向，先把想做的东西做出来。"),
-    ]):
-        design = empty_design()
-        design["card"].update(template=template, palette=palette)
-        members.append({"nickname": name, "initial": name[0], "cohort": str(2025 - index % 3), "direction": "软件" if index % 2 else "硬件",
-                        "position": {"name": "软件主席", "term": "2025–2026 届"} if index == 1 else None,
-                        "card": design["card"], "intro": intro, "tags": ["嵌入式", "开源协作", "从零开始"],
-                        "avatar": "", "cover": "", "url": "#", "works": []})
-    return render(request, "showcase/demo.html", {"members": members, "palette": palette, "palettes": PALETTES})
+    if not settings.DEBUG:
+        raise Http404
+    members = fixtures()
+    filters = {key: request.GET.get(key, "").strip()[:80] for key in ("q", "cohort", "direction", "position")}
+    filters["sort"] = "cohort_asc" if request.GET.get("sort") == "cohort_asc" else "cohort_desc"
+    if request.GET.get("stress") == "1":
+        members[0]["nickname"] = "这是三十字以内用来验证长昵称与官方身份区域的虚构测试成员"
+        members[0]["intro"] = "很长的公开介绍用于确认裁切稳定，不应挤压昵称与身份，也不应产生卡片内部滚动条。" * 1
+        members[0]["tags"] = ["十二字长度的技能标签测试甲", "十二字长度的技能标签测试乙", "开源", "工程"]
+        members[0]["position"] = {"name": "硬件副主席", "term": "2025–2026 届"}
+        members[0]["card"]["modules"] = ["intro", "tags", "work"]
+        members[0]["works"] = [{"title": "用于长内容测试的精选作品", "url": "", "image": ""}]
+        members[1]["background"] = members[1]["background_small"] = "/team/design-demo/photos/missing/"
+    selected = [m for m in members if
+        (not filters["q"] or filters["q"].lower() in (m["nickname"] + " ".join(m["tags"])).lower()) and
+        (not filters["cohort"] or filters["cohort"] == m["cohort"]) and
+        (not filters["direction"] or filters["direction"] == m["direction_key"]) and
+        (not filters["position"] or (filters["position"] == "1" and m["position"]))]
+    selected.sort(key=lambda m: m["cohort"], reverse=filters["sort"] == "cohort_desc")
+    page = Paginator(selected, 24).get_page(request.GET.get("page"))
+    context = {"members": page.object_list, "page": page, "demo": True, "filters": filters,
+        "cohorts": ["2025", "2024", "2023", "2022"], "directions": DIRECTIONS,
+        "positions": [SimpleNamespace(pk=1, name="硬件副主席")], "wall_url": "/team/design-demo/",
+        "filtered": any(filters[k] for k in ("q", "cohort", "direction", "position"))}
+    response = render(request, "showcase/results.html" if request.headers.get("X-Showcase-Partial") == "1" else "showcase/wall.html", context)
+    patch_vary_headers(response, ["X-Showcase-Partial"])
+    return response
+
+
+def photo(request, name):
+    if not settings.DEBUG or name not in PHOTO_NAMES:
+        raise Http404
+    return FileResponse((Path(__file__).parent / "demo_assets" / f"{name}.png").open("rb"), content_type="image/png")
+
+
+def sample_detail(request, index):
+    if not settings.DEBUG or not 0 <= index < 6:
+        raise Http404
+    return render(request, "showcase/detail.html", {"member": fixtures()[index], "demo": True})

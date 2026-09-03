@@ -1,19 +1,21 @@
-<article class="sc-card sc-card--{{ member.card.template }} sc-palette--{{ member.card.palette }} sc-texture--{{ member.card.texture }} sc-focus--{{ member.card.focus }}" aria-label="{{ member.nickname }}的成员名片">
-    <div class="sc-card-rail" aria-hidden="true"><span>HEU / ESTA</span><span>MEMBER PROFILE</span></div>
-    {% if member.card.template == 'gallery' %}
-    <div class="sc-card-art">
-        {% if member.cover %}<img src="{{ member.cover }}" alt="成员选择的作品封面" loading="lazy" decoding="async">{% endif %}
-        <span class="sc-art-placeholder" aria-hidden="true">BUILD<br>SOMETHING.</span>
+{% load l10n %}{% with bg=member.card.background %}
+<article class="sc-card sc-card--{{ member.card.template }} sc-palette--{{ member.card.palette }} sc-background--{{ bg.mode }} sc-preset--{{ bg.preset }} sc-texture--{{ member.card.texture }}{% if member.background %} sc-has-photo{% endif %}{% if member.position %} sc-has-position{% endif %}" aria-label="{{ member.nickname }}的成员名片">
+    <div class="sc-card-surface" aria-hidden="true">
+        {% if member.background %}<div class="sc-photo sc-blur--{{ bg.blur }}" style="--sc-x:{{ bg.x|unlocalize }}%;--sc-y:{{ bg.y|unlocalize }}%;--sc-zoom:{{ bg.zoom|unlocalize }}"><img src="{{ member.background_small }}" srcset="{{ member.background_small }} 640w, {{ member.background }} 1600w" sizes="(min-width: 960px) 33vw, (min-width: 640px) 50vw, 100vw" alt="" loading="{% if eager %}eager{% else %}lazy{% endif %}" decoding="async"></div><div class="sc-photo-mask sc-mask--{{ bg.mask }}"></div>{% endif %}
+        <span class="sc-card-texture"></span>
     </div>
-    {% endif %}
-    <div class="sc-card-identity">{% include 'showcase/identity.html' with member=member design=member.card only %}</div>
-    <div class="sc-card-modules">
-        {% for kind in member.card.modules %}
-        {% if kind == 'intro' and member.intro %}<p class="sc-card-intro">{{ member.intro }}</p>{% endif %}
-        {% if kind == 'tags' and member.tags %}<ul class="sc-tags">{% for tag in member.tags %}<li>{{ tag }}</li>{% endfor %}</ul>{% endif %}
-        {% if kind == 'work' and member.works %}{% with work=member.works.0 %}<div class="sc-card-work">{% if work.image %}<img src="{{ work.image }}" alt="" loading="lazy">{% endif %}<div><span class="sc-label">SELECTED WORK</span><strong>{{ work.title }}</strong></div></div>{% endwith %}{% endif %}
-        {% endfor %}
-        {% if member.legacy_medals %}<ul class="sc-tags">{% for medal in member.legacy_medals %}<li>{{ medal }}</li>{% endfor %}</ul>{% endif %}
+    <div class="sc-card-content">
+        {% if member.card.template == 'type' and 'intro' in member.card.modules and member.intro %}<div class="sc-card-quote"><span class="sc-rule" aria-hidden="true"></span><p>{{ member.intro }}</p></div>{% endif %}
+        <div class="sc-card-identity">{% include 'showcase/identity.html' with member=member design=member.card only %}</div>
+        <div class="sc-card-modules">
+            {% for kind in member.card.modules %}
+            {% if kind == 'intro' and member.intro and member.card.template != 'type' %}<p class="sc-card-intro">{{ member.intro }}</p>{% endif %}
+            {% if kind == 'tags' and member.tags %}<ul class="sc-tags">{% for tag in member.tags %}<li>{{ tag }}</li>{% endfor %}</ul>{% endif %}
+            {% if kind == 'work' and member.works %}{% with work=member.works.0 %}<div class="sc-card-work">{% if work.url and not preview %}<a href="{{ work.url }}" target="_blank" rel="noopener noreferrer" aria-label="精选作品：{{ work.title }}"><span>精选作品 / </span>{{ work.title }} <span aria-hidden="true">→</span></a>{% else %}<span>精选作品 / {{ work.title }} →</span>{% endif %}</div>{% endwith %}{% endif %}
+            {% endfor %}
+            {% if member.legacy_medals %}<ul class="sc-tags">{% for medal in member.legacy_medals %}<li>{{ medal }}</li>{% endfor %}</ul>{% endif %}
+        </div>
     </div>
-    <div class="sc-card-foot"><span class="sc-label">协会成员</span>{% if not preview %}<a href="{{ member.url }}" aria-label="了解{{ member.nickname }}">认识一下 <span aria-hidden="true">↗</span></a>{% else %}<span>认识一下 ↗</span>{% endif %}</div>
+    {% if not preview %}<a class="sc-card-link" href="{{ member.url }}" aria-label="了解{{ member.nickname }}"><span aria-hidden="true">→</span></a>{% else %}<span class="sc-card-link" aria-hidden="true">→</span>{% endif %}
 </article>
+{% endwith %}

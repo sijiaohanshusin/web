@@ -566,7 +566,7 @@ class TeamWallViewTests(TestCase):
     def test_empty_wall_does_not_promise_visible_members(self):
         make_team_member("w10", None, show=False)
         response = self.client.get(reverse("team:wall"))
-        self.assertContains(response, "暂无符合条件的公开展示")
+        self.assertContains(response, "每一份热爱，都值得被认识")
         self.assertNotContains(response, "下面这些")
 
     def test_wall_never_leaks_contact_details(self):
@@ -590,13 +590,14 @@ class TeamWallViewTests(TestCase):
     def test_summary_counts_public_profiles_only(self):
         make_team_member("w5", None, show=False)
         make_team_member("w6", None, show=True)
-        self.assertContains(self.client.get(reverse("team:wall")), "1 MEMBERS")
+        self.assertContains(self.client.get(reverse("team:wall")), 'id="member-count">1</span>')
 
     def test_moderation_entry_is_officer_only(self):
         self.assertNotContains(self.client.get(reverse("team:wall")), "/showcase/moderation/")
         officer = User.objects.create_user(username="w8", password="x", member_level=roles.LEVEL_OFFICER)
         self.client.force_login(officer)
-        self.assertContains(self.client.get(reverse("team:wall")), "/showcase/moderation/")
+        self.assertNotContains(self.client.get(reverse("team:wall")), "/showcase/moderation/")
+        self.assertContains(self.client.get(reverse("dashboard:overview")), "/showcase/moderation/")
 
     def test_wall_is_reachable_without_login(self):
         self.assertEqual(self.client.get("/team/").status_code, 200)

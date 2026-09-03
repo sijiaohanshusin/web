@@ -305,7 +305,7 @@ class ShowcaseTests(TestCase):
             bad = copy.deepcopy(self.data)
             bad["content"][key] = value
             self.assertEqual(self.send("save", design=bad).status_code, 400)
-        self.data["card"]["modules"] = ["intro", "tags", "work"]
+        self.data["card"]["modules"] = ["intro", "tags", "work", "intro"]
         self.assertEqual(self.send("save").status_code, 400)
 
     def test_palette_and_module_whitelist(self):

@@ -77,10 +77,12 @@
         }
         host.append(thumbnails);
         const pair = el('div', undefined, {class: 'se-pair'});
-        for (const [key, title, choices] of [['palette','配色',opts.palettes], ['texture','纹理',opts.textures], ['focus','图片焦点',opts.focus], ['avatar_shape','头像样式',opts.shapes]]) {
+        for (const [key, title, choices] of [['palette','点缀色',opts.palettes], ['texture','纹理',opts.textures], ...(which === 'page' ? [['focus','图片焦点',opts.focus]] : []), ['avatar_shape','头像样式',opts.shapes]]) {
             pair.append(label(`${which === 'card' ? '卡片' : '个人页'}${title}`, select(choices, model[key], v => { model[key] = v; })));
         }
-        host.append(pair, el('h3', '内容模块'));
+        host.append(pair);
+        if (which === 'card') renderBackground(host, model.background);
+        host.append(el('h3', '内容模块'));
         const all = which === 'card' ? opts.cardModules : opts.pageModules;
         const list = el('ul', undefined, {class: 'se-modules', 'aria-label': '启用模块并排序'});
         const ordered = [...model.modules, ...Object.keys(all).filter(k => !model.modules.includes(k))];
@@ -100,7 +102,7 @@
             const checkbox = el('input', undefined, {type: 'checkbox', id: `${which}-module-${key}`});
             checkbox.checked = index >= 0;
             checkbox.addEventListener('change', () => {
-                if (checkbox.checked && model.modules.length >= (which === 'card' ? 2 : 8)) {
+                if (checkbox.checked && model.modules.length >= (which === 'card' ? 3 : 8)) {
                     checkbox.checked = false; say('请先关闭一个模块，再启用新的模块。', true); return;
                 }
                 model.modules = checkbox.checked ? [...model.modules, key] : model.modules.filter(m => m !== key);
@@ -118,6 +120,30 @@
             list.append(row);
         }
         host.append(list);
+    }
+    function renderBackground(host, bg) {
+        const group = el('div', undefined, {class:'se-background'});
+        group.append(el('h3','卡片背景'), el('p','工作照、渐变与纯色独立于个人页封面。文字区域始终保留安全遮罩。',{class:'form-help'}));
+        group.append(label('背景类型',select(opts.backgrounds,bg.mode,v=>{bg.mode=v;renderDesign('card');})));
+        const swatches = el('div',undefined,{class:'se-swatches','aria-label':'背景配色'});
+        for (const [value,title] of Object.entries(opts.presets)) {
+            const choice=el('label',undefined,{class:`se-swatch se-swatch--${value}`});
+            const radio=el('input',undefined,{type:'radio',name:'card-background-preset',value}); radio.checked=bg.preset===value;
+            radio.addEventListener('change',()=>{bg.preset=value;changed();}); choice.append(radio,el('span',title)); swatches.append(choice);
+        }
+        if (bg.mode !== 'photo') group.append(swatches);
+        if (bg.mode === 'photo') {
+            const image = imageSelect(bg.image,v=>{bg.image=v;});
+            image.firstChild.textContent='工作照素材';
+            group.append(image,el('p','先在下方素材库上传自己的照片。未选择照片时显示深色背景。',{class:'form-help'}));
+            for (const [key,title,min,max,step] of [['x','水平焦点',0,100,1],['y','垂直焦点',0,100,1],['zoom','裁切缩放',1,1.5,.01]]) {
+                const input=el('input',undefined,{type:'range',min:String(min),max:String(max),step:String(step)}); input.value=bg[key];
+                const output=el('output',String(bg[key])); const wrapper=label(title,input); wrapper.append(output);
+                input.addEventListener('input',()=>{bg[key]=Number(input.value);output.textContent=input.value;changed();}); group.append(wrapper);
+            }
+            group.append(label('照片模糊',select(opts.blurs,bg.blur,v=>{bg.blur=v;})),label('文字遮罩',select(opts.masks,bg.mask,v=>{bg.mask=v;})));
+        }
+        host.append(group);
     }
     function assetOptions(node, value) {
         node.replaceChildren(el('option', '不使用图片', {value: ''}));
@@ -154,6 +180,7 @@
         document.querySelector(`[data-add=${kind}]`).disabled = design.content[kind].length >= 6;
     }
     function renderAssets() {
+        renderDesign('card');
         for (const key of ['avatar','cover']) assetOptions(form.elements[key],design.content[key]);
         for (const kind of ['works','gallery']) renderItems(kind);
         const host = document.getElementById('asset-library'); host.replaceChildren();
@@ -174,6 +201,7 @@
         frame.style.transform = `scale(${scale})`;
         frame.style.left = `${Math.max(0,(container.clientWidth-width*scale)/2)}px`;
         try {
+            frame.contentDocument.body.className = device === 'mobile' ? 'sc-preview-mobile' : 'sc-preview-desktop';
             frame.style.height = '1px';
             const height = frame.contentDocument.body.scrollHeight;
             if (height) { frame.style.height = `${height}px`; container.style.height = `${Math.ceil(height*scale)}px`; }

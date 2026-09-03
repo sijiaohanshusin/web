@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.cache import patch_vary_headers
 from django.views.decorators.http import require_GET, require_POST
 
 from accounts.models import Position
@@ -56,6 +57,9 @@ def wall(request):
     cohort = request.GET.get("cohort", "")
     direction = request.GET.get("direction", "")
     position = request.GET.get("position", "")
+    sort = request.GET.get("sort", "cohort_desc")
+    if sort not in {"cohort_desc", "cohort_asc"}:
+        sort = "cohort_desc"
     cohorts = list(queryset.exclude(public_cohort="").order_by("-public_cohort").values_list("public_cohort", flat=True).distinct())
     positions = Position.objects.filter(holders__showcase__in=queryset).distinct()
     if q:
@@ -66,12 +70,16 @@ def wall(request):
         queryset = queryset.filter(public_direction=direction[:12])
     if position:
         queryset = queryset.filter(user__position_id=int(position)) if position.isdecimal() and len(position) < 10 else queryset.none()
-    page = Paginator(queryset.order_by("-public_cohort", "public_name", "id"), 24).get_page(request.GET.get("page"))
+    page = Paginator(queryset.order_by("public_cohort" if sort == "cohort_asc" else "-public_cohort", "public_name", "id"), 24).get_page(request.GET.get("page"))
     query = request.GET.copy()
     query.pop("page", None)
-    return render(request, "showcase/wall.html", {"members": [public_member(sc, sc.published) for sc in page], "page": page,
-        "filters": {"q": q, "cohort": cohort, "direction": direction, "position": position}, "cohorts": cohorts,
-        "directions": schema.DIRECTIONS, "positions": positions, "querystring": query.urlencode(), "can_design": eligible(request.user)})
+    context = {"members": [public_member(sc, sc.published) for sc in page], "page": page,
+        "filters": {"q": q, "cohort": cohort, "direction": direction, "position": position, "sort": sort}, "cohorts": cohorts,
+        "directions": schema.DIRECTIONS, "positions": positions, "querystring": query.urlencode(),
+        "wall_url": reverse("team:wall"), "filtered": bool(q or cohort or direction or position)}
+    response = render(request, "showcase/results.html" if request.headers.get("X-Showcase-Partial") == "1" else "showcase/wall.html", context)
+    patch_vary_headers(response, ["X-Showcase-Partial"])
+    return response
 
 
 @require_GET

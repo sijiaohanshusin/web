@@ -15,7 +15,7 @@
 <section class="se-panel"><h2><span class="sc-label">02</span> 选择你的版式</h2>
 <div class="se-tabs" role="tablist" aria-label="设计目标"><button type="button" role="tab" id="tab-card" aria-selected="true" aria-controls="design-card" data-target="card">成员卡片</button><button type="button" role="tab" id="tab-page" aria-selected="false" aria-controls="design-page" data-target="page" tabindex="-1">个人页面</button></div>
 <div id="design-card" role="tabpanel" aria-labelledby="tab-card"></div><div id="design-page" role="tabpanel" aria-labelledby="tab-page" hidden></div>
-<p class="form-help">卡片最多 2 个模块，个人页最多 8 个。拖动排序，也可用上移、下移按钮。长文字将截断，不挤压身份信息。</p></section>
+<p class="form-help">卡片最多 3 个模块，个人页最多 8 个。拖动排序，也可用上移、下移按钮。长文字将截断，不挤压身份信息。</p></section>
 <section class="se-panel"><h2><span class="sc-label">03</span> 写下你的内容</h2><p class="form-help">内容共用，显示哪些模块由各自版式决定。支持分段换行，不支持 HTML 或嵌入代码。</p>
 <label>卡片短介绍<textarea name="intro" maxlength="60" rows="3"></textarea><small>最多 60 字；文字档案模板更适合一句有态度的介绍。</small></label>
 <label>技能标签<input name="tags" maxlength="60" placeholder="例如：嵌入式，开源，摄影"><small>逗号分隔，最多 4 个，每个最多 12 字。</small></label>
@@ -24,7 +24,7 @@
 <details><summary>图片集 <span class="sc-label">MAX 6</span></summary><div id="gallery-list"></div><button type="button" data-add="gallery" class="se-add">＋ 添加图片</button></details>
 <details><summary>外部链接 <span class="sc-label">HTTPS ONLY</span></summary><div id="links-list"></div><button type="button" data-add="links" class="se-add">＋ 添加链接</button></details></section>
 <section class="se-panel"><h2><span class="sc-label">04</span> 独立素材库</h2><p class="form-help">此处的头像和图片不影响账号头像。草稿图片仅本人可见，发布后只有当前展示实际使用的图片可公开访问。</p>
-<label>展示头像<select name="avatar" data-asset-select></select></label><label>作品橱窗封面<select name="cover" data-asset-select></select></label>
+<label>展示头像<select name="avatar" data-asset-select></select></label><label>个人页作品橱窗封面<select name="cover" data-asset-select></select></label>
 <label>上传图片<input type="file" id="image-upload" accept="image/jpeg,image/png,image/webp"><small>静态 JPEG / PNG / WebP，5MB、800 万像素以内。最多 20 张，上传会移除 EXIF。</small></label>
 <button type="button" id="copy-avatar" class="se-add">复制当前账号头像作为素材</button><div id="asset-library" class="se-assets"></div></section>
 <section class="se-panel"><h2><span class="sc-label">05</span> 预览与发布</h2><p class="form-help">昵称、所选届别和方向、图片、自填文字和链接将面向互联网公开。手机号、邮箱、QQ、学号、生日和性别不会自动公开。请勿在自填内容中放入敏感信息。个人页暂不主动请求搜索引擎收录，但这不代表保密。</p>

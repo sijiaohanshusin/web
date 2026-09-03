@@ -35,7 +35,8 @@ def upgrade_design(raw):
         card = obj(data.get("card"), ("template", "palette", "texture", "focus", "avatar_shape", "modules"), "设计")
         background = default_background()
         background["preset"] = "copper" if card["palette"] == "copper" else "graphite"
-        if card["template"] == "gallery" and data.get("content", {}).get("cover"):
+        content = data.get("content")
+        if isinstance(content, dict) and card["template"] == "gallery" and content.get("cover"):
             background.update(mode="photo", image=data["content"]["cover"])
             background.update({"top": {"y": 0}, "bottom": {"y": 100}, "left": {"x": 0}, "right": {"x": 100}}.get(card["focus"], {}))
         card["background"] = background

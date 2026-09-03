@@ -5,7 +5,8 @@
     </div>
     <div class="sc-identity-text">
         <h2 class="sc-name">{{ member.nickname }}</h2>
-        <p class="sc-meta">{% if member.cohort %}{{ member.cohort }} 级 <span aria-hidden="true">/</span> {% endif %}{{ member.direction|default:"探索中" }}</p>
+        <p class="sc-meta">{% if member.cohort %}{{ member.cohort }}级 <span aria-hidden="true">·</span> {% endif %}{{ member.direction|default:"探索中" }}</p>
+        {% if member.direction_detail %}<p class="sc-direction-detail">{{ member.direction_detail }}</p>{% endif %}
     </div>
 </div>
-{% if member.position %}<p class="sc-official"><span class="sc-official-label">官方任职</span><strong>{{ member.position.name }}</strong><span>现任 · {{ member.position.term }}</span></p>{% endif %}
+{% if member.position %}<p class="sc-official" aria-label="官方现任职位"><svg width="13" height="14" viewBox="0 0 16 18" fill="none" aria-hidden="true"><path d="M8 1 14 4v7c0 3-6 6-6 6s-6-3-6-6V4Z" stroke="currentColor"/><path d="M5 7h6v5H5z" stroke="currentColor"/></svg><span>{{ member.position.name }} · {{ member.position.term }}</span></p>{% endif %}
