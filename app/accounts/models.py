@@ -1,11 +1,14 @@
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from django.db import models
+from django.db import models, router, transaction
 from django.db.models import Q
 from django.db.models.functions import Lower
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 from django.utils import timezone
 
 from . import roles
+from .choices import position_term_choices, position_term_label
 
 
 class Position(models.Model):
@@ -83,6 +86,10 @@ class User(AbstractUser):
     position = models.ForeignKey(
         Position, verbose_name="职位", null=True, blank=True, on_delete=models.SET_NULL, related_name="holders"
     )
+    position_term_start = models.PositiveSmallIntegerField(
+        "任职届次", choices=position_term_choices, null=True, blank=True,
+        help_text="任期起始年份，与入学年级无关；历史不明时留空。",
+    )
 
     # ---- 公开团队页（/team/）----
     # 默认关闭，且只能由本人在个人资料页打开。注册时的隐私同意书写的是「身份核验、
@@ -113,7 +120,46 @@ class User(AbstractUser):
         return self.display_name
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
+        fields = kwargs.get("update_fields")
+        if fields is not None and not {"position", "position_id", "position_term_start"}.intersection(fields):
+            return super().save(*args, **kwargs)
+        using = kwargs.get("using") or router.db_for_write(type(self), instance=self)
+        with transaction.atomic(using=using):
+            previous = None if self._state.adding else (
+                type(self).objects.using(using).select_for_update().filter(pk=self.pk)
+                .values("position_id", "position_term_start").first()
+            )
+            if previous and fields is not None:
+                if "position_term_start" not in fields:
+                    self.position_term_start = previous["position_term_start"]
+                if not {"position", "position_id"}.intersection(fields):
+                    self.position_id = previous["position_id"]
+            if not self.position_id:
+                self.position_term_start = None
+                if fields is not None:
+                    kwargs["update_fields"] = set(fields) | {"position_term_start"}
+            super().save(*args, **kwargs)
+            current = (self.position_id, self.position_term_start)
+            if previous and current == (previous["position_id"], previous["position_term_start"]):
+                return
+            appointments = PositionAppointment.objects.using(using).filter(user_id=self.pk, ended_at__isnull=True)
+            # Filling an unknown term is a correction, not a second tenure.
+            if (previous and self.position_id == previous["position_id"]
+                    and previous["position_term_start"] is None and self.position_term_start is not None):
+                if appointments.update(term_start=self.position_term_start):
+                    return
+            now = timezone.now()
+            appointments.update(ended_at=now)
+            if self.position_id:
+                PositionAppointment.objects.using(using).create(
+                    user_id=self.pk, position_id=self.position_id, position_name=self.position.name,
+                    term_start=self.position_term_start, started_at=now,
+                    operator=getattr(self, "_position_operator", None),
+                )
+
+    @property
+    def position_term_label(self) -> str:
+        return position_term_label(self.position_term_start)
 
     @property
     def display_name(self) -> str:
@@ -190,9 +236,7 @@ class User(AbstractUser):
         要求有职位不是偷懒 —— 这一页回答的是「带我的人是谁」，一份两百人的会员
         名册对访客只是一串陌生名字，对协会则是一份没必要背的隐私负担。
 
-        `position` 是外键而不是历史记录，所以换届之后这一页自动变成新一届 ——
-        「现任团队」本来就该是这个行为。往届名录是另一件事（要按任期存），
-        现在不做。
+        position 只表示现任职位；历任存放在 PositionAppointment，不参与公开现任名单。
         """
         return (
             cls.objects.filter(is_active=True, show_on_team=True, position__isnull=False)
@@ -222,6 +266,57 @@ class User(AbstractUser):
             "cohorts": row["cohorts"] if (row["cohorts"] or 0) >= 2 else 0,
         }
 
+    # ---- 「凭一个手打的标识把人找出来」的唯一口径 ----
+
+    @classmethod
+    def find_by_identifier(cls, raw: str) -> list["User"]:
+        """按**人手上真有的标识**找人：用户名 → 学号 → 姓名 → `#数据库 ID`。
+
+        返回全部命中（0 个 / 1 个 / 多个），**由调用方决定怎么提示**。刻意不在
+        这里替调用方从多个同名里挑一个 —— `real_name` 没有唯一约束，同名同姓
+        并不罕见，静默挑一个就是把职位任命到了另一个人头上。
+
+        为什么要有这个方法：真踩过。驾驶舱职位管理页的「任命」原来写的是
+        `get_object_or_404(User, pk=request.POST.get("user_id"))`，而那一页上
+        **唯一看得见的成员标识是学号**（会员管理页显示「@用户名 · 学号 · 邮箱 ·
+        手机」，pk 只藏在批量操作复选框的 value 里）。于是管理员拿学号一填就是
+        404：`2024000015` 是个合法整数，Django 老老实实去查 `id=2024000015`，
+        查不到就抛 `Http404` —— 连同已经选好的职位一起丢掉，而且页面上没有任何
+        线索说明该填什么。填用户名更糟：非数字进 `pk=` 会让 `IntegerField` 抛
+        `ValueError`，那是 500。
+
+        `#` 前缀明确表示「按数据库 ID 找」（职位管理页的「现任职成员」表里显示
+        的就是 `#pk`，解除任命的隐藏字段发的也是 pk），此时不再回退到别的字段。
+
+        这里是第三个需要它的地方，所以合并成一份：项目加成员（projects）、
+        驾驶舱指派项目负责人、驾驶舱任命职位。前两处原来各写了一遍
+        `filter(username=x).first() or filter(student_id=x).first()`。
+        """
+        raw = (raw or "").strip()
+        if not raw:
+            return []
+
+        if raw.startswith("#"):
+            digits = raw[1:].strip()
+            # 长度上限防的是「一串 30 位数字进 bigint」——那不是找不到，是 DataError
+            if digits.isdecimal() and len(digits) <= 18:
+                return list(cls.objects.filter(pk=int(digits))[:1])
+            return []
+
+        hit = cls.objects.filter(username=raw).first()
+        if hit:
+            return [hit]
+        # 学号有条件唯一约束（非空时唯一），所以最多一条
+        hit = cls.objects.filter(student_id=raw).first()
+        if hit:
+            return [hit]
+        if raw.isdecimal() and len(raw) <= 18:
+            hit = cls.objects.filter(pk=int(raw)).first()
+            if hit:
+                return [hit]
+        # 姓名放最后，且**返回全部同名**交给调用方去问清楚
+        return list(cls.objects.filter(real_name=raw).order_by("username")[:6])
+
     def set_level(self, level: int, actor=None, note: str = "") -> None:
         """变更等级：写日志 + 同步激活状态与 Django 组 + 站内通知本人。"""
         old = self.member_level
@@ -247,6 +342,40 @@ class User(AbstractUser):
                 body=note or "",
                 url="/accounts/profile/",
             )
+
+
+class PositionAppointment(models.Model):
+    """任职记录；ended_at 为空表示现任，其余仅为历史，不参与授权。"""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="position_appointments")
+    position = models.ForeignKey(Position, null=True, blank=True, on_delete=models.SET_NULL)
+    position_name = models.CharField("职位名称快照", max_length=30)
+    term_start = models.PositiveSmallIntegerField("任职届次", choices=position_term_choices, null=True, blank=True)
+    started_at = models.DateTimeField("登记时间", default=timezone.now, null=True, blank=True)
+    ended_at = models.DateTimeField("归档时间", null=True, blank=True)
+    operator = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="position_appointments_recorded", verbose_name="操作人",
+    )
+
+    class Meta:
+        ordering = ["-term_start", "-id"]
+        verbose_name = "任职记录"
+        verbose_name_plural = "任职记录"
+        constraints = [models.UniqueConstraint(
+            fields=["user"], condition=Q(ended_at__isnull=True), name="one_current_position_per_user",
+        )]
+
+    @property
+    def term_label(self):
+        return position_term_label(self.term_start)
+
+
+@receiver(pre_delete, sender=Position)
+def archive_deleted_position(sender, instance, using, **kwargs):
+    # SET_NULL bypasses User.save; preserve history when a custom position is deleted.
+    PositionAppointment.objects.using(using).filter(position=instance, ended_at__isnull=True).update(ended_at=timezone.now())
+    User.objects.using(using).filter(position=instance).update(position_term_start=None)
 
 
 class Medal(models.Model):

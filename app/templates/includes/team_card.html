@@ -29,6 +29,7 @@
     <div class="tm-body">
         <strong class="tm-name">{{ member.display_name }}</strong>
         <span class="tm-pos">{{ member.position.name }}</span>
+        <span class="tm-meta">现任 · {{ member.position_term_label }}</span>
         <span class="tm-meta">
             {% if member.cohort_label %}<span class="tm-cohort">{{ member.cohort_label }}</span>{% endif %}
             <span class="tm-spec">{{ member.specialty_label }}</span>

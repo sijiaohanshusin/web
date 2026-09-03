@@ -524,6 +524,142 @@ class PositionManageTests(TestCase):
         self.assertFalse(self.member.show_on_team)
         self.assertNotIn(self.member, User.team())
 
+    # ---- 任命表单要认人手上真有的标识 ----
+    #
+    # 真实故障：这一格原来叫「成员 ID」、按 `pk` 硬查，而页面上唯一看得见的成员
+    # 标识是学号。管理员填学号 `2024000015` 直接 404（合法整数 → 查 id=2024000015
+    # → 查不到 → Http404），填用户名是 500（非数字进 `pk=` 抛 ValueError）。
+    # 而**既有的两条测试都从 ORM 对象取 `.pk` 来提交**，浏览器脚本更是用 evaluate
+    # 直接往 DOM 里灌 pk —— 于是「站务从页面上拿不到这个数字」这件事在自动化里
+    # 天生不可能暴露。下面这几条补的就是「真人会填什么」。
+
+    def _assign(self, value, position="主席"):
+        pos = Position.objects.get(name=position)
+        return self.client.post(reverse("dashboard:positions"), {
+            "form": "assign", "position_id": pos.pk, "user_id": value,
+        }, follow=True)
+
+    def test_assign_accepts_a_student_id(self):
+        """**用户真踩到的那一条。** 学号是这一页上唯一看得见的成员标识。"""
+        self.member.student_id = "2024000015"
+        self.member.save(update_fields=["student_id"])
+        resp = self._assign("2024000015")
+        self.assertEqual(resp.status_code, 200)
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.position, Position.objects.get(name="主席"))
+
+    def test_assign_accepts_a_username(self):
+        """原来这一条是 500：非数字进 `pk=` 会让 IntegerField 抛 ValueError。"""
+        resp = self._assign("posmember")
+        self.assertEqual(resp.status_code, 200)
+        self.member.refresh_from_db()
+        self.assertIsNotNone(self.member.position)
+
+    def test_assign_accepts_the_hash_id_printed_in_the_holders_table(self):
+        """「现任职成员」表里显示的是 #pk，那个值填回来必须认。"""
+        self._assign(f"#{self.member.pk}")
+        self.member.refresh_from_db()
+        self.assertIsNotNone(self.member.position)
+
+    def test_assign_with_an_unknown_value_explains_instead_of_404(self):
+        """404 会把已经选好的职位一起丢掉，而且页面上没有任何线索说该填什么。"""
+        resp = self._assign("2024999999")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("没找到", resp.content.decode())
+        self.member.refresh_from_db()
+        self.assertIsNone(self.member.position)
+
+    def test_failed_assignment_preserves_the_member_and_position(self):
+        pos = Position.objects.get(name="主席")
+        resp = self._assign("unknown-member")
+        self.assertContains(resp, 'name="user_id" required value="unknown-member"')
+        self.assertContains(resp, f'<option value="{pos.pk}" selected>')
+
+    def test_invalid_position_id_explains_without_changing_the_member(self):
+        for value in ("", "missing", "²", "9" * 30, "99999999"):
+            with self.subTest(value=value):
+                resp = self.client.post(reverse("dashboard:positions"), {
+                    "form": "assign", "position_id": value, "user_id": self.member.username,
+                }, follow=True)
+                self.assertContains(resp, "请选择职位")
+                self.member.refresh_from_db()
+                self.assertIsNone(self.member.position)
+
+    def test_invalid_identifier_is_html_escaped_when_redisplayed(self):
+        resp = self._assign('<img src=x onerror=alert(1)>')
+        self.assertContains(resp, '&lt;img src=x onerror=alert(1)&gt;')
+        self.assertNotContains(resp, '<img src=x onerror=alert(1)>')
+
+    def test_assign_refuses_to_guess_between_people_with_the_same_name(self):
+        """`real_name` 没有唯一约束。挑错就是把职位任命到另一个人头上，
+        而页面会显示「已任命」—— 所以认不准时必须问清楚，不能猜。"""
+        self.member.real_name = "张三"
+        self.member.student_id = "2024000001"
+        self.member.save(update_fields=["real_name", "student_id"])
+        other = User.objects.create_user(username="posmember2", password="x",
+                                         real_name="张三", student_id="2024000002")
+        resp = self._assign("张三")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode()
+        self.assertIn("2 个人叫", body)
+        self.assertIn("posmember2", body)          # 把候选人列出来才叫说清楚
+        self.member.refresh_from_db()
+        other.refresh_from_db()
+        self.assertIsNone(self.member.position)
+        self.assertIsNone(other.position)
+
+    def test_assign_warns_when_the_account_is_deactivated(self):
+        """停用账号任命成功了也不会上墙，不说一句的话站务会以为团队页坏了。"""
+        self.member.is_active = False
+        self.member.save(update_fields=["is_active"])
+        resp = self._assign("posmember")
+        self.assertIn("停用", resp.content.decode())
+
+    def test_unassign_still_works_with_the_pk_the_template_posts(self):
+        """解除任命的隐藏字段发的是裸 pk，换了解析口径之后它必须照旧能用。"""
+        chair = Position.objects.get(name="主席")
+        self.member.position = chair
+        self.member.save(update_fields=["position"])
+        self.client.post(reverse("dashboard:positions"), {
+            "form": "unassign", "user_id": self.member.pk,
+        }, follow=True)
+        self.member.refresh_from_db()
+        self.assertIsNone(self.member.position)
+
+    def test_unassign_does_not_confuse_a_hidden_pk_with_another_username(self):
+        chair = Position.objects.get(name="主席")
+        self.member.position = chair
+        self.member.save(update_fields=["position"])
+        other = User.objects.create_user(username=str(self.member.pk), password="x", position=chair)
+        self.client.post(reverse("dashboard:positions"), {
+            "form": "unassign", "user_id": self.member.pk,
+        }, follow=True)
+        self.member.refresh_from_db()
+        other.refresh_from_db()
+        self.assertIsNone(self.member.position)
+        self.assertEqual(other.position, chair)
+
+    def test_unassign_accepts_an_explicit_hash_id(self):
+        chair = Position.objects.get(name="主席")
+        self.member.position = chair
+        self.member.save(update_fields=["position"])
+        resp = self.client.post(reverse("dashboard:positions"), {
+            "form": "unassign", "user_id": f"#{self.member.pk}",
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        self.member.refresh_from_db()
+        self.assertIsNone(self.member.position)
+
+    def test_non_admin_cannot_assign_a_position(self):
+        self.client.force_login(self.member)
+        resp = self.client.post(reverse("dashboard:positions"), {
+            "form": "assign", "position_id": Position.objects.get(name="主席").pk,
+            "user_id": self.member.username,
+        })
+        self.assertEqual(resp.status_code, 403)
+        self.member.refresh_from_db()
+        self.assertIsNone(self.member.position)
+
     def test_page_shows_who_still_needs_to_opt_in(self):
         """没有这个提示，站务任命完只会以为团队页坏了。"""
         chair = Position.objects.get(name="主席")

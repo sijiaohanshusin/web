@@ -34,6 +34,7 @@ urlpatterns = [
     path("honors/", views.honors_manage, name="honors"),
     path("medals/", views.medals, name="medals"),
     path("positions/", views.positions, name="positions"),
+    path("positions/members/", views.position_members, name="position_members"),
     path("resources/", views.resources, name="resources"),
     path("resources/<int:pk>/delete/", views.resource_delete, name="resource_delete"),
     # 素材中心。名字别改：{% slot %} 的占位框靠 reverse('dashboard:media_slots')

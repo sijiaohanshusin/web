@@ -33,3 +33,12 @@ COLLEGE_CHOICES = [
 def cohort_choices() -> list[tuple[str, str]]:
     year = datetime.date.today().year
     return [(str(value), f"{value} 级") for value in range(year, FOUNDING_YEAR - 1, -1)]
+
+
+def position_term_choices() -> list[tuple[int, str]]:
+    year = datetime.date.today().year
+    return [(value, f"{value}-{value + 1} 届") for value in range(year + 1, FOUNDING_YEAR - 1, -1)]
+
+
+def position_term_label(year) -> str:
+    return f"{year}-{year + 1} 届" if year is not None else "届次待补充"

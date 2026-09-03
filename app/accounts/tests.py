@@ -391,6 +391,69 @@ def make_team_member(username, position, *, show=True, **extra):
     return user
 
 
+class FindByIdentifierTests(TestCase):
+    """`User.find_by_identifier()` 是「凭一个手打的标识找人」的唯一口径。
+
+    三个地方在用它：项目加成员、驾驶舱指派项目负责人、驾驶舱任命职位。前两处
+    原来各写了一遍 `filter(username=x).first() or filter(student_id=x).first()`，
+    第三处压根没有这一步、直接 `get_object_or_404(User, pk=...)` —— 那就是
+    「管理员填学号得到 404、填用户名得到 500」的来源。
+    """
+
+    def setUp(self):
+        self.a = User.objects.create_user(
+            username="wangwu", password="x", real_name="王五", student_id="2024000015")
+        self.b = User.objects.create_user(
+            username="zhangsan_a", password="x", real_name="张三", student_id="2024000001")
+        self.c = User.objects.create_user(
+            username="zhangsan_b", password="x", real_name="张三", student_id="2024000002")
+
+    def test_finds_by_username(self):
+        self.assertEqual(User.find_by_identifier("wangwu"), [self.a])
+
+    def test_finds_by_student_id(self):
+        """真人手上最常有的就是学号 —— 这一条是那次 404 的根。"""
+        self.assertEqual(User.find_by_identifier("2024000015"), [self.a])
+
+    def test_finds_by_hash_prefixed_pk(self):
+        """驾驶舱「现任职成员」表里显示的就是 #pk。"""
+        self.assertEqual(User.find_by_identifier(f"#{self.a.pk}"), [self.a])
+
+    def test_finds_by_bare_pk(self):
+        """解除任命的隐藏字段发的是裸 pk，不能因为改了口径就不认。"""
+        self.assertEqual(User.find_by_identifier(str(self.a.pk)), [self.a])
+
+    def test_returns_every_namesake_instead_of_picking_one(self):
+        """`real_name` 没有唯一约束。替调用方挑一个就是把职位任命到别人头上，
+        而页面会显示「已任命」。"""
+        self.assertEqual(User.find_by_identifier("张三"), [self.b, self.c])
+
+    def test_unknown_and_blank_return_nothing(self):
+        self.assertEqual(User.find_by_identifier("2024999999"), [])
+        self.assertEqual(User.find_by_identifier("  "), [])
+        self.assertEqual(User.find_by_identifier(None), [])
+
+    def test_hash_prefix_does_not_fall_back_to_other_fields(self):
+        """`#` 是「按数据库 ID 找」的明确表示，不该悄悄退回学号。"""
+        self.assertEqual(User.find_by_identifier("#2024000015"), [])
+
+    def test_absurdly_long_digits_do_not_blow_up_the_query(self):
+        """一串 30 位数字进 bigint 不是「找不到」，是 DataError —— 那是 500。"""
+        self.assertEqual(User.find_by_identifier("9" * 30), [])
+        self.assertEqual(User.find_by_identifier("#" + "9" * 30), [])
+
+    def test_non_decimal_digit_characters_do_not_raise(self):
+        for value in ("²", "#²", "①", "#①"):
+            with self.subTest(value=value):
+                self.assertEqual(User.find_by_identifier(value), [])
+
+    def test_blank_student_id_does_not_match_blank_input(self):
+        """大多数账号 student_id 是空串。空输入必须直接判空，
+        否则一次误提交会随机命中一个没填学号的人。"""
+        User.objects.create_user(username="nostudentid", password="x")
+        self.assertEqual(User.find_by_identifier(""), [])
+
+
 class TeamQuerysetTests(TestCase):
     """`User.team()` 是「谁上墙」的唯一口径，三个条件缺一不可。"""
 
@@ -598,6 +661,17 @@ class ProfileTeamOptInTests(TestCase):
         body = self.client.get(reverse("accounts:profile_edit")).content.decode()
         self.assertNotIn("show_on_team", body)
         self.assertNotIn("pf-team", body)
+        self.assertIn("当前账号尚未任命职位", body)
+        self.assertIn('id="public-team"', body)
+        self.assertNotIn(reverse("dashboard:positions"), body)
+
+    def test_unappointed_admin_gets_a_link_to_position_management(self):
+        user = make_team_member("profileadmin", None, show=False, is_staff=True)
+        self._login(user)
+        response = self.client.get(reverse("accounts:profile_edit"))
+        self.assertContains(response, reverse("dashboard:positions"))
+        self.assertContains(response, "管理员身份不等于协会职位")
+        self.assertNotContains(response, 'name="show_on_team"')
 
     def test_optin_fields_appear_for_position_holders(self):
         user = make_team_member("p2", self.chair, show=False)
@@ -605,6 +679,18 @@ class ProfileTeamOptInTests(TestCase):
         body = self.client.get(reverse("accounts:profile_edit")).content.decode()
         self.assertIn("show_on_team", body)
         self.assertIn("public_bio", body)
+
+    def test_profile_links_directly_to_the_optin_section(self):
+        user = make_team_member("profilelink", self.chair, show=False)
+        self._login(user)
+        target = reverse("accounts:profile_edit") + "#public-team"
+        self.assertContains(self.client.get(reverse("accounts:profile")), f'href="{target}"')
+        self.assertContains(self.client.get(reverse("accounts:profile_edit")), 'id="public-team"')
+
+    def test_profile_does_not_link_to_a_missing_optin_section(self):
+        user = make_team_member("profilenopos", None, show=False)
+        self._login(user)
+        self.assertNotContains(self.client.get(reverse("accounts:profile")), "#public-team")
 
     def test_member_can_opt_in_and_out(self):
         user = make_team_member("p3", self.chair, show=False, real_name="孙同意",

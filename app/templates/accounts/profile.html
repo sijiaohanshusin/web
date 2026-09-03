@@ -45,6 +45,9 @@
             </ul>
             <div class="profile-actions">
                 <a class="btn btn-outline" href="{% url 'accounts:profile_edit' %}">编辑资料</a>
+                {% if user.position_id %}
+                    <a class="btn btn-ghost" href="{% url 'accounts:profile_edit' %}#public-team">团队展示设置</a>
+                {% endif %}
                 <a class="btn btn-ghost" href="{% url 'accounts:password_change' %}">修改密码</a>
                 {% if user.is_officer %}
                     <a class="btn btn-primary" href="{% url 'dashboard:overview' %}">管理驾驶舱</a>
@@ -55,6 +58,17 @@
             </div>
         </div>
         <div>
+            {% if position_appointments %}
+            <div class="panel">
+                <h2>我的任职经历</h2>
+                <ul class="profile-meta">
+                    {% for record in position_appointments %}
+                    <li><span>{{ record.term_label }} · {{ record.position_name }}</span><span>{% if record.ended_at %}历任{% else %}现任{% endif %}</span></li>
+                    {% endfor %}
+                </ul>
+                <p class="form-help">历任经历不授予现任职位权限；入学年级与任职届次分别记录。</p>
+            </div>
+            {% endif %}
             <div class="panel">
                 <h2>我的勋章</h2>
                 {% if my_medals %}

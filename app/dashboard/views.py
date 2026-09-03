@@ -4,11 +4,14 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.views.decorators.http import require_POST
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_GET, require_POST
 
 from django.utils import timezone
 
@@ -17,7 +20,8 @@ import uuid
 from pathlib import Path
 
 from accounts import roles
-from accounts.models import Medal, Position, ReturningMembershipRequest, UserMedal
+from accounts.choices import COLLEGE_CHOICES, cohort_choices, position_term_choices
+from accounts.models import Medal, Position, PositionAppointment, ReturningMembershipRequest, UserMedal
 from core import bilibili
 from core import slots as slot_registry
 from core.models import CarouselImage, Feedback, MediaSlot, SiteConfig
@@ -290,6 +294,7 @@ def returning_review(request, pk: int):
     if decision == "reject":
         item.user.is_active = False
         item.user.position = None
+        item.user._position_operator = request.user
         item.user.save(update_fields=["is_active", "position"])
         item.mark_reviewed(ReturningMembershipRequest.Status.REJECTED, request.user, note)
         messages.success(request, f"已拒绝 {item.user.display_name} 的身份恢复申请，记录已保留。")
@@ -315,6 +320,7 @@ def returning_review(request, pk: int):
 
     user = item.user
     user.position = position
+    user._position_operator = request.user
     user.member_level = roles.LEVEL_FORMAL
     user.is_active = True
     user.save(update_fields=["position", "member_level", "is_active"])
@@ -458,6 +464,105 @@ def _clean_hex(value: str, fallback: str) -> str:
     return value if _HEX_COLOR.match(value) else fallback
 
 
+def _form_pk(raw: str) -> int | None:
+    """Validate posted IDs before they reach the database's integer field."""
+    value = (raw or "").strip()
+    return int(value) if re.fullmatch(r"[0-9]{1,18}", value) else None
+
+
+def _resolve_member(request, raw: str, what: str = "成员"):
+    """把管理员手打的标识解析成一个人；认不准就 messages 说清楚并返回 None。
+
+    **这里刻意不用 `get_object_or_404`。** 任命表单是这一页上唯一要人手打值的
+    地方，而页面上看得见的成员标识是学号 —— 按 pk 硬查的后果是「填学号 404、
+    填用户名 500」，而且 404 会把已经选好的职位一起丢掉。查找口径见
+    `User.find_by_identifier`（同一件事在仓库里原来有三份实现，已合并）。
+
+    多个同名时**不替调用方挑一个**：`real_name` 没有唯一约束，挑错就是把职位
+    任命到另一个人头上，而页面会显示「已任命」。
+    """
+    hits = User.find_by_identifier(raw)
+    if len(hits) == 1:
+        return hits[0]
+
+    raw = (raw or "").strip()
+    if not raw:
+        messages.error(request, f"请填写要操作的{what}（用户名 / 学号 / 姓名）。")
+    elif not hits:
+        messages.error(
+            request,
+            f"没找到{what}「{raw}」。可以填用户名、学号或姓名 —— "
+            "在「会员管理」页能搜到；也可以用「现任职成员」表里那个 #ID。",
+        )
+    else:
+        who = "、".join(
+            f"{u.display_name}（@{u.username}"
+            + (f" · 学号 {u.student_id}" if u.student_id else "")
+            + "）"
+            for u in hits
+        )
+        messages.error(
+            request,
+            f"有 {len(hits)} 个人叫「{raw}」，认不准是哪一位，请改用用户名或学号：{who}",
+        )
+    return None
+
+
+@never_cache
+@admin_required
+@require_GET
+def position_members(request):
+    query = request.GET.get("q", "").strip()
+    grade = request.GET.get("grade", "")
+    college = request.GET.get("college", "")
+    position = request.GET.get("position", "")
+    if (
+        len(query) > 150
+        or (grade and grade not in dict(cohort_choices()))
+        or (college and college not in dict(COLLEGE_CHOICES))
+        or (position and position != "unassigned" and not _form_pk(position))
+    ):
+        return JsonResponse({"error": "筛选条件无效，请重新选择。"}, status=400)
+
+    members = User.objects.select_related("position")
+    if query.startswith("#"):
+        members = members.filter(pk=_form_pk(query[1:]))
+    elif query.startswith("@"):
+        members = members.filter(username__icontains=query[1:])
+    elif query:
+        members = members.filter(
+            Q(real_name__icontains=query) | Q(username__icontains=query) | Q(student_id__icontains=query)
+        )
+    if grade:
+        members = members.filter(grade=grade)
+    if college:
+        members = members.filter(college=college)
+    if position == "unassigned":
+        members = members.filter(position__isnull=True)
+    elif position:
+        members = members.filter(position_id=_form_pk(position))
+
+    # Bound each response; only return fields needed to distinguish candidates.
+    rows = list(members.order_by("-is_active", "real_name", "username", "pk")[:13])
+    return JsonResponse({
+        "members": [
+            {
+                "id": member.pk,
+                "username": member.username,
+                "name": member.display_name,
+                "student_id": member.student_id,
+                "grade": member.grade,
+                "college": member.college,
+                "position": member.position.name if member.position_id else "",
+                "term": member.position_term_label if member.position_id else "",
+                "is_active": member.is_active,
+            }
+            for member in rows[:12]
+        ],
+        "has_more": len(rows) > 12,
+    })
+
+
 @admin_required
 def positions(request):
     fixed_names = _fixed_position_names()
@@ -509,22 +614,62 @@ def positions(request):
             return redirect("dashboard:positions")
 
         if form == "assign":
-            pos = get_object_or_404(Position, pk=request.POST.get("position_id"))
-            user = get_object_or_404(User, pk=request.POST.get("user_id"))
-            user.position = pos
-            user.save(update_fields=["position"])
-            messages.success(
-                request,
-                f"已任命 {user.display_name} 为「{pos.name}」。"
-                "要出现在公开团队页上，还需要本人在个人资料里勾选公开展示。",
-            )
-            return redirect("dashboard:positions")
+            # 职位来自服务端渲染的 <select>，成员是人手打的 —— 两者的失败方式不同，
+            # 所以分开处理：职位对不上是「刚被别人删了」，成员对不上是「填了个别的
+            # 标识」，后者必须留在这一页上说清楚，不能 404 把填的东西全丢掉。
+            pos = Position.objects.filter(pk=_form_pk(request.POST.get("position_id"))).first()
+            user = _resolve_member(request, request.POST.get("user_id")) if pos else None
+            term_raw = request.POST.get("term_start", "")
+            term = _form_pk(term_raw) if term_raw else None
+            status = request.POST.get("appointment_status", "current")
+            valid_term = not term_raw or term in dict(position_term_choices())
+            if pos is None:
+                messages.error(request, "请选择职位（也可能是它刚被删掉了，刷新一下）。")
+            elif not valid_term or (status == "history" and term is None):
+                messages.error(request, "请选择有效的任职届次；历任补录必须注明届次。")
+            elif status not in ("current", "history"):
+                messages.error(request, "请选择现任任命或历任补录。")
+            elif user is not None:
+                with transaction.atomic():
+                    user = User.objects.select_for_update().get(pk=user.pk)
+                    if status == "history":
+                        if PositionAppointment.objects.filter(user=user, position_name=pos.name, term_start=term).exists():
+                            messages.info(request, "该成员在此届次的职位记录已存在，未重复添加。")
+                        else:
+                            PositionAppointment.objects.create(
+                                user=user, position=pos, position_name=pos.name, term_start=term,
+                                ended_at=timezone.now(), operator=request.user,
+                            )
+                            messages.success(request, "历任记录已补充，不改变现任职位、会员等级或管理权限。")
+                        return redirect("dashboard:positions")
+                    user.position = pos
+                    user.position_term_start = term
+                    user._position_operator = request.user
+                    user.save(update_fields=["position", "position_term_start"])
+                messages.success(
+                    request,
+                    f"已任命 {user.display_name} 为「{pos.name}」。"
+                    "公开展示需本人进入「个人中心 → 编辑资料 → 公开团队页」勾选并保存。",
+                )
+                if not user.is_active:
+                    messages.warning(
+                        request,
+                        f"注意：{user.display_name} 的账号当前是停用状态，"
+                        "停用期间不会出现在公开团队页上。",
+                    )
+                return redirect("dashboard:positions")
 
         if form == "unassign":
-            user = get_object_or_404(User, pk=request.POST.get("user_id"))
-            user.position = None
-            user.save(update_fields=["position"])
-            messages.success(request, f"已解除 {user.display_name} 的职位。")
+            # Hidden IDs must not resolve to another person's numeric username/student ID.
+            raw_id = (request.POST.get("user_id") or "").strip().removeprefix("#")
+            user = User.objects.filter(pk=_form_pk(raw_id)).first()
+            if user is not None:
+                user.position = None
+                user._position_operator = request.user
+                user.save(update_fields=["position"])
+                messages.success(request, f"已将 {user.display_name} 标为卸任，历任记录已保留。")
+            else:
+                messages.error(request, "未找到要解除职位的成员，请刷新页面后重试。")
             return redirect("dashboard:positions")
 
     # order_by 必须显式写：`annotate()` 建了 GROUP BY，带 GROUP BY 的查询不再套用
@@ -537,11 +682,31 @@ def positions(request):
         pos.is_fixed = pos.name in fixed_names
 
     holders = User.objects.filter(position__isnull=False).select_related("position")
+    history_query = request.GET.get("history_q", "").strip()[:150]
+    history_term = request.GET.get("history_term", "")
+    history = PositionAppointment.objects.filter(ended_at__isnull=False).select_related("user")
+    if history_query:
+        history = history.filter(
+            Q(user__username__icontains=history_query) | Q(user__real_name__icontains=history_query)
+            | Q(user__student_id__icontains=history_query) | Q(position_name__icontains=history_query)
+        )
+    if history_term:
+        history = history.filter(term_start=_form_pk(history_term)) if _form_pk(history_term) else history.none()
 
     context = {
         "active_nav": "positions",
         "positions": all_positions,
         "holders": holders,
+        "grade_choices": cohort_choices(),
+        "college_choices": COLLEGE_CHOICES,
+        "term_choices": position_term_choices(),
+        "assignment_term": request.POST.get("term_start", str(timezone.localdate().year)),
+        "assignment_status": request.POST.get("appointment_status", "current"),
+        "history": Paginator(history, 20).get_page(request.GET.get("history_page")),
+        "history_query": history_query,
+        "history_term": history_term,
+        "assignment_value": request.POST.get("user_id", "") if request.POST.get("form") == "assign" else "",
+        "assignment_position": request.POST.get("position_id", "") if request.POST.get("form") == "assign" else "",
         # 任命 ≠ 上墙。没有这个数字，站务任命完只会以为团队页坏了。
         "awaiting_optin": sum(1 for u in holders if not u.show_on_team),
     }

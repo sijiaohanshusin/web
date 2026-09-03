@@ -23,7 +23,7 @@
             上是本人的同意，注册时那份隐私同意书里没有这一条，站务代勾不了。
             {% endcomment %}
             {% if form.team_fields %}
-            <fieldset class="pf-team">
+            <fieldset class="pf-team" id="public-team" style="scroll-margin-top: 100px;">
                 <legend>公开团队页</legend>
                 <p class="pf-team-lede">
                     你现在担任<strong>{{ user.position.name }}</strong>。
@@ -33,7 +33,7 @@
                 <div class="form-group consent-row {% if form.show_on_team.errors %}has-error{% endif %}">
                     <label>
                         {{ form.show_on_team }}
-                        <span>{{ form.show_on_team.help_text }}</span>
+                        <span><strong>{{ form.show_on_team.label }}</strong><span class="form-help">{{ form.show_on_team.help_text }}</span></span>
                     </label>
                     {% for error in form.show_on_team.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
                 </div>
@@ -41,6 +41,17 @@
                     {% include "includes/field.html" %}
                 {% endwith %}
             </fieldset>
+            {% else %}
+            <section class="panel" id="public-team" style="scroll-margin-top: 100px;">
+                <h2>公开团队页</h2>
+                <p class="form-help">
+                    当前账号尚未任命职位，因此暂不显示公开展示开关。管理员身份不等于协会职位。
+                    请先由管理员完成职位任命，再刷新本页；届时可由你本人决定是否公开展示。
+                </p>
+                {% if user.is_staff or user.is_superuser %}
+                    <a href="{% url 'dashboard:positions' %}">前往职位管理</a>
+                {% endif %}
+            </section>
             {% endif %}
 
             <button type="submit" class="btn btn-primary btn-block" data-profile-save>保存</button>

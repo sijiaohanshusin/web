@@ -6,6 +6,7 @@ from .models import (
     LevelLog,
     Medal,
     Position,
+    PositionAppointment,
     ReturningMembershipRequest,
     User,
     UserMedal,
@@ -17,7 +18,7 @@ from .models import (
 class UserAdmin(DjangoUserAdmin):
     list_display = [
         "username", "real_name", "student_id", "college", "grade",
-        "member_level", "position", "registration_channel", "is_active", "date_joined",
+        "member_level", "position", "position_term_start", "registration_channel", "is_active", "date_joined",
     ]
     list_filter = ["member_level", "registration_channel", "specialty", "is_active", "position", "grade", "college"]
     search_fields = ["username", "real_name", "student_id", "qq", "phone", "email"]
@@ -27,7 +28,7 @@ class UserAdmin(DjangoUserAdmin):
     fieldsets = DjangoUserAdmin.fieldsets + (
         ("协会信息", {"fields": (
             "real_name", "student_id", "college", "grade", "qq", "phone", "avatar",
-            "member_level", "position", "registration_channel", "specialty", "specialty_custom",
+            "member_level", "position", "position_term_start", "registration_channel", "specialty", "specialty_custom",
         )}),
     )
     add_fieldsets = DjangoUserAdmin.add_fieldsets + (
@@ -35,6 +36,7 @@ class UserAdmin(DjangoUserAdmin):
     )
 
     def save_model(self, request, obj, form, change):
+        obj._position_operator = request.user
         super().save_model(request, obj, form, change)
         roles.sync_user_groups(obj)  # 后台改等级后同步 Django 组与 is_staff
 
@@ -53,6 +55,20 @@ class UserAdmin(DjangoUserAdmin):
             user.set_level(roles.LEVEL_FORMAL, actor=request.user, note="Admin 批量晋升")
             count += 1
         self.message_user(request, f"已将 {count} 名成员晋升为科协会员。")
+
+
+@admin.register(PositionAppointment)
+class PositionAppointmentAdmin(admin.ModelAdmin):
+    list_display = ["user", "position_name", "term_start", "started_at", "ended_at"]
+    list_filter = ["term_start", "position_name"]
+    search_fields = ["user__username", "user__real_name", "user__student_id"]
+    readonly_fields = ["user", "position", "position_name", "term_start", "started_at", "ended_at", "operator"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Position)

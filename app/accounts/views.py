@@ -281,6 +281,7 @@ def profile(request):
         "my_events": my_events,
         "my_points": total_for(request.user),
         "my_application": my_application,
+        "position_appointments": request.user.position_appointments.all()[:20],
     })
 
 
