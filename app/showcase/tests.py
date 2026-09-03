@@ -33,8 +33,8 @@ class Client(DjangoClient):
     def request(self, **request):
         response = super().request(**request)
         if response.streaming:
+            # Exhausting Django's wrapper closes the file without closing the test transaction.
             data = b"".join(response.streaming_content)
-            response.close()
             response.streaming_content = (data,)
         return response
 
