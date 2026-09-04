@@ -25,6 +25,11 @@ app/staticfiles/
 /local-server.*.log
 /*-test-results.txt
 
+# 使用手册逐页渲染与临时截图（仅用于本地视觉验收）
+/docs/manuals/rendered/
+/.tmp-admin.png
+/.tmp-manual-test.png
+
 # 字体源文件（几十 MB 的 OTF，只是 scripts/build_fonts.py 的输入；
 # 下载地址写在那个脚本的文件头，产物 woff2 才入库）
 .fontsrc/
