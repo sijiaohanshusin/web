@@ -26,8 +26,8 @@ def public_member(showcase, data):
         # A project made private since publication must disappear from the DTO.
         if work["project"] and not project:
             continue
-        works.append({"title": work["title"] or (project.name if project else "未命名作品"), "description": work["description"],
-                      "image": asset_url(work["image"]), "url": project.public_url if project else work["url"]})
+        works.append({"id": work["id"], "title": work["title"] or (project.name if project else "未命名作品"), "description": work["description"],
+                      "image": asset_url(work["image"]), "large_image": asset_url(work["image"], "large"), "url": project.public_url if project else work["url"]})
     history = []
     if "history" in data["page"]["modules"]:
         history = [{"name": a.position_name, "term": position_term_label(a.term_start), "current": a.ended_at is None}
@@ -46,6 +46,7 @@ def public_member(showcase, data):
         "background_small": asset_url(data["card"]["background"]["image"]) if data["card"]["background"]["mode"] == "photo" else "",
         "intro": c["intro"], "about": c["about"], "tags": c["tags"], "skills": c["skills"],
         "works": works, "gallery": [{"image": asset_url(g["image"], "large"), "caption": g["caption"]} for g in c["gallery"] if g["image"]],
+        "featured_work": next((work for work in works if work["id"] == data["card"]["featured_work"]), None),
         "links": c["links"], "history": history, "medals": medals,
         "legacy_medals": data.get("legacy_medals", []),
         "page_modules": [{"kind": m, "label": PAGE_MODULES[m]} for m in data["page"]["modules"]],

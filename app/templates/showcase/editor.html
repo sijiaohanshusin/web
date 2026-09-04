@@ -1,6 +1,6 @@
 {% extends 'base.html' %}{% load static %}
 {% block title %}设计我的展示 | HEU ESTA{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/showcase.css' %}"><link rel="stylesheet" href="{% static 'css/showcase-editor.css' %}">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/showcase.css' %}"><link rel="stylesheet" href="{% static 'css/showcase-templates.css' %}"><link rel="stylesheet" href="{% static 'css/showcase-editor.css' %}">{% endblock %}
 {% block content %}<div class="container se-shell" id="showcase-editor" data-action="{% url 'accounts:showcase_action' %}" data-upload="{% url 'accounts:showcase_upload' %}">
 <div class="sc-heading"><div><p class="sc-label">YOUR SPACE / YOUR EXPRESSION</p><h1>把自己，介绍给大家。</h1><p>先选择一个起点，再留下自己的表达。模板只改变排版，不会清空内容。</p></div><a href="{% url 'accounts:profile' %}">返回个人中心</a></div>
 {% if showcase.blocked %}<p class="se-notice">展示已被下架：{{ showcase.moderation_reason }}。可以继续编辑草稿，需管理员解除限制后才能重新发布。</p>{% elif showcase.withdrawal_reason %}<p class="se-notice">{{ showcase.withdrawal_reason }}</p>{% endif %}

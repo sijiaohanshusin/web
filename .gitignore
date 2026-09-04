@@ -21,6 +21,9 @@ app/staticfiles/
 
 # scripts/shoot.py 的截图产物（开发期查看渲染用，不入库）
 .shots/
+# Local acceptance server/test outputs, never deployment inputs.
+/local-server.*.log
+/*-test-results.txt
 
 # 字体源文件（几十 MB 的 OTF，只是 scripts/build_fonts.py 的输入；
 # 下载地址写在那个脚本的文件头，产物 woff2 才入库）

@@ -8,7 +8,7 @@ from django.http import FileResponse, Http404
 from django.shortcuts import render
 from django.utils.cache import patch_vary_headers
 
-from .schema import DIRECTIONS, empty_design
+from .schema import DIRECTIONS, PAGE_MODULES, empty_design
 
 PHOTO_NAMES = {"soldering", "maker", "signal", "builder"}
 
@@ -26,17 +26,29 @@ def fixtures():
         design = empty_design()
         design["card"].update(template=template, texture="none" if photo else "grid")
         design["card"]["background"].update(mode="photo" if photo else "gradient", preset="ivory" if index == 2 else "graphite")
+        design["page"].update(template=template, modules=["intro", "skills", "works", "gallery", "links", "history"])
         if index == 3:
             design["card"]["modules"] = ["intro", "work", "tags"]
         url = f"/team/design-demo/photos/{photo}/" if photo else ""
+        cover = url or ("/team/design-demo/photos/signal/" if template == "plate" else "")
+        work_photo = "/team/design-demo/photos/signal/" if direction == "software" else "/team/design-demo/photos/soldering/"
+        works = [{"id": f"demo-{index}-work", "title": "信号采集与可视化工具", "url": "", "image": work_photo,
+                  "large_image": work_photo, "description": "从原理验证到可用界面，记录一次完整的设计迭代。"}]
+        gallery = [{"image": "/team/design-demo/photos/builder/", "caption": "在实践里校准每一个细节。"},
+                   {"image": "/team/design-demo/photos/maker/", "caption": "从一块电路板开始。"}]
         members.append({"url": f"/team/design-demo/member-{index}/", "nickname": name, "initial": name[0], "cohort": year,
             "direction": DIRECTIONS[direction], "direction_key": direction, "direction_detail": "设计与技术" if index == 4 else "",
             "position": {"name": "硬件副主席", "term": "2025–2026 届"} if index == 1 else None,
             "card": design["card"], "page": design["page"], "background": url, "background_small": url,
             "avatar": f"/team/design-demo/photos/{'maker' if index == 0 else photo}/" if index in {0, 1, 3} else "",
-            "cover": url, "intro": intro, "about": intro, "tags": tags, "skills": " / ".join(tags),
-            "works": [{"title": "桌面信号发生器", "url": "", "image": "", "description": "虚构作品示例"}] if index == 3 else [],
-            "gallery": [], "links": [], "history": [], "medals": [], "page_modules": [{"kind": "intro", "label": "自我介绍"}]})
+            "cover": cover, "intro": intro,
+            "about": "热爱把抽象的想法拆解、设计、实现并打磨到可用。\n在实践中学习，也愿意把过程记录下来与伙伴分享。",
+            "tags": tags, "skills": "开源协作 / 工程实践 / 工具开发\n正在学习：从需求分析到系统验证。",
+            "works": works, "gallery": gallery, "links": [{"label": "协会网站", "url": "https://heuesta.cn/"}],
+            "history": [{"name": "项目组成员", "term": "2024–2025 届", "current": False}], "medals": [],
+            "page_modules": [{"kind": kind, "label": PAGE_MODULES[kind]} for kind in design["page"]["modules"]]})
+    for member in members:
+        member["featured_work"] = member["works"][0] if member["works"] else None
     return members
 
 
@@ -53,6 +65,7 @@ def samples(request):
         members[0]["position"] = {"name": "硬件副主席", "term": "2025–2026 届"}
         members[0]["card"]["modules"] = ["intro", "tags", "work"]
         members[0]["works"] = [{"title": "用于长内容测试的精选作品", "url": "", "image": ""}]
+        members[0]["featured_work"] = members[0]["works"][0]
         members[1]["background"] = members[1]["background_small"] = "/team/design-demo/photos/missing/"
     selected = [m for m in members if
         (not filters["q"] or filters["q"].lower() in (m["nickname"] + " ".join(m["tags"])).lower()) and

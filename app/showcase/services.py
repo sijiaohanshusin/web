@@ -1,6 +1,7 @@
 import hashlib
 import io
 import json
+import re
 import warnings
 from pathlib import Path
 
@@ -43,10 +44,10 @@ def validate_owned(showcase, raw, publishing=False):
     data = validate_design(raw, publishing=publishing)
     refs = referenced_assets(data)
     if set(str(pk) for pk in showcase.assets.filter(pk__in=refs).values_list("pk", flat=True)) != refs:
-        raise ValidationError("有图片不属于你的素材库，或已被删除，请重新选择。")
+        raise ValidationError({"assets": ["有图片不属于你的素材库，或已被删除，请重新选择。"]})
     projects = {w["project"] for w in data["content"]["works"] if w["project"]}
     if projects != set(str(pk) for pk in Project.public().filter(pk__in=projects).values_list("pk", flat=True)):
-        raise ValidationError("只能关联已公开的站内作品，请移除已转为私密的关联。")
+        raise ValidationError({"content.works": ["只能关联已公开的站内作品，请移除已转为私密的关联。"]})
     return data
 
 
@@ -182,7 +183,10 @@ def add_asset(user, upload):
             sc = Showcase.objects.select_for_update().get(user=current)
             if sc.assets.count() >= 20:
                 raise ValidationError("每人最多 20 张素材，请先删除未使用的图片。")
-            asset = ShowcaseAsset(showcase=sc, width=outputs[0][1][0], height=outputs[0][1][1])
+            name = str(getattr(upload, "name", "图片")).replace("\\", "/").split("/")[-1]
+            name = re.sub(r"[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]", "", name)
+            asset = ShowcaseAsset(showcase=sc, width=outputs[0][1][0], height=outputs[0][1][1],
+                                  display_name=(Path(name).stem[:110] or "图片") + ".jpg", byte_size=len(outputs[0][0]))
             for field, output, suffix in ((asset.image, outputs[0], "large"), (asset.thumbnail, outputs[1], "small")):
                 field.save(f"{sc.pk}/{asset.pk}-{suffix}.jpg", ContentFile(output[0]), save=False)
                 written.append((field.storage, field.name))

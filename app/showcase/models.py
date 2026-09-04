@@ -50,6 +50,8 @@ class ShowcaseAsset(models.Model):
     thumbnail = models.FileField(upload_to="showcase/")
     width = models.PositiveIntegerField()
     height = models.PositiveIntegerField()
+    display_name = models.CharField(max_length=120, blank=True)
+    byte_size = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
 

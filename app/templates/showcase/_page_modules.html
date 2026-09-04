@@ -1,0 +1,12 @@
+{% for module in member.page_modules %}
+<section class="sc-section sc-section--{{ module.kind }}">
+    <h3><span class="sc-label">0{{ forloop.counter }}</span><span>{{ module.label }}</span></h3>
+    {% if module.kind == 'intro' %}<div class="sc-prose">{{ member.about|linebreaksbr }}</div>{% endif %}
+    {% if module.kind == 'skills' %}<div class="sc-prose">{{ member.skills|linebreaksbr }}</div>{% endif %}
+    {% if module.kind == 'works' %}<div class="sc-works">{% for work in member.works %}<article>{% if work.image %}<a class="sc-image-link" href="{{ work.large_image|default:work.image }}" target="_blank" rel="noopener" aria-label="查看{{ work.title }}完整图片"><img src="{{ work.image }}" alt="{{ work.title }}" loading="lazy"></a>{% else %}<div class="sc-work-placeholder" aria-hidden="true">PROJECT / 0{{ forloop.counter }}</div>{% endif %}<div class="sc-work-copy"><h4>{{ work.title }}</h4><p>{{ work.description }}</p>{% if work.url %}<a href="{{ work.url }}" target="_blank" rel="noopener noreferrer nofollow ugc">查看作品 ↗</a>{% endif %}</div></article>{% empty %}<p class="sc-empty-module">作品仍在打磨中。</p>{% endfor %}</div>{% endif %}
+    {% if module.kind == 'gallery' %}<div class="sc-gallery">{% for photo in member.gallery %}<figure><a class="sc-image-link" href="{{ photo.image }}" target="_blank" rel="noopener" aria-label="查看完整图片：{{ photo.caption }}"><img src="{{ photo.image }}" alt="{{ photo.caption }}" loading="lazy"></a><figcaption>{{ photo.caption }}</figcaption></figure>{% empty %}<p class="sc-empty-module">下一张，留给新的尝试。</p>{% endfor %}</div>{% endif %}
+    {% if module.kind == 'links' %}<ul class="sc-links">{% for link in member.links %}{% if link.url %}<li><a href="{{ link.url }}" rel="noopener noreferrer nofollow ugc" target="_blank">{{ link.label|default:'外部链接' }} <span aria-hidden="true">↗</span></a></li>{% endif %}{% endfor %}</ul>{% endif %}
+    {% if module.kind == 'history' %}<ul class="sc-history">{% for item in member.history %}<li><strong>{{ item.name }}</strong><span>{{ item.term }}</span><span>{% if item.current %}现任{% else %}历任{% endif %}</span></li>{% empty %}<li>暂无官方任职记录。</li>{% endfor %}</ul>{% endif %}
+    {% if module.kind == 'medals' %}<ul class="sc-tags">{% for medal in member.medals %}<li>{{ medal.name }}</li>{% empty %}<li>继续积累，持续创造。</li>{% endfor %}</ul>{% endif %}
+</section>
+{% endfor %}

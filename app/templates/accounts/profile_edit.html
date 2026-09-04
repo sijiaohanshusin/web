@@ -4,5 +4,5 @@
 <p class="nf-eyebrow">// PROFILE</p><h1>编辑资料</h1><p class="auth-sub">完善信息，便于招新联络与身份核验。这些档案字段不会自动进入公开展示。</p>
 <form method="post" enctype="multipart/form-data">{% csrf_token %}{% for field in form.basic_fields %}{% include "includes/field.html" %}{% endfor %}<button type="submit" class="btn btn-primary btn-block" data-profile-save>保存</button></form>
 <section class="panel" id="public-team" style="scroll-margin-top:100px"><h2>我的成员展示</h2>
-{% if user.can_design_showcase %}<p>{% if user.showcase_is_public %}你已有公开展示。{% else %}当前未公开展示。{% endif %}不要求担任职位；昵称、图片和版式请在独立编辑器中设置。</p><a class="btn btn-primary" href="{% url 'accounts:showcase' %}">设计我的展示</a>{% else %}<p>已激活的科协会员及以上可以自愿展示，不要求担任职位。招新成员与预备会员暂未开放。</p>{% endif %}
+{% if user.can_design_showcase %}<p><strong>{{ showcase_summary.label }}</strong>。不要求担任职位；昵称、图片和版式请在独立编辑器中设置。保存草稿不会自动公开。</p>{% if showcase_summary.reason %}<p>{{ showcase_summary.reason }}</p>{% endif %}<a class="btn btn-primary" href="{% url 'accounts:showcase' %}">设计我的展示</a>{% else %}<p>已激活的科协会员及以上可以自愿展示，不要求担任职位。招新成员与预备会员暂未开放。</p>{% endif %}
 </section><p class="auth-alt"><a href="{% url 'accounts:profile' %}">← 返回个人中心</a></p></div></div>{% endblock %}

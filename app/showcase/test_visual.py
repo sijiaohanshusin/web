@@ -48,6 +48,7 @@ class VisualTests(TestCase):
         old = copy.deepcopy(self.data)
         old["version"] = 1
         del old["card"]["background"]
+        del old["card"]["featured_work"]
         old["card"].update(template="gallery", focus="top")
         old["content"]["cover"] = str(asset.pk)
         Showcase.objects.filter(pk=self.sc.pk).update(draft=old, published=old, public_name=old["nickname"])
@@ -57,7 +58,7 @@ class VisualTests(TestCase):
         self.assertIn(str(asset.pk), dto["background"])
         self.assertEqual(Client().get(self.asset_url(asset)).status_code, 200)
         editor = self.client.get(reverse("accounts:showcase"))
-        self.assertEqual(editor.context["bootstrap"]["draft"]["version"], 2)
+        self.assertEqual(editor.context["bootstrap"]["draft"]["version"], 3)
         self.sc.refresh_from_db()
         self.assertEqual(self.sc.draft, old)
         self.assertEqual(self.sc.published, old)
@@ -101,9 +102,22 @@ class VisualTests(TestCase):
         self.data["card"]["background"]["image"] = str(asset.pk)
         self.data["content"]["cover"] = str(asset.pk)
         self.data["card"]["template"] = "gallery"
+        self.data["page"]["template"] = "type"
         self.publish()
         self.assertEqual(Client().get(self.asset_url(asset)).status_code, 404)
         self.assertNotContains(Client().get("/team/"), str(asset.pk))
+
+    def test_engineering_page_cover_is_public_only_after_publish(self):
+        asset = add_asset(self.user, upload_image())
+        self.data["page"]["template"] = "plate"
+        self.data["content"]["cover"] = str(asset.pk)
+        self.assertEqual(self.send("save").status_code, 200)
+        self.assertEqual(Client().get(self.asset_url(asset, "large")).status_code, 404)
+        self.publish()
+        response = self.public()
+        self.assertContains(response, "sc-dossier-workbench")
+        self.assertContains(response, self.asset_url(asset, "large"))
+        self.assertEqual(Client().get(self.asset_url(asset, "large")).status_code, 200)
 
     def test_background_removal_and_moderation_revoke_access(self):
         asset = add_asset(self.user, upload_image())

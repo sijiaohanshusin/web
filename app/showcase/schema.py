@@ -1,5 +1,6 @@
 """Versioned, closed content schema. No presentation code or remote media is accepted."""
 import copy
+import json
 import math
 import re
 import uuid
@@ -41,20 +42,40 @@ def upgrade_design(raw):
             background.update({"top": {"y": 0}, "bottom": {"y": 100}, "left": {"x": 0}, "right": {"x": 100}}.get(card["focus"], {}))
         card["background"] = background
         data["version"] = 2
+    if isinstance(data, dict) and type(data.get("version")) is int and data["version"] in {2, 3}:
+        legacy = data["version"] == 2
+        content = data.get("content")
+        if isinstance(content, dict) and isinstance(content.get("works"), list):
+            for index, work in enumerate(content["works"]):
+                if isinstance(work, dict) and "id" not in work:
+                    # Deterministic for legacy clients: preview and publish must hash identically.
+                    work["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL, "heuesta:work:" + str(index) + ":" + json.dumps(work, sort_keys=True, ensure_ascii=True)))
+            if legacy and isinstance(data.get("card"), dict):
+                works = content["works"]
+                data["card"]["featured_work"] = works[0].get("id", "") if works and isinstance(works[0], dict) else ""
+        if legacy:
+            data["version"] = 3
     return data
 
 
 def empty_design():
     return {
-        "version": 2, "nickname": "", "cohort": "", "direction": "hardware", "direction_detail": "",
-        "card": {"template": "plate", "palette": "cyan", "texture": "grid", "focus": "center", "avatar_shape": "round", "modules": ["intro", "tags"], "background": default_background()},
+        "version": 3, "nickname": "", "cohort": "", "direction": "hardware", "direction_detail": "",
+        "card": {"template": "plate", "palette": "cyan", "texture": "grid", "focus": "center", "avatar_shape": "round", "modules": ["intro", "tags"], "background": default_background(), "featured_work": ""},
         "page": {"template": "plate", "palette": "cyan", "texture": "grid", "focus": "center", "avatar_shape": "square", "modules": ["intro", "skills", "works"]},
         "content": {"intro": "", "about": "", "tags": [], "skills": "", "avatar": "", "cover": "", "works": [], "gallery": [], "links": []},
     }
 
 
-def fail(message):
-    raise ValidationError(message)
+def fail(message, field=""):
+    raise ValidationError({field: [message]} if field else message)
+
+
+def at(path, validator, *args):
+    try:
+        return validator(*args)
+    except ValidationError as exc:
+        raise ValidationError({path: exc.messages}) from exc
 
 
 def obj(value, keys, label):
@@ -104,60 +125,76 @@ def validate_design(raw, *, publishing=False):
     data = upgrade_design(raw)
     defaults = empty_design()
     obj(data, defaults, "展示")
-    if type(data["version"]) is not int or data["version"] != 2:
+    if type(data["version"]) is not int or data["version"] != 3:
         fail("不支持的展示版本，请刷新页面。")
-    data["nickname"] = text(data["nickname"], 30, "公开昵称")
+    data["nickname"] = at("nickname", text, data["nickname"], 30, "公开昵称")
     if publishing and not data["nickname"]:
-        fail("发布前请填写公开昵称。")
+        fail("发布前请填写公开昵称。", "nickname")
     if data["nickname"] in {"主席", "硬件主席", "软件主席", "硬件副主席", "软件副主席", "站务管理", "系统管理员", "科协官方"}:
-        fail("请使用个人昵称；官方职位由系统单独显示，不能作为昵称。")
+        fail("请使用个人昵称；官方职位由系统单独显示，不能作为昵称。", "nickname")
     if not isinstance(data["cohort"], str) or (data["cohort"] and data["cohort"] not in {str(y) for y in range(1995, timezone.localdate().year + 1)}):
-        fail("请选择有效的四位入学年份。")
+        fail("请选择有效的四位入学年份。", "cohort")
     if not isinstance(data["direction"], str) or data["direction"] not in DIRECTIONS:
-        fail("请选择有效方向。")
-    data["direction_detail"] = text(data["direction_detail"], 40, "公开方向说明")
+        fail("请选择有效方向。", "direction")
+    data["direction_detail"] = at("direction_detail", text, data["direction_detail"], 40, "公开方向说明")
     for target, modules, maximum in (("card", CARD_MODULES, 3), ("page", PAGE_MODULES, 8)):
         design = obj(data[target], defaults[target], "设计")
         for key, choices in (("template", TEMPLATES), ("palette", PALETTES), ("texture", TEXTURES), ("focus", FOCUS), ("avatar_shape", SHAPES)):
             if not isinstance(design[key], str) or design[key] not in choices:
-                fail("请选择编辑器提供的模板与样式。")
+                fail("请选择编辑器提供的模板与样式。", f"{target}.{key}")
         chosen = sequence(design["modules"], maximum, "内容模块")
         if any(not isinstance(m, str) or m not in modules for m in chosen) or len(set(chosen)) != len(chosen):
-            fail("模块类型无效或重复。")
+            fail("模块类型无效或重复。", f"{target}.modules")
     background = obj(data["card"]["background"], default_background(), "卡片背景")
     for key, choices in (("mode", BACKGROUNDS), ("preset", PRESETS), ("blur", BLURS), ("mask", MASKS)):
         if not isinstance(background[key], str) or background[key] not in choices:
-            fail("请选择编辑器提供的背景、渐变和遮罩。")
-    background["image"] = asset_id(background["image"])
+            fail("请选择编辑器提供的背景、渐变和遮罩。", f"card.background.{key}")
+    background["image"] = at("card.background.image", asset_id, background["image"])
     for key, low, high in (("x", 0, 100), ("y", 0, 100), ("zoom", 1, 1.5)):
         value = background[key]
         if type(value) not in (int, float) or not math.isfinite(value) or not low <= value <= high:
-            fail("图片焦点或缩放超出允许范围。")
+            fail("图片焦点或缩放超出允许范围。", f"card.background.{key}")
         background[key] = round(value, 2)
     content = obj(data["content"], defaults["content"], "内容")
     for field, limit, label in (("intro", 60, "卡片短介绍"), ("about", 2400, "自我介绍"), ("skills", 600, "技能兴趣")):
-        content[field] = text(content[field], limit, label)
-    content["tags"] = [text(t, 12, "标签") for t in sequence(content["tags"], 4, "标签")]
+        content[field] = at(f"content.{field}", text, content[field], limit, label)
+    content["tags"] = [at("content.tags", text, t, 12, "标签") for t in at("content.tags", sequence, content["tags"], 4, "标签")]
     if any(not t for t in content["tags"]) or len(set(content["tags"])) != len(content["tags"]):
-        fail("标签不能重复或留空。")
+        fail("标签不能重复或留空。", "content.tags")
     for key in ("avatar", "cover"):
-        content[key] = asset_id(content[key])
-    for work in sequence(content["works"], 6, "作品"):
-        obj(work, ("title", "description", "image", "url", "project"), "作品")
-        work["title"] = text(work["title"], 60, "作品标题")
-        work["description"] = text(work["description"], 240, "作品说明")
-        work["image"] = asset_id(work["image"])
-        work["url"] = https_url(work["url"])
+        content[key] = at(f"content.{key}", asset_id, content[key])
+    ids = set()
+    for index, work in enumerate(at("content.works", sequence, content["works"], 6, "作品")):
+        path = f"content.works.{index}"
+        obj(work, ("id", "title", "description", "image", "url", "project"), "作品")
+        work["id"] = at(path + ".id", asset_id, work["id"])
+        if not work["id"] or work["id"] in ids:
+            fail("作品标识无效或重复。", path + ".id")
+        ids.add(work["id"])
+        work["title"] = at(path + ".title", text, work["title"], 60, "作品标题")
+        work["description"] = at(path + ".description", text, work["description"], 240, "作品说明")
+        work["image"] = at(path + ".image", asset_id, work["image"])
+        work["url"] = at(path + ".url", https_url, work["url"])
         if not isinstance(work["project"], str) or (work["project"] and not re.fullmatch(r"[1-9][0-9]{0,17}", work["project"])):
-            fail("站内作品标识不正确。")
-    for item in sequence(content["gallery"], 6, "图片集"):
+            fail("站内作品标识不正确。", path + ".project")
+        if work["project"]:
+            work["url"] = ""
+        visible = "works" in data["page"]["modules"] or ("work" in data["card"]["modules"] and data["card"]["featured_work"] == work["id"])
+        if publishing and visible and not work["title"] and not work["project"]:
+            fail("请为要公开的作品填写名称。", path + ".title")
+    data["card"]["featured_work"] = at("card.featured_work", asset_id, data["card"]["featured_work"])
+    if data["card"]["featured_work"] and data["card"]["featured_work"] not in ids:
+        fail("精选作品已被移除，请重新选择。", "card.featured_work")
+    for index, item in enumerate(at("content.gallery", sequence, content["gallery"], 6, "图片集")):
         obj(item, ("image", "caption"), "图片")
-        item["image"] = asset_id(item["image"])
-        item["caption"] = text(item["caption"], 100, "图片说明")
-    for link in sequence(content["links"], 6, "外部链接"):
+        item["image"] = at(f"content.gallery.{index}.image", asset_id, item["image"])
+        item["caption"] = at(f"content.gallery.{index}.caption", text, item["caption"], 100, "图片说明")
+    for index, link in enumerate(at("content.links", sequence, content["links"], 6, "外部链接")):
         obj(link, ("label", "url"), "链接")
-        link["label"] = text(link["label"], 40, "链接名称")
-        link["url"] = https_url(link["url"])
+        link["label"] = at(f"content.links.{index}.label", text, link["label"], 40, "链接名称")
+        link["url"] = at(f"content.links.{index}.url", https_url, link["url"])
+        if publishing and "links" in data["page"]["modules"] and not link["url"]:
+            fail("请填写要公开的 HTTPS 链接，或移除空条目。", f"content.links.{index}.url")
     return data
 
 
@@ -168,13 +205,13 @@ def referenced_assets(data, *, visible_only=False):
     bg = data["card"]["background"]
     if not visible_only or bg["mode"] == "photo":
         refs.add(bg["image"])
-    if not visible_only or data["page"]["template"] == "gallery":
+    if not visible_only or data["page"]["template"] in {"plate", "gallery"}:
         refs.add(c["cover"])
     works = c["works"]
     if not visible_only or "works" in data["page"]["modules"]:
         refs.update(w["image"] for w in works)
-    elif "work" in data["card"]["modules"] and works:
-        refs.add(works[0]["image"])
+    elif "work" in data["card"]["modules"]:
+        refs.update(w["image"] for w in works if w["id"] == data["card"]["featured_work"])
     if not visible_only or "gallery" in data["page"]["modules"]:
         refs.update(g["image"] for g in c["gallery"])
     return refs - {""}

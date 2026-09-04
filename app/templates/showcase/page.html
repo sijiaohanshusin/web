@@ -1,23 +1,76 @@
-<article class="sc-page sc-page--{{ member.page.template }} sc-palette--{{ member.page.palette }} sc-texture--{{ member.page.texture }} sc-focus--{{ member.page.focus }}">
-    <header class="sc-page-hero">
-        <p class="sc-label">HEU ESTA / MEMBER PROFILE</p>
-        {% if member.page.template == 'gallery' %}<div class="sc-page-cover">{% if member.cover %}<img src="{{ member.cover }}" alt="成员选择的作品封面">{% else %}<span class="sc-art-placeholder">IDEAS INTO REALITY.</span>{% endif %}</div>{% endif %}
-        {% include 'showcase/identity.html' with member=member design=member.page only %}
-        {% if 'intro' in member.page.modules and member.intro %}<p class="sc-page-intro">{{ member.intro }}</p>{% endif %}
-        {% if 'skills' in member.page.modules and member.tags %}<ul class="sc-tags">{% for tag in member.tags %}<li>{{ tag }}</li>{% endfor %}</ul>{% endif %}
-    </header>
-    <div class="sc-page-modules">
-    {% for module in member.page_modules %}
-        <section class="sc-section sc-section--{{ module.kind }}">
-            <h3><span class="sc-label">0{{ forloop.counter }}</span>{{ module.label }}</h3>
-            {% if module.kind == 'intro' %}<div class="sc-prose">{{ member.about|linebreaksbr }}</div>{% endif %}
-            {% if module.kind == 'skills' %}<div class="sc-prose">{{ member.skills|linebreaksbr }}</div>{% endif %}
-            {% if module.kind == 'works' %}<div class="sc-works">{% for work in member.works %}<article>{% if work.image %}<img src="{{ work.image }}" alt="{{ work.title }}" loading="lazy">{% endif %}<h4>{{ work.title }}</h4><p>{{ work.description }}</p>{% if work.url %}<a href="{{ work.url }}" target="_blank" rel="noopener noreferrer nofollow ugc">查看作品 ↗</a>{% endif %}</article>{% empty %}<p class="sc-empty-module">作品仍在打磨中。</p>{% endfor %}</div>{% endif %}
-            {% if module.kind == 'gallery' %}<div class="sc-gallery">{% for photo in member.gallery %}<figure><img src="{{ photo.image }}" alt="{{ photo.caption }}" loading="lazy"><figcaption>{{ photo.caption }}</figcaption></figure>{% empty %}<p class="sc-empty-module">下一张，留给新的尝试。</p>{% endfor %}</div>{% endif %}
-            {% if module.kind == 'links' %}<ul class="sc-links">{% for link in member.links %}{% if link.url %}<li><a href="{{ link.url }}" rel="noopener noreferrer nofollow ugc" target="_blank">{{ link.label|default:'外部链接' }} ↗</a></li>{% endif %}{% endfor %}</ul>{% endif %}
-            {% if module.kind == 'history' %}<ul class="sc-history">{% for item in member.history %}<li><strong>{{ item.name }}</strong><span>{{ item.term }}</span><span>{% if item.current %}现任{% else %}历任{% endif %}</span></li>{% empty %}<li>暂无官方任职记录。</li>{% endfor %}</ul>{% endif %}
-            {% if module.kind == 'medals' %}<ul class="sc-tags">{% for medal in member.medals %}<li>{{ medal.name }}</li>{% empty %}<li>继续积累，持续创造。</li>{% endfor %}</ul>{% endif %}
+<article class="sc-page sc-page--{{ member.page.template }} sc-palette--{{ member.page.palette }} sc-texture--{{ member.page.texture }} sc-focus--{{ member.page.focus }}{% if member.cover %} sc-page-has-cover{% endif %}">
+    {% if member.page.template == 'plate' %}
+    <div class="sc-dossier-grid">
+        <header class="sc-page-hero sc-dossier-profile">
+            <p class="sc-label">HEU ESTA / MEMBER PROFILE</p>
+            <div class="sc-page-identity">{% include 'showcase/identity.html' with member=member design=member.page only %}</div>
+            {% if 'intro' in member.page.modules and member.intro %}<p class="sc-page-intro">{{ member.intro }}</p>{% endif %}
+            <div class="sc-dossier-number" aria-hidden="true">ESTA / {% if member.cohort %}{{ member.cohort|slice:'-2:' }}{% else %}--{% endif %}</div>
+            <div class="sc-dossier-coordinate" aria-hidden="true"><span>HEU ESTA MEMBER</span><span>ENGINEERING DOSSIER</span></div>
+        </header>
+        <section class="sc-dossier-workbench" aria-label="个人页封面">
+            <div class="sc-dossier-cover">
+                {% if member.cover %}<img src="{{ member.cover }}" alt="成员选择的个人页封面">{% else %}<div class="sc-dossier-cover-empty" aria-hidden="true"><span>IDEA</span><span>SIGNAL</span><span>BUILD</span></div>{% endif %}
+                <span class="sc-dossier-caption" aria-hidden="true">⌖ WORKBENCH_01</span>
+            </div>
+            <div class="sc-dossier-instruments" aria-hidden="true">
+                <div class="sc-instrument sc-instrument--chip"><span>PCB / MACRO</span><i></i></div>
+                <div class="sc-instrument sc-instrument--scope"><span>OSCILLOSCOPE</span><svg viewBox="0 0 360 120" preserveAspectRatio="none"><path d="M0 62h28l7-25 12 58 14-83 15 92 14-72 13 46 12-20 11 4h30l8-24 12 54 13-78 14 88 13-69 13 43 10-16 14 2h56" fill="none" vector-effect="non-scaling-stroke"/></svg></div>
+            </div>
         </section>
-    {% endfor %}
+        <aside class="sc-dossier-spec">
+            <p class="sc-dossier-title">SPECIFICATION</p>
+            <dl>
+                <div><dt>MEMBER</dt><dd>{{ member.nickname }}</dd></div>
+                {% if member.position %}<div><dt>ROLE / TERM</dt><dd>{{ member.position.name }}<br>{{ member.position.term }}</dd></div>{% endif %}
+                {% if member.cohort %}<div><dt>ENTRY COHORT</dt><dd>{{ member.cohort }} 级</dd></div>{% endif %}
+                <div><dt>MAJOR FIELD</dt><dd>{{ member.direction|default:'探索中' }}{% if member.direction_detail %}<br>{{ member.direction_detail }}{% endif %}</dd></div>
+                {% if 'skills' in member.page.modules and member.tags %}<div><dt>FOCUS AREA</dt><dd>{% for tag in member.tags %}{{ tag }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</dd></div>{% endif %}
+            </dl>
+            <div class="sc-dossier-circuit" aria-hidden="true"></div>
+        </aside>
     </div>
+    <div class="sc-page-modules sc-dossier-modules">{% include 'showcase/_page_modules.html' with member=member only %}</div>
+    <footer class="sc-page-signature"><span>HEU ESTA · ENGINEERING DOSSIER</span><span>探索 · 协作 · 创造</span></footer>
+
+    {% elif member.page.template == 'type' %}
+    <header class="sc-archive-masthead"><span>HEU ESTA / MEMBER ARCHIVE</span><span>FIELD JOURNAL · 文字档案</span><span>VOL. 01</span></header>
+    <div class="sc-archive-layout">
+        <header class="sc-page-hero sc-archive-statement">
+            <p class="sc-label"><span>01</span> 个人宣言 · PERSONAL STATEMENT</p>
+            {% if 'intro' in member.page.modules and member.intro %}<p class="sc-page-intro">{{ member.intro }}</p>{% else %}<p class="sc-page-intro">{{ member.nickname }}的成员档案。</p>{% endif %}
+            <div class="sc-archive-blueprint" aria-hidden="true"><span>BUILD USEFUL THINGS<br>SOLVE REAL PROBLEMS</span></div>
+        </header>
+        <aside class="sc-archive-colophon">
+            <p class="sc-label">身份档案 · IDENTITY COLOPHON</p>
+            <div class="sc-page-identity">{% include 'showcase/identity.html' with member=member design=member.page only %}</div>
+            <dl>
+                {% if member.cohort %}<div><dt>加入协会</dt><dd>{{ member.cohort }} 级</dd></div>{% endif %}
+                <div><dt>专注方向</dt><dd>{{ member.direction|default:'探索中' }}{% if member.direction_detail %} · {{ member.direction_detail }}{% endif %}</dd></div>
+                {% if 'skills' in member.page.modules and member.tags %}<div><dt>关键词</dt><dd>{{ member.tags|join:' · ' }}</dd></div>{% endif %}
+                {% if member.position %}<div><dt>现任职位</dt><dd>{{ member.position.name }} · {{ member.position.term }}</dd></div>{% endif %}
+            </dl>
+            <div class="sc-archive-contents">
+                <p class="sc-label">目录 · CONTENTS</p>
+                <ol>{% for module in member.page_modules %}<li><span>0{{ forloop.counter }}</span><span>{{ module.label }}</span><span>P.{{ forloop.counter|add:'1'|stringformat:'02d' }}</span></li>{% endfor %}</ol>
+            </div>
+            <blockquote>记录思考，沉淀经验，<br>让每一次实践成为下一次创造的起点。</blockquote>
+        </aside>
+        <div class="sc-page-modules sc-archive-modules">{% include 'showcase/_page_modules.html' with member=member only %}</div>
+    </div>
+    <footer class="sc-page-signature"><span>HEU ESTA · MEMBER ARCHIVE</span><span>DESIGNED WITH PURPOSE</span></footer>
+
+    {% else %}
+    <header class="sc-page-hero">
+        <div class="sc-page-cover">{% if member.cover %}<img src="{{ member.cover }}" alt="成员选择的作品封面">{% else %}<span class="sc-art-placeholder">IDEAS INTO REALITY.</span>{% endif %}</div>
+        <div class="sc-page-identity">
+            <p class="sc-label">HEU ESTA / MEMBER PROFILE</p>
+            {% include 'showcase/identity.html' with member=member design=member.page only %}
+            {% if 'intro' in member.page.modules and member.intro %}<p class="sc-page-intro">{{ member.intro }}</p>{% endif %}
+            {% if 'skills' in member.page.modules and member.tags %}<ul class="sc-tags">{% for tag in member.tags %}<li>{{ tag }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+    </header>
+    <div class="sc-page-modules">{% include 'showcase/_page_modules.html' with member=member only %}</div>
+    <footer class="sc-page-signature"><span>HEU ESTA · 协会成员</span><span>探索 · 协作 · 创造</span></footer>
+    {% endif %}
 </article>

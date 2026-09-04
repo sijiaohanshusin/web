@@ -30,9 +30,9 @@ def api_errors(view):
         try:
             return view(request, *args, **kwargs)
         except services.Conflict as exc:
-            return JsonResponse({"error": str(exc)}, status=409)
+            return JsonResponse({"error": str(exc), "code": "conflict"}, status=409)
         except ValidationError as exc:
-            return JsonResponse({"error": " ".join(exc.messages)}, status=400)
+            return JsonResponse({"error": " ".join(exc.messages), "fields": getattr(exc, "message_dict", {"__all__": exc.messages})}, status=400)
         except PermissionDenied:
             return JsonResponse({"error": "当前账号或展示状态不允许此操作。"}, status=403)
     return wrapped
@@ -97,12 +97,13 @@ def editor(request):
     options = {"templates": schema.TEMPLATES, "palettes": schema.PALETTES, "textures": schema.TEXTURES,
                "focus": schema.FOCUS, "shapes": schema.SHAPES, "cardModules": schema.CARD_MODULES, "pageModules": schema.PAGE_MODULES,
                "backgrounds": schema.BACKGROUNDS, "presets": schema.PRESETS, "blurs": schema.BLURS, "masks": schema.MASKS}
-    return render(request, "showcase/editor.html", {
-        "showcase": sc, "bootstrap": {"draft": schema.upgrade_design(sc.draft), "revision": sc.revision, "options": options, "assets": asset_list(sc),
-                                      "published": sc.published is not None, "blocked": sc.blocked},
+    data = state_data(sc)
+    data.update(options=options, projects=[{"id": str(p.pk), "name": p.name, "url": p.public_url} for p in Project.public()])
+    return render(request, "showcase/workspace.html", {
+        "showcase": sc, "bootstrap": data,
         "cohorts": range(timezone.localdate().year, 1994, -1), "directions": schema.DIRECTIONS,
         "public_projects": Project.public(), "preview_card": render_member(sc, sc.draft),
-        "public_url": reverse("team:detail", args=[sc.pk]),
+        "public_url": reverse("team:detail", args=[sc.pk]), "official": public_member(sc, sc.draft)["position"],
     })
 
 
@@ -120,16 +121,88 @@ def action(request):
             raise services.Conflict("版本已变化，请保留当前内容并刷新后对照。")
         design = services.validate_owned(sc, data.get("design"))
         target = data.get("target", "card")
-        if not isinstance(target, str) or target not in {"card", "page"}:
+        if not isinstance(target, str) or target not in {"card", "page", "both", "templates"}:
             raise ValidationError("无效的预览类型。")
+        if target == "templates":
+            documents = {}
+            for kind in ("card", "page"):
+                for template in schema.TEMPLATES:
+                    variant = copy.deepcopy(design)
+                    variant[kind]["template"] = template
+                    documents[kind + "-" + template] = render_to_string("showcase/preview.html", {"component": render_member(sc, variant, kind)})
+            return JsonResponse({"documents": documents})
+        if target == "both":
+            return JsonResponse({"documents": {kind: render_to_string("showcase/preview.html", {"component": render_member(sc, design, kind)}) for kind in ("card", "page")},
+                                 "ticket": services.preview_ticket(sc, design)})
         component = render_member(sc, design, target)
         return JsonResponse({"document": render_to_string("showcase/preview.html", {"component": component}), "ticket": services.preview_ticket(sc, design)})
     sc = services.change(request.user, operation, data.get("revision"), data.get("design"), data.get("consent"), data.get("ticket", ""))
-    return JsonResponse({"revision": sc.revision, "published": sc.published is not None, "message": {"save": "草稿已保存，公开内容未改变。", "publish": "已发布，成员墙现在展示这一版。", "withdraw": "已撤回，页面与图片已停止公开访问。"}[operation]})
+    return JsonResponse({**state_data(sc), "message": {"save": "草稿已保存，公开内容未改变。", "publish": "已发布，成员墙现在展示这一版。", "withdraw": "已撤回，页面与图片已停止公开访问。"}[operation]})
+
+
+def asset_uses(raw, *, public=False):
+    if not raw:
+        return {}
+    data = schema.upgrade_design(raw)
+    c, card, page = data["content"], data["card"], data["page"]
+    result = {}
+    def add(aid, label):
+        if aid:
+            result.setdefault(aid, []).append(label)
+    add(c["avatar"], "展示头像")
+    if not public or card["background"]["mode"] == "photo":
+        add(card["background"]["image"], "卡片背景")
+    if not public or page["template"] in {"plate", "gallery"}:
+        add(c["cover"], "个人页封面")
+    projects = set(str(pk) for pk in Project.public().values_list("pk", flat=True)) if public else None
+    for index, work in enumerate(c["works"]):
+        if public and work["project"] and work["project"] not in projects:
+            continue
+        if not public or "works" in page["modules"] or ("work" in card["modules"] and work["id"] == card["featured_work"]):
+            add(work["image"], f"作品 {index + 1}")
+    if not public or "gallery" in page["modules"]:
+        for index, entry in enumerate(c["gallery"]):
+            add(entry["image"], f"图集 {index + 1}")
+    return result
 
 
 def asset_list(sc):
-    return [{"id": str(a.pk), "url": asset_url(a.pk), "width": a.width, "height": a.height} for a in sc.assets.order_by("created_at")]
+    draft = asset_uses(sc.draft)
+    public = asset_uses(sc.published, public=True) if sc.published and not sc.blocked else {}
+    reserved = schema.referenced_assets(sc.published) if sc.published else set()
+    result = []
+    for index, a in enumerate(sc.assets.order_by("created_at")):
+        aid = str(a.pk)
+        try:
+            size = a.byte_size or a.image.size
+        except (OSError, ValueError):
+            size = None
+        result.append({"id": aid, "url": asset_url(a.pk), "large_url": asset_url(a.pk, "large"),
+                       "width": a.width, "height": a.height, "name": a.display_name or f"素材 {index + 1}.jpg",
+                       "format": "JPEG", "bytes": size, "draft_uses": draft.get(aid, []), "public_uses": public.get(aid, []),
+                       "can_delete": aid not in draft and aid not in reserved,
+                       "delete_url": reverse("accounts:showcase_asset_delete", args=[aid])})
+    return result
+
+
+def state_data(sc):
+    return {"draft": schema.upgrade_design(sc.draft), "revision": sc.revision, "assets": asset_list(sc),
+            "published": bool(sc.published and not sc.blocked), "blocked": sc.blocked,
+            "moderation_reason": sc.moderation_reason, "withdrawal_reason": sc.withdrawal_reason,
+            "published_at": sc.published_at.isoformat() if sc.published_at else None,
+            "saved_at": sc.updated_at.isoformat(), "public_url": reverse("team:detail", args=[sc.pk])}
+
+
+@login_required
+@require_GET
+@api_errors
+def state(request):
+    if not eligible(request.user):
+        raise PermissionDenied
+    sc = Showcase.objects.filter(user=request.user).first()
+    if not sc:
+        return JsonResponse({"draft": schema.empty_design(), "revision": 0, "assets": [], "published": False, "blocked": False})
+    return JsonResponse(state_data(sc))
 
 
 @login_required
@@ -172,7 +245,7 @@ def asset(request, asset_id, size):
     if not owner:
         if not Showcase.objects.visible().filter(pk=sc.pk).exists():
             raise Http404
-        published = copy.deepcopy(sc.published)
+        published = schema.upgrade_design(sc.published)
         projects = {str(pk) for pk in Project.public().values_list("pk", flat=True)}
         published["content"]["works"] = [w for w in published["content"]["works"] if not w["project"] or w["project"] in projects]
         if str(a.pk) not in schema.referenced_assets(published, visible_only=True):

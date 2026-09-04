@@ -81,7 +81,7 @@
 {% endcomment %}
 {% block preloader %}{% endblock %}
 
-<header class="site-nav" id="site-nav">
+{% block site_header %}<header class="site-nav" id="site-nav">
     <div class="container nav-inner">
         <a class="nav-brand" href="{% url 'core:home' %}">
             {% comment %}
@@ -176,7 +176,7 @@
             <span></span><span></span><span></span>
         </button>
     </div>
-</header>
+</header>{% endblock %}
 
 {% comment %}
 `tabindex="-1"` 是给跳转链接用的：光有 id 的话部分浏览器只滚动、不移动焦点，

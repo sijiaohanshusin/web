@@ -58,6 +58,15 @@
             </div>
         </div>
         <div>
+            {% if user.can_design_showcase %}
+            <section class="panel" id="public-team">
+                <h2>我的成员展示</h2>
+                <p><span class="badge badge-gray">{{ showcase_summary.label }}</span></p>
+                {% if showcase_summary.reason %}<p>{{ showcase_summary.reason }}</p>{% endif %}
+                <p class="form-help">卡片与个人页独立设计。保存草稿不会公开，只有本人确认发布后才会出现在成员墙。</p>
+                <a class="btn btn-primary" href="{% url 'accounts:showcase' %}">设计我的展示</a>
+            </section>
+            {% endif %}
             {% if position_appointments %}
             <div class="panel">
                 <h2>我的任职经历</h2>

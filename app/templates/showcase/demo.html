@@ -1,6 +1,6 @@
 {% extends 'base.html' %}{% load static %}
 {% block title %}成员名片交互样稿{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/showcase.css' %}">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/showcase.css' %}"><link rel="stylesheet" href="{% static 'css/showcase-templates.css' %}">{% endblock %}
 {% block content %}<div class="container sc-wall"><div class="sc-heading"><div><p class="sc-label">DESIGN LAB / FICTIONAL MEMBERS</p><h1>不止一种，被认识的方式。</h1><p>工程铭牌 · 作品橱窗 · 文字档案。以下均为虚构成员，不代表真实任命或公开资料。</p></div></div>
 <form class="sc-filters"><label>切换配色<select name="palette">{% for value,label in palettes.items %}<option value="{{ value }}" {% if palette == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><button class="btn btn-primary">预览配色</button></form>
 <div class="sc-grid">{% for member in members %}{% include 'showcase/card.html' with member=member preview=True only %}{% endfor %}</div></div>{% endblock %}

@@ -282,6 +282,7 @@ def profile(request):
         "my_points": total_for(request.user),
         "my_application": my_application,
         "position_appointments": request.user.position_appointments.all()[:20],
+        "showcase_summary": showcase_summary(request.user),
     })
 
 
@@ -295,7 +296,17 @@ def profile_edit(request):
             return redirect("accounts:profile")
     else:
         form = ProfileForm(instance=request.user)
-    return render(request, "accounts/profile_edit.html", {"form": form})
+    return render(request, "accounts/profile_edit.html", {"form": form, "showcase_summary": showcase_summary(request.user)})
+
+
+def showcase_summary(user):
+    from showcase.models import Showcase
+
+    sc = Showcase.objects.filter(user=user).first()
+    if not sc:
+        return {"label": "尚未创建私有草稿", "reason": ""}
+    label = "被管理员下架" if sc.blocked else "已有公开版本" if sc.published and user.can_design_showcase else "已撤回" if sc.withdrawal_reason else "尚未公开"
+    return {"label": label, "reason": sc.moderation_reason if sc.blocked else "", "saved_at": sc.updated_at}
 
 
 class PasswordChangeView(auth_views.PasswordChangeView):

@@ -4,18 +4,50 @@
         {% if member.background %}<div class="sc-photo sc-blur--{{ bg.blur }}" style="--sc-x:{{ bg.x|unlocalize }}%;--sc-y:{{ bg.y|unlocalize }}%;--sc-zoom:{{ bg.zoom|unlocalize }}"><img src="{{ member.background_small }}" srcset="{{ member.background_small }} 640w, {{ member.background }} 1600w" sizes="(min-width: 960px) 33vw, (min-width: 640px) 50vw, 100vw" alt="" loading="{% if eager %}eager{% else %}lazy{% endif %}" decoding="async"></div><div class="sc-photo-mask sc-mask--{{ bg.mask }}"></div>{% endif %}
         <span class="sc-card-texture"></span>
     </div>
+
+    {% if member.card.template == 'plate' %}
+    <div class="sc-card-dossier-mark" aria-hidden="true"><span>HEU ESTA</span><span>ENGINEERING DOSSIER</span></div>
     <div class="sc-card-content">
-        {% if member.card.template == 'type' and 'intro' in member.card.modules and member.intro %}<div class="sc-card-quote"><span class="sc-rule" aria-hidden="true"></span><p>{{ member.intro }}</p></div>{% endif %}
+        <p class="sc-card-kicker"><span>PROFILE</span><span>{% if member.cohort %}{{ member.cohort }}{% else %}MEMBER{% endif %}</span></p>
         <div class="sc-card-identity">{% include 'showcase/identity.html' with member=member design=member.card only %}</div>
         <div class="sc-card-modules">
             {% for kind in member.card.modules %}
-            {% if kind == 'intro' and member.intro and member.card.template != 'type' %}<p class="sc-card-intro">{{ member.intro }}</p>{% endif %}
+            {% if kind == 'intro' and member.intro %}<p class="sc-card-intro">{{ member.intro }}</p>{% endif %}
             {% if kind == 'tags' and member.tags %}<ul class="sc-tags">{% for tag in member.tags %}<li>{{ tag }}</li>{% endfor %}</ul>{% endif %}
-            {% if kind == 'work' and member.works %}{% with work=member.works.0 %}<div class="sc-card-work">{% if work.url and not preview %}<a href="{{ work.url }}" target="_blank" rel="noopener noreferrer" aria-label="精选作品：{{ work.title }}"><span>精选作品 / </span>{{ work.title }} <span aria-hidden="true">→</span></a>{% else %}<span>精选作品 / {{ work.title }} →</span>{% endif %}</div>{% endwith %}{% endif %}
+            {% if kind == 'work' and member.featured_work %}{% with work=member.featured_work %}<div class="sc-card-work">{% if work.url and not preview %}<a href="{{ work.url }}" target="_blank" rel="noopener noreferrer" aria-label="精选作品：{{ work.title }}"><span>SELECTED / </span>{{ work.title }} <span aria-hidden="true">→</span></a>{% else %}<span>SELECTED / {{ work.title }} →</span>{% endif %}</div>{% endwith %}{% endif %}
+            {% endfor %}
+            {% if member.legacy_medals %}<ul class="sc-tags">{% for medal in member.legacy_medals %}<li>{{ medal }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="sc-card-dossier-foot" aria-hidden="true"><span>ESTA / {% if member.cohort %}{{ member.cohort|slice:'-2:' }}{% else %}--{% endif %}</span><span>MEMBER PROFILE</span></div>
+    </div>
+    {% elif member.card.template == 'type' %}
+    <div class="sc-card-archive-mark" aria-hidden="true"><span>HEU ESTA / MEMBER ARCHIVE</span><span>FIELD NOTE</span></div>
+    <div class="sc-card-content">
+        {% if 'intro' in member.card.modules and member.intro %}<div class="sc-card-quote"><span class="sc-rule" aria-hidden="true"></span><p>{{ member.intro }}</p></div>{% else %}<div class="sc-card-quote sc-card-quote--fallback"><span class="sc-rule" aria-hidden="true"></span><p>{{ member.nickname }}的<br>成员档案。</p></div>{% endif %}
+        <div class="sc-card-identity">{% include 'showcase/identity.html' with member=member design=member.card only %}</div>
+        <div class="sc-card-modules">
+            {% for kind in member.card.modules %}
+            {% if kind == 'tags' and member.tags %}<ul class="sc-tags">{% for tag in member.tags %}<li>{{ tag }}</li>{% endfor %}</ul>{% endif %}
+            {% if kind == 'work' and member.featured_work %}{% with work=member.featured_work %}<div class="sc-card-work">{% if work.url and not preview %}<a href="{{ work.url }}" target="_blank" rel="noopener noreferrer" aria-label="精选作品：{{ work.title }}"><span>精选作品 / </span>{{ work.title }} <span aria-hidden="true">→</span></a>{% else %}<span>精选作品 / {{ work.title }} →</span>{% endif %}</div>{% endwith %}{% endif %}
+            {% endfor %}
+            {% if member.legacy_medals %}<ul class="sc-tags">{% for medal in member.legacy_medals %}<li>{{ medal }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="sc-card-archive-foot" aria-hidden="true"><span>ARCHIVE {% if member.cohort %}{{ member.cohort }}{% else %}ESTA{% endif %}</span><span>VOL. 01</span></div>
+    </div>
+    {% else %}
+    <div class="sc-card-content">
+        <div class="sc-card-identity">{% include 'showcase/identity.html' with member=member design=member.card only %}</div>
+        <div class="sc-card-modules">
+            {% for kind in member.card.modules %}
+            {% if kind == 'intro' and member.intro %}<p class="sc-card-intro">{{ member.intro }}</p>{% endif %}
+            {% if kind == 'tags' and member.tags %}<ul class="sc-tags">{% for tag in member.tags %}<li>{{ tag }}</li>{% endfor %}</ul>{% endif %}
+            {% if kind == 'work' and member.featured_work %}{% with work=member.featured_work %}<div class="sc-card-work">{% if work.url and not preview %}<a href="{{ work.url }}" target="_blank" rel="noopener noreferrer" aria-label="精选作品：{{ work.title }}"><span>精选作品 / </span>{{ work.title }} <span aria-hidden="true">→</span></a>{% else %}<span>精选作品 / {{ work.title }} →</span>{% endif %}</div>{% endwith %}{% endif %}
             {% endfor %}
             {% if member.legacy_medals %}<ul class="sc-tags">{% for medal in member.legacy_medals %}<li>{{ medal }}</li>{% endfor %}</ul>{% endif %}
         </div>
     </div>
+    {% endif %}
+
     {% if not preview %}<a class="sc-card-link" href="{{ member.url }}" aria-label="了解{{ member.nickname }}"><span aria-hidden="true">→</span></a>{% else %}<span class="sc-card-link" aria-hidden="true">→</span>{% endif %}
 </article>
 {% endwith %}
