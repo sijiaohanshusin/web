@@ -121,10 +121,10 @@ def run():
                     member = pages['member']
                     member.goto(FORUM + f"/category/{fixture['discussionCid']}")
                     member.locator('[component="category/post"]').click()
-                    member.locator('[component="composer/title"]').fill('手册演示：第一次发帖')
-                    member.locator('[component="composer/body"]').fill('## 我想交流的内容\n\n这是隔离环境中的演示帖子，请不要用于正式通知。')
+                    member.locator('[component="composer"] input.title').fill('手册演示：第一次发帖')
+                    member.locator('[component="composer"] textarea.write').fill('## 我想交流的内容\n\n这是隔离环境中的演示帖子，请不要用于正式通知。')
                     capture(member, 'forum-compose')
-                    member.locator('[component="composer/submit"]').click()
+                    member.locator('[component="composer"] [data-action="post"]:visible').click()
                     member.wait_for_url('**/topic/**')
                     expect(member.locator('[component="post/content"]').first).to_contain_text('隔离环境中的演示帖子')
                     topic_url = member.url
@@ -132,9 +132,9 @@ def run():
                     reply = pages['preparatory']
                     reply.goto(topic_url)
                     reply.locator('[component="topic/reply"]').first.click()
-                    reply.locator('[component="composer/body"]').fill('这是预备会员的演示回复，发布后应当显示在主题中。')
+                    reply.locator('[component="composer"] textarea.write').fill('这是预备会员的演示回复，发布后应当显示在主题中。')
                     capture(reply, 'forum-reply-compose')
-                    reply.locator('[component="composer/submit"]').click()
+                    reply.locator('[component="composer"] [data-action="post"]:visible').click()
                     expect(reply.locator('[component="post/content"]').last).to_contain_text('预备会员的演示回复')
                     capture(reply, 'forum-topic')
                     checks.append('preparatory member replies through the real composer')

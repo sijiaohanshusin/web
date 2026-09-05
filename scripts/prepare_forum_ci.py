@@ -52,12 +52,16 @@ def main():
                                 stdout=log, stderr=subprocess.STDOUT)
         if result.returncode:
             raise RuntimeError('Disposable NodeBB setup failed; credential-bearing command/log withheld')
+    for plugin in ('nodebb-plugin-session-sharing', 'nodebb-plugin-heuesta-mailbox', 'nodebb-plugin-heuesta-ci-fixture'):
+        run(['node', 'nodebb', 'activate', plugin], APP)
+    # Fresh-install migrations run before SSO is configured. The upstream legacy
+    # hash migration assumes an old mapping exists if a secret is already set.
+    # Schema only: never upgrade pinned dependencies/plugins as part of a test.
+    run(['node', 'nodebb', 'upgrade', '--schema'], APP)
     for script in ('localize.js', 'groups-v2.js'):
         run(['node', str(ROOT / 'ops/forum' / script)], APP)
     shutil.copyfile(ROOT / 'scripts/forum_fixture/configure.cjs', APP / 'heuesta-audit.cjs')
     run(['node', 'heuesta-audit.cjs'], APP)
-    for plugin in ('nodebb-plugin-session-sharing', 'nodebb-plugin-heuesta-mailbox', 'nodebb-plugin-heuesta-ci-fixture'):
-        run(['node', 'nodebb', 'activate', plugin], APP)
     run(['node', 'nodebb', 'build'], APP)
     print('Isolated forum prepared; no production settings or mail credentials used.')
 
