@@ -9,6 +9,41 @@ concurrency:
   group: quality-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  forum-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: heuesta_forum_ci
+          POSTGRES_USER: heuesta_forum_ci
+          POSTGRES_PASSWORD: disposable-forum-ci-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U heuesta_forum_ci -d heuesta_forum_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      HEUESTA_FORUM_AUDIT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: pip install -r app/requirements.txt playwright
+      - run: python -m playwright install --with-deps chromium
+      - run: python scripts/prepare_forum_ci.py
+      - run: python scripts/check_forum.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: isolated-forum-evidence
+          include-hidden-files: true
+          path: |
+            .shots/forum-evidence/*.png
+            .shots/forum-evidence/checks.json
+          retention-days: 14
   django-postgres:
     runs-on: ubuntu-latest
     timeout-minutes: 20

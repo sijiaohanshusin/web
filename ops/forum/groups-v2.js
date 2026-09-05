@@ -5,7 +5,7 @@
    - session-sharing 开启 syncGroups 白名单双向同步：晋升时旧等级徽章自动摘除
    docker exec -w /usr/src/app heuesta-forum-forum-1 node /opt/config/groups-v2.js
 */
-const APP = '/usr/src/app';
+const APP = process.env.NODEBB_APP_DIR || '/usr/src/app';
 const nconf = require(APP + '/node_modules/nconf');
 
 nconf.file({ file: APP + '/config.json' });

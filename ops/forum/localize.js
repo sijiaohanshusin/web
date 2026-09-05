@@ -3,7 +3,7 @@
    用法（服务器上）：
    docker exec -w /usr/src/app -e NODEBB_JWT_SECRET=xxx heuesta-forum-forum-1 node /opt/config/localize.js
 */
-const APP = '/usr/src/app';
+const APP = process.env.NODEBB_APP_DIR || '/usr/src/app';
 const nconf = require(APP + '/node_modules/nconf');
 
 nconf.file({ file: APP + '/config.json' });

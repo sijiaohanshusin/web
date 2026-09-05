@@ -1,0 +1,5 @@
+{
+  "id": "nodebb-plugin-heuesta-ci-fixture",
+  "name": "Isolated CI fixtures, never install in production",
+  "hooks": [{"hook": "static:app.load", "method": "init", "priority": 100}]
+}

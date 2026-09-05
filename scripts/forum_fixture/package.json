@@ -1,0 +1,7 @@
+{
+  "name": "nodebb-plugin-heuesta-ci-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "main": "library.js",
+  "nbbpm": {"compatibility": "^4.14.0"}
+}
