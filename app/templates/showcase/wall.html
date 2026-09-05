@@ -6,14 +6,15 @@
 {% block content %}<div class="container sc-wall" id="member-wall">
 <nav class="sc-breadcrumb" aria-label="面包屑"><span>了解协会</span><span aria-hidden="true">/</span><span aria-current="page">协会成员</span></nav>
 <header class="sc-wall-heading"><h1>遇见，一起创造的人。</h1><p>不同的方向，相同的热爱。认识每一个把想法变成现实的伙伴。</p><span class="sc-label">MEMBERS / HEU ESTA</span></header>
-<form class="sc-filters" method="get" role="search" aria-label="筛选公开成员" action="{{ wall_url }}">
-    <div class="sc-member-count">全部成员 <span id="member-count">{{ page.paginator.count }}</span></div>
-    <label class="sc-search"><span class="sc-sr-only">搜索昵称或公开标签</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/></svg><input type="search" name="q" value="{{ filters.q }}" maxlength="80" placeholder="搜索昵称或公开标签" autocomplete="off"><button type="submit" class="sc-search-submit" aria-label="查找成员">→</button></label>
-    <label><span class="sc-sr-only">入学届别</span><select name="cohort"><option value="">入学届别</option>{% for year in cohorts %}<option value="{{ year }}" {% if filters.cohort == year %}selected{% endif %}>{{ year }} 级</option>{% endfor %}</select></label>
-    <label><span class="sc-sr-only">擅长方向</span><select name="direction"><option value="">擅长方向</option>{% for value,label in directions.items %}<option value="{{ value }}" {% if filters.direction == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-    <label><span class="sc-sr-only">现任职位</span><select name="position"><option value="">现任职位</option>{% for item in positions %}<option value="{{ item.pk }}" {% if filters.position == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></label>
-    <label class="sc-sort"><span class="sc-sr-only">按入学届别排序</span><select name="sort"><option value="cohort_desc" {% if filters.sort == 'cohort_desc' %}selected{% endif %}>入学届别 ↓</option><option value="cohort_asc" {% if filters.sort == 'cohort_asc' %}selected{% endif %}>入学届别 ↑</option></select></label>
-</form>
+{% if show_filters %}<form class="sc-filters" method="get" role="search" aria-label="筛选公开成员" action="{{ wall_url }}">
+    <div class="sc-member-count">{% if filtered %}筛选结果{% else %}全部成员{% endif %} <span id="member-count">{{ page.paginator.count }}</span></div>
+    {% if show_search %}<label class="sc-search"><span class="sc-sr-only">搜索昵称或公开标签</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/></svg><input type="search" name="q" value="{{ filters.q }}" maxlength="80" placeholder="搜索昵称或公开标签" autocomplete="off"><button type="submit" class="sc-search-submit" aria-label="查找成员">→</button></label>{% else %}<input type="hidden" name="q" value="{{ filters.q }}">{% endif %}
+    {% if show_cohort %}<label><span class="sc-sr-only">入学届别</span><select name="cohort"><option value="">入学届别</option>{% for year in cohorts %}<option value="{{ year }}" {% if filters.cohort == year %}selected{% endif %}>{{ year }} 级</option>{% endfor %}</select></label>{% else %}<input type="hidden" name="cohort" value="{{ filters.cohort }}">{% endif %}
+    {% if show_direction %}<label><span class="sc-sr-only">擅长方向</span><select name="direction"><option value="">擅长方向</option>{% for value,label in directions.items %}<option value="{{ value }}" {% if filters.direction == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% else %}<input type="hidden" name="direction" value="{{ filters.direction }}">{% endif %}
+    {% if show_position %}<label><span class="sc-sr-only">现任职位</span><select name="position"><option value="">现任职位</option>{% for item in positions %}<option value="{{ item.pk }}" {% if filters.position == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></label>{% else %}<input type="hidden" name="position" value="{{ filters.position }}">{% endif %}
+    {% if show_sort %}<label class="sc-sort"><span class="sc-sr-only">按入学届别排序</span><select name="sort"><option value="cohort_desc" {% if filters.sort == 'cohort_desc' %}selected{% endif %}>入学届别 ↓</option><option value="cohort_asc" {% if filters.sort == 'cohort_asc' %}selected{% endif %}>入学届别 ↑</option></select></label>{% else %}<input type="hidden" name="sort" value="{{ filters.sort }}">{% endif %}
+    {% if filtered %}<a class="sc-filter-reset" href="{{ wall_url }}" data-wall-link>清除筛选</a>{% endif %}
+</form>{% endif %}
 <p class="sc-filter-feedback" id="filter-feedback" role="status" aria-live="polite"></p>
 {% include 'showcase/results.html' %}
 </div>{% endblock %}

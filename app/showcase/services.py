@@ -94,7 +94,10 @@ def change(user, action, revision, raw=None, consent=False, ticket=""):
             sc.published = data
             sc.public_name = data["nickname"]
             # Only tags actually enabled on a public card are searchable.
-            tags_visible = "tags" in data["card"]["modules"] or "skills" in data["page"]["modules"]
+            tags_visible = (
+                "tags" in data["card"]["modules"]
+                or (data["publication"]["page"] and "skills" in data["page"]["modules"])
+            )
             sc.public_tags = " ".join(data["content"]["tags"]) if tags_visible else ""
             sc.public_cohort = data["cohort"]
             sc.public_direction = data["direction"]

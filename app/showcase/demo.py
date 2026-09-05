@@ -77,7 +77,9 @@ def samples(request):
     context = {"members": page.object_list, "page": page, "demo": True, "filters": filters,
         "cohorts": ["2025", "2024", "2023", "2022"], "directions": DIRECTIONS,
         "positions": [SimpleNamespace(pk=1, name="硬件副主席")], "wall_url": "/team/design-demo/",
-        "filtered": any(filters[k] for k in ("q", "cohort", "direction", "position"))}
+        "filtered": any(filters[k] for k in ("q", "cohort", "direction", "position")),
+        "show_filters": True, "show_search": True, "show_cohort": True,
+        "show_direction": True, "show_position": True, "show_sort": True}
     response = render(request, "showcase/results.html" if request.headers.get("X-Showcase-Partial") == "1" else "showcase/wall.html", context)
     patch_vary_headers(response, ["X-Showcase-Partial"])
     return response

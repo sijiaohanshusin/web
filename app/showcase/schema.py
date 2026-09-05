@@ -55,12 +55,18 @@ def upgrade_design(raw):
                 data["card"]["featured_work"] = works[0].get("id", "") if works and isinstance(works[0], dict) else ""
         if legacy:
             data["version"] = 3
+    if isinstance(data, dict) and type(data.get("version")) is int and data["version"] == 3:
+        # v1-v3 had one publication switch: a published card always linked to a
+        # public personal page. Preserve that consent when reading old data.
+        data["publication"] = {"card": True, "page": True}
+        data["version"] = 4
     return data
 
 
 def empty_design():
     return {
-        "version": 3, "nickname": "", "cohort": "", "direction": "hardware", "direction_detail": "",
+        "version": 4, "nickname": "", "cohort": "", "direction": "hardware", "direction_detail": "",
+        "publication": {"card": True, "page": False},
         "card": {"template": "plate", "palette": "cyan", "texture": "grid", "focus": "center", "avatar_shape": "round", "modules": ["intro", "tags"], "background": default_background(), "featured_work": ""},
         "page": {"template": "plate", "palette": "cyan", "texture": "grid", "focus": "center", "avatar_shape": "square", "modules": ["intro", "skills", "works"]},
         "content": {"intro": "", "about": "", "tags": [], "skills": "", "avatar": "", "cover": "", "works": [], "gallery": [], "links": []},
@@ -125,8 +131,13 @@ def validate_design(raw, *, publishing=False):
     data = upgrade_design(raw)
     defaults = empty_design()
     obj(data, defaults, "展示")
-    if type(data["version"]) is not int or data["version"] != 3:
+    if type(data["version"]) is not int or data["version"] != 4:
         fail("不支持的展示版本，请刷新页面。")
+    publication = obj(data["publication"], ("card", "page"), "公开范围")
+    if type(publication["card"]) is not bool or type(publication["page"]) is not bool:
+        fail("公开范围不正确，请刷新编辑器后重试。", "publication")
+    if publishing and not publication["card"]:
+        fail("成员展示至少需要公开成员卡片。", "publication.card")
     data["nickname"] = at("nickname", text, data["nickname"], 30, "公开昵称")
     if publishing and not data["nickname"]:
         fail("发布前请填写公开昵称。", "nickname")
@@ -179,7 +190,10 @@ def validate_design(raw, *, publishing=False):
             fail("站内作品标识不正确。", path + ".project")
         if work["project"]:
             work["url"] = ""
-        visible = "works" in data["page"]["modules"] or ("work" in data["card"]["modules"] and data["card"]["featured_work"] == work["id"])
+        visible = (
+            (publication["page"] and "works" in data["page"]["modules"])
+            or (publication["card"] and "work" in data["card"]["modules"] and data["card"]["featured_work"] == work["id"])
+        )
         if publishing and visible and not work["title"] and not work["project"]:
             fail("请为要公开的作品填写名称。", path + ".title")
     data["card"]["featured_work"] = at("card.featured_work", asset_id, data["card"]["featured_work"])
@@ -193,7 +207,7 @@ def validate_design(raw, *, publishing=False):
         obj(link, ("label", "url"), "链接")
         link["label"] = at(f"content.links.{index}.label", text, link["label"], 40, "链接名称")
         link["url"] = at(f"content.links.{index}.url", https_url, link["url"])
-        if publishing and "links" in data["page"]["modules"] and not link["url"]:
+        if publishing and publication["page"] and "links" in data["page"]["modules"] and not link["url"]:
             fail("请填写要公开的 HTTPS 链接，或移除空条目。", f"content.links.{index}.url")
     return data
 
@@ -201,17 +215,18 @@ def validate_design(raw, *, publishing=False):
 def referenced_assets(data, *, visible_only=False):
     data = upgrade_design(data)
     c = data["content"]
+    publication = data["publication"]
     refs = {c["avatar"]}
     bg = data["card"]["background"]
     if not visible_only or bg["mode"] == "photo":
         refs.add(bg["image"])
-    if not visible_only or data["page"]["template"] in {"plate", "gallery"}:
+    if not visible_only or (publication["page"] and data["page"]["template"] in {"plate", "gallery"}):
         refs.add(c["cover"])
     works = c["works"]
-    if not visible_only or "works" in data["page"]["modules"]:
+    if not visible_only or (publication["page"] and "works" in data["page"]["modules"]):
         refs.update(w["image"] for w in works)
     elif "work" in data["card"]["modules"]:
         refs.update(w["image"] for w in works if w["id"] == data["card"]["featured_work"])
-    if not visible_only or "gallery" in data["page"]["modules"]:
+    if not visible_only or (publication["page"] and "gallery" in data["page"]["modules"]):
         refs.update(g["image"] for g in c["gallery"])
     return refs - {""}

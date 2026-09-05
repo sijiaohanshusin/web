@@ -12,19 +12,21 @@
 .sc-wall-heading h1 { margin:0 0 10px; font:700 clamp(32px,4.1vw,52px)/1.3 var(--font-body); letter-spacing:.045em; color:#f2f3f0; }
 .sc-wall-heading p { margin:0 0 16px; color:#a6aeaf; font:400 14px/1.7 var(--font-body); letter-spacing:.035em; }
 .sc-wall-heading .sc-label { display:block; color:#35cbdb; font-size:12px; letter-spacing:.18em; }
-.sc-filters { display:grid; grid-template-columns:110px minmax(170px,1.8fr) repeat(3,minmax(100px,1fr)) minmax(112px,1fr); gap:16px; align-items:center; padding:17px 20px; border:1px solid #cbd9df13; background:#cedfea04; border-radius:13px; margin-bottom:20px; }
+.sc-filters { display:flex; flex-wrap:wrap; gap:12px 16px; align-items:center; padding:17px 20px; border:1px solid #cbd9df13; background:#cedfea04; border-radius:13px; margin-bottom:20px; }
 .sc-member-count { display:flex; gap:12px; align-items:center; white-space:nowrap; color:#4ad5e1; font-size:14px; }
 .sc-member-count span { display:grid; place-items:center; min-width:22px; height:22px; padding-inline:6px; font:12px var(--font-mono); border-radius:50%; background:#cbd5d230; color:#f0f1ec; }
-.sc-filters label { min-width:0; display:block; margin:0; }
+.sc-filters label { min-width:140px; flex:1 1 150px; display:block; margin:0; }
 .sc-filters input,.sc-filters select { width:100%; height:40px; min-width:0; background:transparent; border:1px solid #b5cbd91a; border-radius:7px; padding:0 14px; color:#abb4b7; font:13px var(--font-body); }
 .sc-filters select { cursor:pointer; appearance:none; padding-right:28px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%23abb4b7'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; }
 .sc-filters option { background:#0b161c; color:#e6ebed; }
-.sc-filters .sc-search { position:relative; }
+.sc-filters .sc-search { position:relative; flex:2 1 230px; }
 .sc-search svg { position:absolute; width:17px; height:17px; left:12px; top:12px; stroke:#abb4b7; stroke-width:1.5; pointer-events:none; }
 .sc-filters .sc-search input { padding-left:36px; padding-right:26px; font-size:12px; }
 .sc-search input::placeholder { color:#939ea2; }
 .sc-search-submit { position:absolute; right:2px; top:4px; width:26px; height:32px; background:transparent; color:#abb4b7; border:0; cursor:pointer; font-size:17px; }
+.sc-filters .sc-sort { flex:0 1 135px; margin-left:auto; }
 .sc-filters .sc-sort select { border-color:transparent; background-image:none; padding:0; text-align:right; }
+.sc-filter-reset { flex:0 0 auto; color:#65d7e1; font-size:12px; }
 .sc-filters :focus-visible { outline:2px solid #39c5d5; outline-offset:3px; }
 .sc-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 .sc-filter-feedback { margin:0; font-size:12px; color:#97b8c3; }
@@ -55,9 +57,7 @@
     .showcase-wall-page .nav-user { font-size:12px; }
 }
 @media(max-width:959px) {
-    .sc-filters { grid-template-columns:100px minmax(160px,1fr) 1fr; gap:12px; padding:16px; }
-    .sc-filters .sc-search { grid-column:span 2; }
-    .sc-sort { grid-column:1/-1; justify-self:end; }
+    .sc-filters { gap:12px; padding:16px; }
     .sc-wall-heading h1 { font-size:36px; }
 }
 @media(max-width:639px) {
@@ -66,10 +66,11 @@
     .sc-breadcrumb { margin-bottom:20px; }
     .sc-wall-heading h1 { font-size:clamp(27px,7.6vw,36px); letter-spacing:0; }
     .sc-wall-heading p { font-size:13px; margin-bottom:16px; }
-    .sc-filters { grid-template-columns:1fr 1fr; gap:10px; padding:14px; }
-    .sc-member-count { grid-column:1/-1; padding-bottom:2px; }
-    .sc-filters .sc-search { grid-column:1/-1; }
-    .sc-sort { grid-column:auto; justify-self:stretch; }
+    .sc-filters { gap:10px; padding:14px; }
+    .sc-member-count { flex-basis:100%; padding-bottom:2px; }
+    .sc-filters .sc-search { flex-basis:100%; }
+    .sc-filters label { min-width:calc(50% - 6px); flex:1 1 calc(50% - 6px); }
+    .sc-filters .sc-sort { margin-left:0; }
     .sc-filters input,.sc-filters select { font-size:12px; padding-left:10px; }
     .sc-wall-footer > div { font-size:11px; letter-spacing:.04em; }
     .sc-empty { padding:24px 16px; }

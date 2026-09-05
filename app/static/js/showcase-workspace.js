@@ -10,11 +10,13 @@
   const $$ = (selector, scope = root) => [...scope.querySelectorAll(selector)];
   const content = $("#section-content"), stage = $("#preview-stage"), inspector = $("#inspector");
   const csrf = $("input[name=csrfmiddlewaretoken]").value;
-  const names = { "card-layout":"版式与身份", "card-background":"背景与照片", "card-content":"内容与排序", "page-layout":"布局与内容", "page-works":"精选作品", "page-gallery":"图集与链接", assets:"素材库", publish:"预览与发布" };
+  const names = { "card-layout":"快速开始", "card-background":"背景与照片", "card-content":"内容与排序", "page-layout":"布局与内容", "page-works":"精选作品", "page-gallery":"图集与链接", assets:"素材库", publish:"预览与发布" };
+  const groups = { "card-layout":"start", "card-background":"card", "card-content":"card", "page-layout":"page", "page-works":"page", "page-gallery":"page", assets:"assets", publish:"publish" };
+  const groupLabels = { start:"快速开始", card:"成员卡片", page:"个人页面", assets:"素材库", publish:"预览与发布" };
   let section = names[new URL(location.href).searchParams.get("section")] ? new URL(location.href).searchParams.get("section") : "card-layout";
-  let device = "desktop", composing = false, previewTimer, previewAbort, templateAbort, messageTimer;
+  let device = "desktop", composing = false, previewTimer, autosaveTimer, previewAbort, templateAbort, messageTimer;
   let pickerPath = "", selectedAsset = "", workId = "", templates = {}, documents = {}, confirmed = false, lastPreview = -1;
-  let conflictServer = null, drag = null, confirmationResolve, saveError = "";
+  let conflictServer = null, drag = null, confirmationResolve, saveError = "", saveInFlight = false, autosaveQueued = false;
   const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const get = path => path.split(".").reduce((v, k) => v?.[k], model.draft);
   const asset = id => model.server.assets.find(a => a.id === id);
@@ -46,6 +48,21 @@
   }
   function heading(title, description, eyebrow) {
     return '<header class="se-section-heading"><div><p class="se-eyebrow">'+eyebrow+'</p><h1>'+title+'</h1><p>'+description+'</p></div></header>';
+  }
+  function subnav() {
+    const tabs = groups[section] === "card"
+      ? [["card-background","背景与照片"],["card-content","内容与排序"]]
+      : groups[section] === "page"
+        ? [["page-layout","布局与内容"],["page-works","精选作品"],["page-gallery","图集与链接"]]
+        : [];
+    if (!tabs.length) return "";
+    return '<nav class="se-subnav" aria-label="'+groupLabels[groups[section]]+'功能">'+tabs.map(([id,label]) =>
+      '<a href="?section='+id+'" data-section-link="'+id+'" aria-current="'+(id===section?'page':'false')+'">'+label+'</a>'
+    ).join("")+'</nav>';
+  }
+  function pagePublicationControl() {
+    const enabled = get("publication.page");
+    return '<div class="se-publication-choice '+(enabled?'is-enabled':'')+'"><div><span class="se-label">公开范围</span><strong>'+(enabled?'成员卡片 + 个人页面':'仅成员卡片')+'</strong><p>'+(enabled?'成员卡片会进入成员墙，并可打开完整个人页面。':'先发布一张卡片即可；个人页面内容继续保存在私有草稿中。')+'</p></div><label class="se-switch"><input type="checkbox" data-publication-page '+(enabled?'checked':'')+'><span aria-hidden="true"></span><b>公开个人页面</b></label></div>';
   }
   function layoutCard() {
     const years={"":"不展示届别"}; for(let y=new Date().getFullYear();y>=1995;y--) years[y]=y+" 级";
@@ -82,6 +99,7 @@
   }
   function pageLayout() {
     return heading("布局与内容","给你的经历、作品与热爱一个完整的空间。","PERSONAL PAGE / LAYOUT")+
+      panel("是否公开个人页面",pagePublicationControl()+help("关闭后仍可编辑和预览，内容不会丢失；成员墙上的卡片也不会受到影响。"))+
       panel("个人页模板",templateGrid("page")+help("独立于成员卡片。预览与真实个人展示页共用组件。"))+
       panel("页面内容模块",help("已启用 "+get("page.modules").length+" / 7 类模块。官方记录来自网站，展示与否由你决定。")+moduleList("page"))+
       panel("自我介绍与技能",field("content.about","自我介绍",{area:true,rows:5,max:2400,hint:"支持换行，不支持 HTML、嵌入网页或脚本。"})+field("content.skills","技能与兴趣",{area:true,max:600}))+
@@ -117,18 +135,20 @@
   }
   function publicState() {
     const s=model.server;
-    return s.blocked?"被管理员下架":s.published?"已有公开版本":s.withdrawal_reason?"已撤回":"尚未公开";
+    return s.blocked?"被管理员下架":s.public_card?(s.public_page?"卡片与个人页已公开":"成员卡片已公开"):s.withdrawal_reason?"已撤回":"尚未公开";
   }
   function publish() {
     return heading("预览与发布","认真检查，确认这是你想与大家分享的样子。","REVIEW / PUBLISH")+
-      '<div class="se-public-state">公开状态：<strong>'+publicState()+'</strong>'+(model.server.published?' · <a href="'+model.server.public_url+'" target="_blank" rel="noopener">查看当前公开页 ↗</a>':"")+'</div>'+
-      '<div class="se-notice">进入本页不会自动公开。卡片与个人页同时确认，发布后才会替换当前公开版本。</div>'+
-      '<div class="se-publish-previews"><section><h2>成员卡片</h2><div data-publish-frame="card"></div></section><section><h2>个人展示页</h2><div data-publish-frame="page"></div></section></div>';
+      '<div class="se-public-state">公开状态：<strong>'+publicState()+'</strong>'+(model.server.public_page?' · <a href="'+model.server.public_url+'" target="_blank" rel="noopener">查看当前公开页 ↗</a>':"")+'</div>'+
+      panel("本次公开范围",pagePublicationControl())+
+      '<div class="se-notice">进入本页不会自动公开。发布会替换当前公开卡片；个人页面只在你打开上方开关后公开。</div>'+
+      '<div class="se-publish-previews"><section><h2>成员卡片 · 必选</h2><div data-publish-frame="card"></div></section><section class="'+(get("publication.page")?'':'is-private-preview')+'"><h2>个人展示页 · '+(get("publication.page")?'将公开':'仅私有预览')+'</h2><div data-publish-frame="page"></div></section></div>';
   }
   function render() {
-    content.innerHTML='<div class="se-section">'+({"card-layout":layoutCard,"card-background":background,"card-content":cardContent,"page-layout":pageLayout,"page-works":works,"page-gallery":galleryLinks,assets:library,publish}[section])()+'</div>';
-    root.querySelector(".se-workbench").dataset.section=section;
-    $$("[data-section-link]").forEach(a=>a.setAttribute("aria-current",a.dataset.sectionLink===section?"page":"false"));
+    content.innerHTML=subnav()+'<div class="se-section">'+({"card-layout":layoutCard,"card-background":background,"card-content":cardContent,"page-layout":pageLayout,"page-works":works,"page-gallery":galleryLinks,assets:library,publish}[section])()+'</div>';
+    const workbench=root.querySelector(".se-workbench");
+    workbench.dataset.section=section;workbench.dataset.group=groups[section];
+    $$("[data-section-link]").forEach(a=>a.setAttribute("aria-current",a.dataset.sectionGroup ? (a.dataset.sectionGroup===groups[section]?"page":"false") : (a.dataset.sectionLink===section?"page":"false")));
     $("#preview-title").textContent=section==="assets"?"素材详情":section==="publish"?"发布检查":"实时预览";
     mobilePreviewLabel();
     stage.hidden=section==="assets"||section==="publish";
@@ -139,7 +159,7 @@
   }
   function status(text, error=false) {
     const el=$("#save-state");
-    el.textContent=text||(model.busy?"保存中…":saveError?"保存失败 · 输入已保留":model.dirty?"● 未保存修改":"✓ 草稿已保存");
+    el.textContent=text||(model.busy?"正在处理…":saveInFlight?"自动保存中…":saveError?"自动保存暂停 · 输入已保留":model.dirty?"● 等待自动保存":"✓ 草稿已保存");
     el.dataset.state=error||saveError?"error":model.dirty?"dirty":"saved";
     const notice=$("#moderation-notice");
     notice.hidden=!model.server.blocked;
@@ -149,11 +169,11 @@
       if(model.busy) { if(!el.disabled) { el.disabled=true; el.dataset.busyDisabled="1"; } }
       else if(el.dataset.busyDisabled) { el.disabled=false; delete el.dataset.busyDisabled; }
     });
-    $$('[data-operation="save"]').forEach(b=>b.disabled=model.busy);
+    $$('[data-operation="save"]').forEach(b=>b.disabled=model.busy||saveInFlight||!model.dirty);
     const publishButton=$('[data-operation="publish"]');
-    if(publishButton) publishButton.disabled=model.busy||model.dirty||!model.ticket||!confirmed||model.server.blocked;
+    if(publishButton) publishButton.disabled=model.busy||saveInFlight||model.dirty||!model.ticket||!confirmed||model.server.blocked;
     const consent=$("#publish-consent");
-    if(consent) consent.disabled=model.busy||model.dirty||!model.ticket||model.server.blocked;
+    if(consent) consent.disabled=model.busy||saveInFlight||model.dirty||!model.ticket||model.server.blocked;
   }
   function renderInspector() {
     if(section==="assets") {
@@ -162,10 +182,10 @@
       return;
     }
     if(section==="publish") {
-      inspector.innerHTML='<h2 style="font-size:18px;margin-top:24px">发布前检查</h2><ul class="se-checklist"><li data-ok="'+!!get("nickname")+'">已填写公开昵称</li><li data-ok="'+!model.dirty+'">'+(model.dirty?"请先保存这次修改":"草稿已保存")+'</li><li data-ok="'+!!model.ticket+'">'+(model.ticket?"卡片与个人页预览已更新":"正在等待最新双预览")+'</li><li data-ok="'+!model.server.blocked+'">'+(model.server.blocked?"等待管理员解除下架限制":"当前具备公开展示资格")+'</li></ul>'+
+      inspector.innerHTML='<h2 class="se-inspector-title">发布前检查</h2><ul class="se-checklist"><li data-ok="'+!!get("nickname")+'">已填写公开昵称</li><li data-ok="true">成员卡片将公开</li><li data-ok="true">个人页面'+(get("publication.page")?'将一并公开':'保持私有草稿')+'</li><li data-ok="'+!model.dirty+'">'+(model.dirty?"请先保存这次修改":"草稿已保存")+'</li><li data-ok="'+!!model.ticket+'">'+(model.ticket?"当前公开范围预览已更新":"正在等待最新预览")+'</li><li data-ok="'+!model.server.blocked+'">'+(model.server.blocked?"等待管理员解除下架限制":"当前具备公开展示资格")+'</li></ul>'+
         (model.dirty?btn("先保存并刷新预览",'data-operation="save"',"se-primary se-publish-button"):"")+
-        '<label class="se-consent"><input type="checkbox" id="publish-consent" '+(confirmed?"checked":"")+'>我确认昵称、图片、自填文字和链接将面向互联网公开。未启用的模块不会公开；学号、联系方式等档案不会自动展示。撤回无法收回他人已下载的内容。</label>'+
-        btn(model.server.published?"确认更新公开版本":"确认发布我的展示",'data-operation="publish"',"se-primary se-publish-button")+
+        '<label class="se-consent"><input type="checkbox" id="publish-consent" '+(confirmed?"checked":"")+'>我确认成员卡片'+(get("publication.page")?'和个人页面':'')+'中的昵称、图片、自填文字及链接将面向互联网公开。未启用或未选择公开的内容不会公开；学号、联系方式等档案不会自动展示。</label>'+
+        btn(model.server.published?"确认更新公开版本":(get("publication.page")?"发布卡片与个人页面":"发布成员卡片"),'data-operation="publish"',"se-primary se-publish-button")+
         help("无需管理员预审。任职经历与勋章的开关，不代表修改或授予官方记录。")+
         (model.server.published?btn("撤回公开展示",'data-operation="withdraw"',"se-subtle se-publish-button"):"");
       status();
@@ -190,13 +210,14 @@
     messageTimer=setTimeout(()=>$("#editor-message").hidden=true,6500);
   }
   function touch() {
-    confirmed=false;model.ticket="";lastPreview=-1;previewAbort?.abort();templateAbort?.abort();
+    confirmed=false;model.ticket="";lastPreview=-1;saveError="";previewAbort?.abort();templateAbort?.abort();
     $("#preview-status").textContent="内容已变化 · 正在更新预览";
     if($("#publish-consent")) $("#publish-consent").checked=false;
-    status();schedulePreview();
+    status();schedulePreview();scheduleAutosave();
   }
   function set(path,value,refresh=false) { model.set(path,value);touch();if(refresh)render(); }
   function sectionFor(path) {
+    if(path.startsWith("publication"))return"publish";
     if(path.startsWith("content.works"))return"page-works";
     if(path.startsWith("content.gallery")||path.startsWith("content.links"))return"page-gallery";
     if(path.startsWith("card.background"))return"card-background";
@@ -272,15 +293,23 @@
   function mountPublish(){ $$("[data-publish-frame]").forEach(el=>frame(el,documents[el.dataset.publishFrame],el.dataset.publishFrame));cleanFrames(); }
   function mountPreview(){if(section==="publish")mountPublish();else if(section!=="assets")frame(stage,documents[section.startsWith("page")?"page":"card"],section.startsWith("page")?"page":"card");cleanFrames();}
   function schedulePreview(delay=350){clearTimeout(previewTimer);if(!composing&&!model.busy)previewTimer=setTimeout(updatePreview,delay);}
+  function scheduleAutosave(delay=1400){
+    clearTimeout(autosaveTimer);
+    if(model.dirty&&!composing&&!model.busy)autosaveTimer=setTimeout(()=>saveDraft(true),delay);
+  }
   async function updatePreview(){
     if(model.busy||composing)return;
+    const target=section==="publish"?"both":groups[section]==="page"?"page":groups[section]==="assets"?"":"card";
+    if(!target)return;
     previewAbort?.abort();previewAbort=new AbortController();
     const snapshot=model.snapshot();
     $("#preview-status").textContent="正在更新预览…";
     try{
-      const data=await api({action:"preview",target:"both",...snapshot},previewAbort.signal);
+      const data=await api({action:"preview",target,...snapshot},previewAbort.signal);
       if(!model.acceptPreview(snapshot,data.ticket))return;
-      documents=data.documents;lastPreview=model.generation;
+      if(target==="both")documents=data.documents;
+      else documents[target]=data.document;
+      if(section==="publish")lastPreview=model.generation;
       $("#preview-status").textContent="预览已更新 · "+(model.dirty?"尚未保存":"与当前保存草稿一致");
       mountPreview();renderInspector();status();
     }catch(error){
@@ -299,8 +328,28 @@
       templates=data.documents;mountTemplates();
     }catch(error){if(error.name!=="AbortError")$("#preview-status").textContent="模板缩略图暂未更新；编辑内容已保留";}
   }
+  async function saveDraft(auto=false){
+    if(!model.dirty){if(!auto)toast("草稿已经是最新版本。");return;}
+    if(saveInFlight||model.busy){autosaveQueued=true;return;}
+    const snapshot=model.snapshot();
+    saveInFlight=true;saveError="";autosaveQueued=false;status(auto?"自动保存中…":"保存中…");
+    if(!auto)$("#form-errors").hidden=true;
+    try{
+      const data=await api({action:"save",...snapshot});
+      model.acceptSave(data,snapshot);saveError="";confirmed=false;
+      if(!auto){toast(data.message);render();}
+    }catch(error){
+      saveError=error.message||"自动保存失败";
+      status(auto?"自动保存暂停 · 输入已保留":"保存失败 · 输入已保留",true);
+      if(!auto||error.code==="conflict")errors(error);
+    }finally{
+      saveInFlight=false;status();schedulePreview(0);requestTemplates();
+      if(model.dirty||autosaveQueued)scheduleAutosave(900);
+    }
+  }
   async function operation(action){
-    if(model.busy)return;
+    if(action==="save")return saveDraft(false);
+    if(model.busy||saveInFlight)return;
     if(action==="publish"&&(model.dirty||!model.ticket||!confirmed||lastPreview!==model.generation))return toast("请先保存、检查最新双预览并确认公开说明。");
     if(action==="withdraw"&&!await confirm("撤回公开展示？","成员墙、个人页和公开图片将停止新访问。草稿会保留，已被他人下载的内容无法收回。"))return;
     const snapshot=model.snapshot(), ticket=model.ticket;
@@ -342,7 +391,7 @@
     try{
       const response=await request(root.dataset.upload,{method:"POST",body:data});model.server.assets=response.assets;
       const added=response.assets.find(a=>!before.has(a.id));
-      if(copy&&added&&section==="card-layout"&&!$("#asset-picker").open)model.set("content.avatar",added.id);
+      if(copy&&added&&section==="card-layout"&&!$("#asset-picker").open){model.set("content.avatar",added.id);touch();}
       selectedAsset=added?.id||selectedAsset;
       toast("图片已安全处理。选择用途后，再保存草稿。");render();if($("#asset-picker").open)renderPicker();
     }catch(error){errors(error);}
@@ -390,11 +439,12 @@
       const path=el.dataset.module+".modules",list=get(path);
       set(path,el.checked?[...list,el.value]:list.filter(v=>v!==el.value),true);
     }else if(el.dataset.featureWork){set("card.featured_work",el.checked?el.dataset.featureWork:"",false);}
+    else if(el.hasAttribute("data-publication-page")){set("publication.page",el.checked,true);}
     else if(el.id==="publish-consent"){confirmed=el.checked;status();}
     else if(el.matches("[data-file-input]")&&el.files[0])upload(el.files[0]);
   });
-  root.addEventListener("compositionstart",()=>{composing=true;clearTimeout(previewTimer);previewAbort?.abort();});
-  root.addEventListener("compositionend",()=>{composing=false;schedulePreview();});
+  root.addEventListener("compositionstart",()=>{composing=true;clearTimeout(previewTimer);clearTimeout(autosaveTimer);previewAbort?.abort();});
+  root.addEventListener("compositionend",()=>{composing=false;schedulePreview();scheduleAutosave();});
   root.addEventListener("keydown",event=>{
     if(event.key==="Escape"&&root.dataset.menu==="open"){root.dataset.menu="closed";$("#section-menu").setAttribute("aria-expanded","false");$("#section-menu").focus();}
     if(event.target.id==="tag-entry"&&event.key==="Enter"&&!event.isComposing){event.preventDefault();addTag();}
@@ -462,7 +512,7 @@
   root.addEventListener("drop",event=>{const drop=event.target.closest("[data-dropzone]"),row=event.target.closest("[data-drag-path]");if(drop){event.preventDefault();drop.classList.remove("drag-over");if(event.dataTransfer.files[0])upload(event.dataTransfer.files[0]);}else if(row&&drag&&row.dataset.dragPath===drag.path){event.preventDefault();set(drag.path,move(get(drag.path),drag.index,Number(row.dataset.dragIndex)),true);}drag=null;});
   root.addEventListener("dragend",()=>{$$(".dragging").forEach(el=>el.classList.remove("dragging"));drag=null;});
   addEventListener("popstate",()=>showSection(new URL(location.href).searchParams.get("section")||"card-layout",false));
-  addEventListener("beforeunload",event=>{if(model.dirty||model.busy){event.preventDefault();event.returnValue="";}});
+  addEventListener("beforeunload",event=>{if(model.dirty||model.busy||saveInFlight){event.preventDefault();event.returnValue="";}});
   document.addEventListener("visibilitychange",async()=>{
     if(document.hidden||model.busy)return;
     try{const server=await request(root.dataset.state);if(server.revision!==model.revision){model.ticket="";confirmed=false;status();$("#preview-status").textContent="服务器版本有更新；请保留当前内容并检查冲突。";}else{model.server.blocked=server.blocked;model.server.moderation_reason=server.moderation_reason;status();}}catch{/* The next explicit action reports authorization or connectivity errors. */}

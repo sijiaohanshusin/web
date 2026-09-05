@@ -34,7 +34,7 @@ class EditorV3Tests(TestCase):
     def test_state_is_owner_only_and_has_no_account_private_fields(self):
         data = self.state().json()
         self.assertEqual(data["revision"], self.sc.revision)
-        self.assertEqual(data["draft"]["version"], 3)
+        self.assertEqual(data["draft"]["version"], 4)
         for field in ("real_name", "student_id", "email", "phone", "qq", "birthday"):
             self.assertNotIn(field, json.dumps(data))
         other = User.objects.create_user(username="state-owner", member_level=3)

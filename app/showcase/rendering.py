@@ -36,7 +36,8 @@ def public_member(showcase, data):
     if "medals" in data["page"]["modules"]:
         medals = [{"name": award.medal.name} for award in account.medals.select_related("medal").all()[:30]]
     return {
-        "url": reverse("team:detail", args=[showcase.pk]),
+        "url": reverse("team:detail", args=[showcase.pk]) if data["publication"]["page"] else "",
+        "has_page": data["publication"]["page"],
         "nickname": data["nickname"] or "我的公开昵称", "initial": (data["nickname"] or "我")[0].upper(),
         "cohort": data["cohort"], "direction": DIRECTIONS[data["direction"]],
         "direction_detail": data["direction_detail"] if data["direction"] == "custom" else "",

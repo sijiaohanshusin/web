@@ -19,7 +19,7 @@ from accounts.models import Position, User
 from projects.models import Project
 from .models import ModerationEvent, Showcase, ShowcaseAsset
 from .rendering import public_member
-from .schema import empty_design, validate_design
+from .schema import empty_design, upgrade_design, validate_design
 from .services import Conflict, add_asset, change, get_showcase, moderate, preview_ticket
 
 
@@ -52,6 +52,9 @@ class ShowcaseTests(TestCase):
             gender="female", birthday=date(2004, 4, 18), grade="2024")
         self.sc = get_showcase(self.user)
         self.data = copy.deepcopy(self.sc.draft)
+        # Most legacy flow assertions exercise the complete public profile.
+        # New accounts default to card-only publication and have dedicated tests below.
+        self.data["publication"]["page"] = True
         self.data["nickname"] = "林序"
         self.data["content"].update(intro="让想法落地。", tags=["开源", "设计"])
         self.client.force_login(self.user)
@@ -113,6 +116,48 @@ class ShowcaseTests(TestCase):
         self.assertEqual(self.send("publish", consent=True, ticket=preview["ticket"]).status_code, 200)
         self.assertContains(self.public(), "林序")
         self.assertEqual(uuid.UUID(str(self.sc.pk)).version, 4)
+
+    def test_new_showcase_defaults_to_card_only_publication(self):
+        design = empty_design()
+        self.assertEqual(design["version"], 4)
+        self.assertEqual(design["publication"], {"card": True, "page": False})
+
+    def test_v3_snapshot_preserves_legacy_card_and_page_consent(self):
+        legacy = copy.deepcopy(self.data)
+        legacy.pop("publication")
+        legacy["version"] = 3
+        upgraded = upgrade_design(legacy)
+        self.assertEqual(upgraded["version"], 4)
+        self.assertEqual(upgraded["publication"], {"card": True, "page": True})
+
+    def test_card_only_publication_stays_on_wall_without_detail_link(self):
+        self.data["publication"]["page"] = False
+        self.publish()
+        wall = Client().get("/team/")
+        self.assertContains(wall, "林序")
+        self.assertNotContains(wall, reverse("team:detail", args=[self.sc.pk]))
+        self.assertEqual(self.public().status_code, 404)
+
+    def test_card_only_publication_can_enable_page_later(self):
+        self.data["publication"]["page"] = False
+        self.publish()
+        self.assertEqual(self.public().status_code, 404)
+        self.sc.refresh_from_db()
+        self.data["publication"]["page"] = True
+        self.sc = change(self.user, "publish", self.sc.revision, self.data, True, preview_ticket(self.sc, self.data))
+        self.assertContains(self.public(), "林序")
+
+    def test_publish_rejects_disabled_card(self):
+        self.data["publication"] = {"card": False, "page": True}
+        self.assertEqual(self.send("publish", consent=True, ticket=preview_ticket(self.sc, self.data)).status_code, 400)
+
+    def test_state_reports_card_and_page_publication_separately(self):
+        self.data["publication"]["page"] = False
+        self.publish()
+        state = self.client.get(reverse("accounts:showcase_state")).json()
+        self.assertTrue(state["published"])
+        self.assertTrue(state["public_card"])
+        self.assertFalse(state["public_page"])
 
     def test_saving_after_publication_does_not_replace_snapshot(self):
         self.publish()
@@ -190,6 +235,38 @@ class ShowcaseTests(TestCase):
         self.assertEqual(Client().get("/team/", {"cohort": "2024", "direction": "hardware"}).context["page"].paginator.count, 1)
         self.assertEqual(Client().get("/team/", {"cohort": "2025"}).context["page"].paginator.count, 0)
         self.assertEqual(Client().get("/team/", {"position": "invalid"}).context["page"].paginator.count, 0)
+
+    def test_empty_wall_hides_filter_toolbar(self):
+        response = Client().get("/team/")
+        self.assertNotContains(response, 'class="sc-filters"')
+        self.assertContains(response, "每一份热爱，都值得被认识")
+
+    def test_wall_progressively_reveals_search_and_useful_facets(self):
+        self.publish()
+        response = Client().get("/team/")
+        self.assertContains(response, 'class="sc-filters"')
+        self.assertNotContains(response, 'placeholder="搜索昵称或公开标签"')
+        self.assertNotContains(response, '<select name="cohort">')
+
+        for index in range(5):
+            user = User.objects.create_user(username=f"searchable{index}", member_level=3, grade=str(2023 + index % 2))
+            sc = get_showcase(user)
+            design = copy.deepcopy(sc.draft)
+            design["nickname"] = f"伙伴{index}"
+            design["direction"] = "software" if index % 2 else "hardware"
+            change(user, "publish", sc.revision, design, True, preview_ticket(sc, design))
+
+        response = Client().get("/team/")
+        self.assertContains(response, 'placeholder="搜索昵称或公开标签"')
+        self.assertContains(response, '<select name="cohort">')
+        self.assertContains(response, '<select name="direction">')
+
+    def test_filtered_empty_result_keeps_reset_path(self):
+        self.publish()
+        response = Client().get("/team/", {"q": "不存在的成员"})
+        self.assertContains(response, 'class="sc-filters"')
+        self.assertContains(response, "清除筛选")
+        self.assertContains(response, "暂时没有匹配的伙伴")
 
     def test_pagination_and_order_not_position_rank(self):
         self.publish()
@@ -332,7 +409,7 @@ class ShowcaseTests(TestCase):
 
     def test_project_becoming_private_disappears(self):
         project = Project.objects.create(name="曾公开作品", is_public=True)
-        self.data["content"]["works"] = [{"title": "", "description": "", "image": "", "url": "", "project": str(project.pk)}]
+        self.data["content"]["works"] = [{"id": str(uuid.uuid4()), "title": "", "description": "", "image": "", "url": "", "project": str(project.pk)}]
         self.publish()
         self.assertContains(self.public(), "曾公开作品")
         project.is_public = False
@@ -366,6 +443,16 @@ class ShowcaseTests(TestCase):
         self.data["content"]["gallery"] = [{"image": str(asset.pk), "caption": "未启用"}]
         self.publish()
         self.assertEqual(Client().get(self.asset_url(asset)).status_code, 404)
+
+    def test_card_only_publication_does_not_expose_page_assets(self):
+        background = add_asset(self.user, upload_image("background.png"))
+        cover = add_asset(self.user, upload_image("cover.png"))
+        self.data["publication"]["page"] = False
+        self.data["card"]["background"].update(mode="photo", image=str(background.pk))
+        self.data["content"]["cover"] = str(cover.pk)
+        self.publish()
+        self.assertEqual(Client().get(self.asset_url(background)).status_code, 200)
+        self.assertEqual(Client().get(self.asset_url(cover)).status_code, 404)
 
     def test_replaced_snapshot_retires_old_image(self):
         asset = add_asset(self.user, upload_image())

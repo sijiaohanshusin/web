@@ -53,6 +53,7 @@ def body(request):
 @require_GET
 def wall(request):
     queryset = Showcase.objects.visible().select_related("user__position")
+    total_members = queryset.count()
     q = request.GET.get("q", "").strip()[:80]
     cohort = request.GET.get("cohort", "")
     direction = request.GET.get("direction", "")
@@ -61,7 +62,9 @@ def wall(request):
     if sort not in {"cohort_desc", "cohort_asc"}:
         sort = "cohort_desc"
     cohorts = list(queryset.exclude(public_cohort="").order_by("-public_cohort").values_list("public_cohort", flat=True).distinct())
-    positions = Position.objects.filter(holders__showcase__in=queryset).distinct()
+    direction_values = set(queryset.exclude(public_direction="").values_list("public_direction", flat=True).distinct())
+    directions = {key: label for key, label in schema.DIRECTIONS.items() if key in direction_values}
+    positions = list(Position.objects.filter(holders__showcase__in=queryset).distinct())
     if q:
         queryset = queryset.filter(Q(public_name__icontains=q) | Q(public_tags__icontains=q))
     if cohort:
@@ -73,10 +76,14 @@ def wall(request):
     page = Paginator(queryset.order_by("public_cohort" if sort == "cohort_asc" else "-public_cohort", "public_name", "id"), 24).get_page(request.GET.get("page"))
     query = request.GET.copy()
     query.pop("page", None)
+    filtered = bool(q or cohort or direction or position)
     context = {"members": [public_member(sc, sc.published) for sc in page], "page": page,
         "filters": {"q": q, "cohort": cohort, "direction": direction, "position": position, "sort": sort}, "cohorts": cohorts,
-        "directions": schema.DIRECTIONS, "positions": positions, "querystring": query.urlencode(),
-        "wall_url": reverse("team:wall"), "filtered": bool(q or cohort or direction or position)}
+        "directions": directions, "positions": positions, "querystring": query.urlencode(),
+        "wall_url": reverse("team:wall"), "filtered": filtered, "total_members": total_members,
+        "show_filters": bool(total_members or filtered), "show_search": bool(total_members >= 6 or q),
+        "show_cohort": bool(len(cohorts) > 1 or cohort), "show_direction": bool(len(directions) > 1 or direction),
+        "show_position": bool(len(positions) > 1 or position), "show_sort": total_members > 1}
     response = render(request, "showcase/results.html" if request.headers.get("X-Showcase-Partial") == "1" else "showcase/wall.html", context)
     patch_vary_headers(response, ["X-Showcase-Partial"])
     return response
@@ -85,6 +92,8 @@ def wall(request):
 @require_GET
 def detail(request, public_id):
     sc = get_object_or_404(Showcase.objects.visible().select_related("user__position"), pk=public_id)
+    if not schema.upgrade_design(sc.published)["publication"]["page"]:
+        raise Http404
     return render(request, "showcase/detail.html", {"member": public_member(sc, sc.published)})
 
 
@@ -145,6 +154,7 @@ def asset_uses(raw, *, public=False):
         return {}
     data = schema.upgrade_design(raw)
     c, card, page = data["content"], data["card"], data["page"]
+    publication = data["publication"]
     result = {}
     def add(aid, label):
         if aid:
@@ -152,15 +162,15 @@ def asset_uses(raw, *, public=False):
     add(c["avatar"], "展示头像")
     if not public or card["background"]["mode"] == "photo":
         add(card["background"]["image"], "卡片背景")
-    if not public or page["template"] in {"plate", "gallery"}:
+    if not public or (publication["page"] and page["template"] in {"plate", "gallery"}):
         add(c["cover"], "个人页封面")
     projects = set(str(pk) for pk in Project.public().values_list("pk", flat=True)) if public else None
     for index, work in enumerate(c["works"]):
         if public and work["project"] and work["project"] not in projects:
             continue
-        if not public or "works" in page["modules"] or ("work" in card["modules"] and work["id"] == card["featured_work"]):
+        if not public or (publication["page"] and "works" in page["modules"]) or ("work" in card["modules"] and work["id"] == card["featured_work"]):
             add(work["image"], f"作品 {index + 1}")
-    if not public or "gallery" in page["modules"]:
+    if not public or (publication["page"] and "gallery" in page["modules"]):
         for index, entry in enumerate(c["gallery"]):
             add(entry["image"], f"图集 {index + 1}")
     return result
@@ -186,8 +196,12 @@ def asset_list(sc):
 
 
 def state_data(sc):
+    published = schema.upgrade_design(sc.published) if sc.published else None
     return {"draft": schema.upgrade_design(sc.draft), "revision": sc.revision, "assets": asset_list(sc),
-            "published": bool(sc.published and not sc.blocked), "blocked": sc.blocked,
+            "published": bool(published and not sc.blocked),
+            "public_card": bool(published and published["publication"]["card"] and not sc.blocked),
+            "public_page": bool(published and published["publication"]["page"] and not sc.blocked),
+            "blocked": sc.blocked,
             "moderation_reason": sc.moderation_reason, "withdrawal_reason": sc.withdrawal_reason,
             "published_at": sc.published_at.isoformat() if sc.published_at else None,
             "saved_at": sc.updated_at.isoformat(), "public_url": reverse("team:detail", args=[sc.pk])}
@@ -201,7 +215,8 @@ def state(request):
         raise PermissionDenied
     sc = Showcase.objects.filter(user=request.user).first()
     if not sc:
-        return JsonResponse({"draft": schema.empty_design(), "revision": 0, "assets": [], "published": False, "blocked": False})
+        return JsonResponse({"draft": schema.empty_design(), "revision": 0, "assets": [], "published": False,
+                             "public_card": False, "public_page": False, "blocked": False})
     return JsonResponse(state_data(sc))
 
 
@@ -286,6 +301,7 @@ def moderation(request):
         return HttpResponse(status=405)
     # Administrators see status and the live public snapshot, never private drafts/assets.
     rows = [{"id": str(sc.pk), "label": sc.public_name or "未公开展示", "blocked": sc.blocked, "reason": sc.moderation_reason,
-             "url": reverse("team:detail", args=[sc.pk]) if sc.published and not sc.blocked else ""}
-            for sc in Showcase.objects.filter(Q(published__isnull=False) | Q(blocked=True)).order_by("-updated_at")[:200]]
+             "url": (reverse("team:detail", args=[sc.pk]) if sc.published and not sc.blocked
+                     and schema.upgrade_design(sc.published)["publication"]["page"] else "")}
+             for sc in Showcase.objects.filter(Q(published__isnull=False) | Q(blocked=True)).order_by("-updated_at")[:200]]
     return render(request, "showcase/moderation.html", {"rows": rows})

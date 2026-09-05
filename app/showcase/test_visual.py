@@ -58,7 +58,7 @@ class VisualTests(TestCase):
         self.assertIn(str(asset.pk), dto["background"])
         self.assertEqual(Client().get(self.asset_url(asset)).status_code, 200)
         editor = self.client.get(reverse("accounts:showcase"))
-        self.assertEqual(editor.context["bootstrap"]["draft"]["version"], 3)
+        self.assertEqual(editor.context["bootstrap"]["draft"]["version"], 4)
         self.sc.refresh_from_db()
         self.assertEqual(self.sc.draft, old)
         self.assertEqual(self.sc.published, old)

@@ -9,7 +9,7 @@ body.showcase-editor-page .site-main{padding:0;max-width:none}.showcase-editor-p
 .se-private{font-size:11px;border:1px solid var(--se-line);border-radius:4px;padding:3px 7px;color:var(--se-muted);white-space:nowrap}.se-wall-return{margin-left:auto;font-size:12px;color:var(--se-muted)!important}.se-save-state{font-size:12px;white-space:nowrap;color:var(--se-muted)}.se-save-state[data-state=dirty]{color:#d8ae73}.se-save-state[data-state=error]{color:#f59e9e}
 .se-button,.se-upload-button{border:1px solid var(--se-line);border-radius:5px;background:#132028;color:var(--se-text);padding:9px 16px;display:inline-flex;justify-content:center;align-items:center;gap:8px;min-height:40px;font-size:13px;white-space:nowrap}
 .se-button:hover{border-color:#617984;background:#192a33}.se-primary{background:#22bacb;color:#031419;font-weight:600;border-color:#29c4d3}.se-primary:hover{background:#4bd4e0}.se-danger{color:#efaaaa;border-color:#653d43;background:#2c191f}.se-subtle{background:transparent}.se-link-button{border:0;background:none;color:var(--se-accent);padding:0;text-align:left}
-.se-workbench{display:grid;grid-template-columns:220px minmax(0,1.53fr) minmax(320px,1fr);min-height:calc(100vh - 76px)}
+.se-workbench{display:grid;grid-template-columns:244px minmax(0,1.48fr) minmax(330px,1fr);min-height:calc(100vh - 76px)}
 .se-sidebar{border-right:1px solid var(--se-line);padding:30px 18px 24px;position:sticky;top:76px;height:calc(100vh - 76px);display:flex;flex-direction:column;background:#0a1318}
 .se-sidebar-title{font-size:13px;color:var(--se-muted);margin:0 16px 24px}.se-sidebar nav h2{font-size:13px;font-weight:500;margin:18px 14px 6px;color:#c8d2d8;letter-spacing:0}.se-sidebar nav h2 span{margin-right:7px;color:#8296a2}.se-sidebar nav a{display:flex;gap:10px;align-items:center;font-size:13px;border-radius:5px;padding:10px 12px 10px 38px;color:var(--se-muted);margin:3px 0;position:relative}
 .se-sidebar nav a:hover{color:var(--se-text);background:#132028}.se-sidebar nav a[aria-current=page]{color:#67deeb;background:#113139}.se-sidebar nav a[aria-current=page]:before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:2px;background:var(--se-accent)}.se-sidebar nav a.se-nav-main{padding-left:14px;margin-top:18px}
@@ -50,3 +50,48 @@ body.showcase-editor-page .site-main{padding:0;max-width:none}.showcase-editor-p
 @media(prefers-reduced-motion:reduce){.se-section{animation:none}.se-sidebar{transition:none}.se-shell *{scroll-behavior:auto!important}}
 @media(max-width:767px){.se-workbench .se-thumb{height:auto;aspect-ratio:3/5}.se-sidebar{visibility:hidden}.se-shell[data-menu=open] .se-sidebar{visibility:visible}}
 @media(max-width:1199px){.se-identity-editor{grid-template-columns:1fr}.se-identity-avatar{flex-direction:row;flex-wrap:wrap;justify-content:flex-start}.se-identity-avatar .se-avatar-image{width:62px;height:62px}.se-identity-avatar .se-help{flex-basis:100%;text-align:left}}
+
+/* v4 task navigation and progressive publication controls. */
+.se-sidebar .se-task-nav{display:grid;gap:7px}
+.se-sidebar .se-task-nav a{align-items:flex-start;padding:13px 12px;margin:0;gap:12px}
+.se-task-index{font:10px/1.7 var(--font-mono);letter-spacing:1px;color:#68808c}
+.se-task-nav a>span:last-child{display:grid;gap:3px}
+.se-task-nav strong{font-size:13px;font-weight:550;color:#c7d2d8}
+.se-task-nav small{font-size:10px;line-height:1.5;color:#718691}
+.se-task-nav a[aria-current=page] strong{color:#74e0ea}
+.se-task-nav a[aria-current=page] .se-task-index{color:#33c8d8}
+.se-subnav{display:flex;gap:5px;padding:4px;margin:0 0 25px;border:1px solid var(--se-line);border-radius:7px;background:#091216;max-width:max-content}
+.se-subnav a{padding:8px 15px;border-radius:4px;color:#8398a3;font-size:12px}
+.se-subnav a:hover{color:#d8e4e8;background:#12232b}
+.se-subnav a[aria-current=page]{color:#04161b;background:#4bcddb;font-weight:600}
+.se-publication-choice{display:flex;justify-content:space-between;align-items:center;gap:22px;padding:17px 18px;border:1px solid #354651;border-radius:7px;background:#0a141a}
+.se-publication-choice.is-enabled{border-color:#3c7780;background:linear-gradient(110deg,#0d2027,#102a2f)}
+.se-publication-choice>div{min-width:0}
+.se-publication-choice strong{display:block;margin:5px 0 4px;font-size:15px}
+.se-publication-choice p{margin:0;color:#849aa5;font-size:11px;line-height:1.7}
+.se-switch{display:flex;align-items:center;gap:9px;white-space:nowrap;cursor:pointer}
+.se-switch input{position:absolute;opacity:0;pointer-events:none}
+.se-switch span{width:38px;height:21px;padding:2px;border-radius:999px;background:#26363f;box-shadow:inset 0 0 0 1px #485964;transition:background .18s ease}
+.se-switch span:after{content:"";display:block;width:17px;height:17px;border-radius:50%;background:#9cabb2;transition:transform .18s ease,background .18s ease}
+.se-switch input:checked+span{background:#1e7e89}
+.se-switch input:checked+span:after{transform:translateX(17px);background:#ddfbfd}
+.se-switch input:focus-visible+span{outline:2px solid #5ce2ed;outline-offset:3px}
+.se-switch b{font-size:12px;font-weight:500;color:#becbd1}
+.is-private-preview{opacity:.62}
+.is-private-preview h2:after{content:"PRIVATE";margin-left:8px;padding:2px 5px;border:1px solid #697b84;border-radius:3px;font:8px var(--font-mono);letter-spacing:1px}
+.se-inspector-title{font-size:18px;margin-top:24px}
+.se-mobile-actions{display:none}
+
+@media(max-width:767px){
+  .se-topbar>[data-operation=save],.se-topbar>[data-section-link=publish]{display:none}
+  .se-workspace,.se-preview{padding-bottom:102px}
+  .se-mobile-actions{position:fixed;display:grid;grid-template-columns:1fr 1.3fr;gap:10px;left:0;right:0;bottom:0;z-index:55;padding:11px 16px calc(11px + env(safe-area-inset-bottom));background:#081116e8;border-top:1px solid #30414a;backdrop-filter:blur(14px)}
+  .se-mobile-actions .se-button{width:100%}
+  .se-subnav{max-width:100%;overflow-x:auto;scrollbar-width:none}
+  .se-subnav a{flex:1;text-align:center;white-space:nowrap;padding-inline:11px}
+  .se-publication-choice{align-items:flex-start;flex-direction:column}
+  .se-switch{width:100%;justify-content:space-between}
+  .is-private-preview{opacity:.72}
+}
+
+@media(prefers-reduced-motion:reduce){.se-switch span,.se-switch span:after{transition:none}}
