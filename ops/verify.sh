@@ -33,7 +33,7 @@ has_i()  { grep -qi -- "$1" <<<"$2"; }
 has_re() { grep -qiE -- "$1" <<<"$2"; }
 
 echo "应用"
-for path in / /recruit/ /works/ /honors/ /team/ /news/ /accounts/register/ /recruitment/; do
+for path in / /recruit/ /works/ /honors/ /team/ /news/ /accounts/register/ /recruitment/ /help/ /help/recruit/ /help/member/; do
     c=$(curl -sS $R -o /dev/null -w '%{http_code}' "$BASE$path")
     if [ "$c" = "200" ]; then ok "$path 200"; else bad "$path 返回 $c"; fi
 done
@@ -92,18 +92,32 @@ fi
 html=$(curl -sS $R "$BASE/")
 
 echo
-echo "自托管字体（六个：mono / 标题得意黑 / 正文 Regular + Bold / 导语宋体 / 科协数字）"
+echo "自托管字体（首屏仅预加载正文 Regular + Bold；装饰字体按 CSS 使用情况加载）"
 # **必须查「首页实际引用的那个哈希」，不能在目录里按名字挑一个。**
 # /srv/heuesta/static 是持久卷，而 ManifestStaticFilesStorage 从不删旧哈希文件 ——
 # 目录里同时躺着几个月前的同名字体。第一版这里写的是 `ls | grep | head -1`，
 # 结果挑中了七月那份陈旧文件、还打了勾：文件确实存在、确实可达，但**根本不是
 # 页面在用的那个**。「文件在」证明不了任何事，要比对的是引用关系。
-fonts=$(grep -oE 'fonts/[A-Za-z-]+\.[0-9a-f]{12}\.woff2' <<<"$html" | sort -u)
+preloads=$(grep -oE '<link[^>]*rel="preload"[^>]*as="font"[^>]*>' <<<"$html")
+preload_count=$(grep -c 'as="font"' <<<"$preloads")
+if [ "$preload_count" = "2" ] && has SourceHanSansCN-Regular "$preloads" && has SourceHanSansCN-Bold "$preloads"; then
+    ok "只预加载两种共享正文字重"
+else
+    bad "字体预加载不符合两种共享正文字重策略（$preload_count 项）"
+fi
+tokens_path=$(grep -oE '/static/css/tokens\.[0-9a-f]{12}\.css' <<<"$html" | head -1)
+tokens_css=""
+if [ -n "$tokens_path" ]; then
+    tokens_css=$(curl -fsS $R "$BASE$tokens_path") || bad "页面引用的字体样式表不可达"
+else
+    bad "页面未引用带哈希的 tokens.css"
+fi
+fonts=$(grep -oE 'fonts/[A-Za-z-]+\.[0-9a-f]{12}\.woff2' <<<"$tokens_css" | sort -u)
 if [ -z "$fonts" ]; then
-    bad "首页没有引用任何自托管字体"
+    bad "页面引用的样式表没有声明自托管字体"
 else
     n=$(wc -l <<<"$fonts")
-    if [ "$n" = "6" ]; then ok "首页引用了 6 个字体"; else bad "首页引用了 $n 个字体，应为 6"; fi
+    if [ "$n" = "6" ]; then ok "CSS 声明了 6 个自托管字体，不等于同时预加载"; else bad "CSS 声明了 $n 个字体，应为 6"; fi
     for f in $fonts; do
         base=$(basename "$f")
         c=$(curl -sS $R -o /dev/null -w '%{http_code}' "$BASE/static/$f")
@@ -126,7 +140,7 @@ fi
 
 echo
 echo "首页真的是新版（找几个改版才有的标记）"
-for probe in 'skip-link' 'view-transitions' 'nf-hero' 'SmileySans-subset' \
+for probe in 'skip-link' 'view-transitions' 'nf-hero' '帮助中心与使用手册' \
              'SourceHanSansCN-Regular-subset'; do
     if has "$probe" "$html"; then
         ok "首页含 $probe"

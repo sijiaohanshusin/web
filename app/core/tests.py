@@ -288,6 +288,29 @@ class HomePageDegradationTests(TestCase):
         self.assertNotContains(resp, "精选培训视频")
 
 
+class HomeAccessCopyTests(TestCase):
+    def test_home_does_not_promise_all_resources_after_registration(self):
+        for level in (None, 1, 2, 3):
+            with self.subTest(level=level):
+                self.client.logout()
+                if level is not None:
+                    member = User.objects.create_user(username=f"copy-check-{level}", member_level=level)
+                    self.client.force_login(member)
+                response = self.client.get(reverse("core:home"))
+                self.assertNotContains(response, "注册会员解锁全部内容")
+                self.assertContains(response, "按会员等级开放，具体以资料页权限为准")
+                if level in (None, 1):
+                    self.assertContains(response, "公开版块可浏览，一面通过后可参与讨论；新用户发帖需审核")
+
+    def test_deploy_check_follows_css_font_references_not_six_preloads(self):
+        from pathlib import Path
+        script = (Path(__file__).resolve().parents[2] / "ops" / "verify.sh").read_text(encoding="utf-8")
+        self.assertIn('tokens_css=$(curl', script)
+        self.assertIn('<<<"$tokens_css"', script)
+        self.assertIn('preload_count', script)
+        self.assertNotIn('首页引用了 $n 个字体，应为 6', script)
+
+
 class MotionPipelineTests(TestCase):
     """动效链路的模板接线。
 

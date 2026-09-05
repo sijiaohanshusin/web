@@ -511,7 +511,7 @@ includes/honor_row.html，和荣誉墙是同一份。
             <a class="nf-res-row" href="{% url 'files:list' %}">
                 <span class="res-branch" aria-hidden="true">├─</span>
                 <span class="res-name">资料站</span>
-                <span class="res-desc">培训课件、竞赛资料、工具软件，注册会员解锁全部内容</span>
+                <span class="res-desc">培训课件、竞赛资料、工具软件；按会员等级开放，具体以资料页权限为准</span>
                 <span class="res-go">浏览资料 <span>→</span></span>
             </a>
             <a class="nf-res-row" href="{{ forum_url }}" target="_blank" rel="noopener">
@@ -522,7 +522,7 @@ includes/honor_row.html，和荣誉墙是同一份。
                 原文案对所有人写「主站账号直接登录」，而招新成员（等级 1）拿不到
                 SSO Cookie —— 登录再跳回来仍然是游客，控制台干净、页面正常。
                 {% endcomment %}
-                <span class="res-desc">{% if user.is_member %}提问、晒作品、找队友，主站账号直接登录{% else %}提问、晒作品、找队友；公开可读，一面通过后即可发帖{% endif %}</span>
+                <span class="res-desc">{% if user.is_member %}提问、晒作品、找队友，主站账号直接登录{% else %}公开版块可浏览，一面通过后可参与讨论；新用户发帖需审核{% endif %}</span>
                 <span class="res-go">进入论坛 <span>→</span></span>
             </a>
             <a class="nf-res-row" href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">
