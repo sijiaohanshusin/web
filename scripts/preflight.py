@@ -131,6 +131,8 @@ def check_static():
                        encoding="utf-8", errors="replace", env=env)
     check(r.returncode == 0, "check_static_pipeline 通过",
           "" if r.returncode == 0 else "跑 python manage.py check_static_pipeline 看详情")
+    if r.returncode:
+        print((r.stdout + r.stderr)[-8000:])
 
 
 # ---------------------------------------------------------------- 5. 依赖清单

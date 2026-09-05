@@ -35,7 +35,13 @@ jobs:
           DJANGO_SETTINGS_MODULE: config.settings.ci
           HEUESTA_ISOLATED_CI: '1'
           CI_DB_PASSWORD: disposable-ci-only
+      # The static-pipeline check renders a page under dev settings. Its local
+      # database is separate from the disposable PostgreSQL test database.
+      - run: python manage.py migrate --noinput --settings=config.settings.dev
+        working-directory: app
       - run: python scripts/preflight.py --candidate
+        env:
+          BILIBILI_API_ENABLED: '0'
   browser-and-plugins:
     runs-on: ubuntu-latest
     timeout-minutes: 30
