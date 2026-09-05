@@ -53,7 +53,7 @@ def submit_and_review(page, admin, api_path, checks, name):
     with page.expect_response(lambda r: urlsplit(r.url).path == api_path and r.request.method == 'POST') as pending:
         page.locator('[component="composer"] [data-action="post"]:visible').click()
     response = pending.value
-    assert response.status == 200, response.text()
+    assert response.status == 202, response.text()
     data = response.json()['response']
     assert data.get('queued'), 'Fresh accounts must follow the actual default moderation queue'
     checks.append(f'{name}: submission enters review rather than silently disappearing')
@@ -148,6 +148,29 @@ def run():
                     assert admin.evaluate('app.user.isAdmin')
                     assert not pages['officer'].evaluate('app.user.isAdmin'), 'Main-site rank must not grant NodeBB administration'
                     checks.append('forum administration remains separately granted')
+                    # Verify revocation before the writing journey, then restore only
+                    # this disposable member so the remaining checks still run.
+                    users['member'].member_level = 2
+                    users['member'].save(update_fields=['member_level'])
+                    main = contexts['member'].new_page()
+                    main.goto(BASE + '/accounts/profile/')
+                    member.goto(FORUM + '/categories')
+                    result = api(member, f"/api/topic/{fixture['mailboxTid']}")
+                    if result['status'] == 200:
+                        errors.append('SSO: existing forum session retained mailbox access after downgrade')
+                    else:
+                        checks.append('existing forum session synchronizes downgrade on next forum page load')
+                    main.locator('form[action$="/accounts/logout/"] button').click()
+                    member.goto(FORUM + '/categories')
+                    member.wait_for_function('window.app && app.user')
+                    if member.evaluate('Number(app.user.uid)') != 0:
+                        errors.append('SSO: forum retained login after main-site logout')
+                    else:
+                        checks.append('main-site logout clears the forum identity on next page load')
+                    users['member'].member_level = 3
+                    users['member'].save(update_fields=['member_level'])
+                    do_login(contexts['member'], BASE, f'{users["member"].username}:{password}')
+                    main.close()
                     member.goto(FORUM + f"/category/{fixture['discussionCid']}")
                     member.locator('[component="category/post"]').click()
                     member.locator('[component="composer"] input.title').fill('手册演示：第一次发帖')
@@ -180,20 +203,6 @@ def run():
                         checks.append(f'{role}: real mailbox create reply and vote endpoints are read-only')
                     member.goto(FORUM + f"/topic/{fixture['mailboxTid']}")
                     capture(member, 'forum-mailbox')
-                    # A valid new main-site token must remove stale managed group membership.
-                    users['member'].member_level = 2
-                    users['member'].save(update_fields=['member_level'])
-                    main = contexts['member'].new_page()
-                    main.goto(BASE + '/accounts/profile/')
-                    member.goto(FORUM + '/categories')
-                    result = api(member, f"/api/topic/{fixture['mailboxTid']}")
-                    assert result['status'] != 200, 'Existing forum session retained mailbox access after downgrade'
-                    checks.append('existing forum session synchronizes downgrade on next forum page load')
-                    main.locator('form[action$="/accounts/logout/"] button').click()
-                    member.goto(FORUM + '/categories')
-                    member.wait_for_function('window.app && app.user')
-                    assert member.evaluate('Number(app.user.uid)') == 0, 'Forum retained login after main-site logout'
-                    checks.append('main-site logout clears the forum identity on next page load')
                 finally:
                     for ctx in contexts.values():
                         ctx.close()
