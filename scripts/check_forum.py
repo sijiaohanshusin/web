@@ -1,6 +1,7 @@
 """Real Django login -> NodeBB session sharing, posting and mailbox access, CI only."""
 import json
 import os
+import re
 from pathlib import Path
 import secrets
 import subprocess
@@ -21,6 +22,16 @@ OUT = ROOT / '.shots' / 'forum-evidence'
 APP = ROOT / '.shots' / 'forum-runtime'
 BASE = 'http://127.0.0.1:8814'
 FORUM = 'http://127.0.0.1:4567'
+
+
+def safe_startup_diagnostic(config):
+    text = (OUT / 'server.private.log').read_text(errors='replace')[-7000:]
+    for secret in (config.get('secret'), config['postgres'].get('password'), 'dev-sso-secret-not-for-production'):
+        if secret:
+            text = text.replace(secret, '[redacted]')
+    text = re.sub(r'eyJ[A-Za-z0-9_.-]+', '[redacted-jwt]', text)
+    text = '\n'.join(line for line in text.splitlines() if not re.search(r'cookie|token|password|secret', line, re.I))
+    return text
 
 
 def capture(page, name):
@@ -68,12 +79,12 @@ def run():
             proc = subprocess.Popen(['node', 'app.js'], cwd=APP, env=env, stdout=log, stderr=subprocess.STDOUT)
             for _ in range(120):
                 if proc.poll() is not None:
-                    raise RuntimeError('Forum failed to start; inspect private local server log')
+                    raise RuntimeError('Forum startup failed:\n' + safe_startup_diagnostic(config))
                 if fixture_file.exists() and port_open(4567):
                     break
                 time.sleep(1)
             else:
-                raise RuntimeError('Isolated forum readiness timeout')
+                raise RuntimeError('Isolated forum readiness timeout:\n' + safe_startup_diagnostic(config))
             fixture = json.loads(fixture_file.read_text())
             checks.extend(fixture['checks'])
             with DevServer(8814), sync_playwright() as p:

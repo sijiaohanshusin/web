@@ -48,8 +48,10 @@ def main():
     }
     # Setup can print credentials. Its log is deliberately excluded from CI artifacts.
     with (OUT / 'setup.private.log').open('w') as log:
-        subprocess.run(['node', 'nodebb', 'setup', json.dumps(config), '--skip-build'], cwd=APP, env=env,
-                       stdout=log, stderr=subprocess.STDOUT, check=True)
+        result = subprocess.run(['node', 'nodebb', 'setup', json.dumps(config), '--skip-build'], cwd=APP, env=env,
+                                stdout=log, stderr=subprocess.STDOUT)
+        if result.returncode:
+            raise RuntimeError('Disposable NodeBB setup failed; credential-bearing command/log withheld')
     for script in ('localize.js', 'groups-v2.js'):
         run(['node', str(ROOT / 'ops/forum' / script)], APP)
     shutil.copyfile(ROOT / 'scripts/forum_fixture/configure.cjs', APP / 'heuesta-audit.cjs')
