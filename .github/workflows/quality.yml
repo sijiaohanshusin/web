@@ -67,5 +67,10 @@ jobs:
         if: always()
         with:
           name: browser-evidence
-          path: .shots/
+          include-hidden-files: true
+          if-no-files-found: error
+          path: |
+            .shots/**/*.png
+            .shots/**/checks.json
+            .shots/*.png
           retention-days: 14
