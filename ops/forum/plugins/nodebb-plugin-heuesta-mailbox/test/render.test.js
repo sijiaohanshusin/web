@@ -27,3 +27,30 @@ test('enhances every post returned by NodeBB', () => {
 	const data = enhancePosts({ posts: [{ content: `<p>[heuesta-mailbox-preview:${TOKEN}]</p>` }] });
 	assert.match(data.posts[0].content, /<iframe/);
 });
+
+test('accepts NodeBB Markdown paragraphs with automatic text direction', () => {
+	const rendered = enhancePostContent([
+		`<p dir="auto">[heuesta-mailbox-preview:${TOKEN}]</p>`,
+		'<p dir="auto">[heuesta-mailbox-text-start]</p>',
+		'<p dir="auto">Plain fallback</p>',
+		'<p dir="auto">[heuesta-mailbox-text-end]</p>',
+	].join('\n'));
+	assert.match(rendered, /<iframe/);
+	assert.match(rendered, /<details/);
+	assert.match(rendered, /Plain fallback/);
+	assert.doesNotMatch(rendered, /\[heuesta-mailbox-/);
+	assert.equal(enhancePostContent(rendered), rendered);
+});
+
+test('leaves ordinary posts and quoted examples unchanged', () => {
+	const ordinary = '<p dir="auto">Ordinary discussion</p>';
+	const code = `<pre><code>[heuesta-mailbox-preview:${TOKEN}]</code></pre>`;
+	assert.equal(enhancePostContent(ordinary), ordinary);
+	assert.equal(enhancePostContent(code), code);
+	assert.doesNotMatch(enhancePostContent('<p>[heuesta-mailbox-preview:javascript:alert(1)]</p>'), /<iframe/);
+});
+
+test('ignores missing posts in the NodeBB post list', () => {
+	const result = enhancePosts({ posts: [null, { content: '<p>Text</p>' }] });
+	assert.equal(result.posts[1].content, '<p>Text</p>');
+});

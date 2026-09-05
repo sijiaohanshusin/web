@@ -1,7 +1,8 @@
 'use strict';
 
-const PREVIEW_MARKER = /<p>\s*\[heuesta-mailbox-preview:([a-f0-9]{64})\]\s*<\/p>/gi;
-const TEXT_BLOCK = /<p>\s*\[heuesta-mailbox-text-start\]\s*<\/p>([\s\S]*?)<p>\s*\[heuesta-mailbox-text-end\]\s*<\/p>/gi;
+// NodeBB's Markdown renderer adds direction attributes to paragraph elements.
+const PREVIEW_MARKER = /<p\b[^>]*>\s*\[heuesta-mailbox-preview:([a-f0-9]{64})\]\s*<\/p>/gi;
+const TEXT_BLOCK = /<p\b[^>]*>\s*\[heuesta-mailbox-text-start\]\s*<\/p>([\s\S]*?)<p\b[^>]*>\s*\[heuesta-mailbox-text-end\]\s*<\/p>/gi;
 const ARCHIVE_MARKER = /(?:&lt;|<)!--\s*heuesta-mailbox(?:-sender)?:.*?--(?:&gt;|>)/gi;
 
 function previewFrame(token) {
@@ -31,7 +32,9 @@ function enhancePostContent(value) {
 
 function enhancePosts(data) {
 	for (const post of data && Array.isArray(data.posts) ? data.posts : []) {
-		post.content = enhancePostContent(post.content);
+		if (post) {
+			post.content = enhancePostContent(post.content);
+		}
 	}
 	return data;
 }

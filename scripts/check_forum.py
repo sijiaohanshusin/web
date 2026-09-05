@@ -40,6 +40,14 @@ def capture(page, name):
     assert not page.evaluate('document.documentElement.scrollWidth > innerWidth + 1')
 
 
+def inspect_composer(page, text, checks):
+    notice = page.locator('[component="composer/post-queue/alert"].show')
+    expect(notice).to_be_visible()
+    notice.locator('.btn-close').click()
+    expect(page.locator('[component="composer"] .preview')).to_contain_text(text)
+    checks.append('composer queue notice can be dismissed and live preview shows the typed body')
+
+
 def api(page, path, method='GET', body=None):
     return page.evaluate('''async ({path, method, body}) => {
       const response = await fetch(path, {method, headers: {
@@ -176,7 +184,15 @@ def run():
                     member.locator('[component="category/post"]').click()
                     member.locator('[component="composer"] input.title').fill('手册演示：第一次发帖')
                     member.locator('[component="composer"] textarea.write').fill('## 我想交流的内容\n\n这是隔离环境中的演示帖子，请不要用于正式通知。')
+                    capture(member, 'forum-queue-notice')
+                    inspect_composer(member, '隔离环境中的演示帖子', checks)
                     capture(member, 'forum-compose')
+                    member.set_viewport_size({'width': 390, 'height': 844})
+                    expect(member.locator('[component="composer"] textarea.write')).to_be_visible()
+                    expect(member.locator('[component="composer"] [data-action="post"]:visible')).to_be_visible()
+                    capture(member, 'forum-compose-mobile')
+                    member.set_viewport_size({'width': 1440, 'height': 1000})
+                    checks.append('mobile composer keeps body and submit action reachable without horizontal overflow')
                     topic_url = submit_and_review(member, admin, '/api/v3/topics', checks, 'topic')
                     member.goto(topic_url)
                     expect(member.locator('[component="post/content"]').first).to_contain_text('隔离环境中的演示帖子')
@@ -185,6 +201,7 @@ def run():
                     reply.goto(topic_url)
                     reply.locator('[component="topic/reply"]:visible').first.click()
                     reply.locator('[component="composer"] textarea.write').fill('这是预备会员的演示回复，发布后应当显示在主题中。')
+                    inspect_composer(reply, '预备会员的演示回复', checks)
                     capture(reply, 'forum-reply-compose')
                     tid = topic_url.rsplit('/', 1)[-1]
                     submit_and_review(reply, admin, f'/api/v3/topics/{tid}', checks, 'reply')
@@ -203,6 +220,16 @@ def run():
                             assert result['status'] == 403, (role, path, result)
                         checks.append(f'{role}: real mailbox create reply and vote endpoints are read-only')
                     member.goto(FORUM + f"/topic/{fixture['mailboxTid']}")
+                    content = member.locator('[component="post/content"]').first
+                    expect(content).not_to_contain_text('[heuesta-mailbox-')
+                    frame = content.locator('iframe[title="邮件原始排版"]')
+                    expect(frame).to_be_visible()
+                    assert frame.get_attribute('sandbox') == 'allow-popups allow-popups-to-escape-sandbox'
+                    expect(frame.content_frame.locator('body')).to_contain_text('活动安排仅用于验证私密版块')
+                    content.locator('summary').click()
+                    expect(content.locator('details[open]')).to_contain_text('合成邮件')
+                    content.locator('summary').click()
+                    checks.append('mailbox renders sanitized HTML and working text disclosure without leaking internal markers')
                     capture(member, 'forum-mailbox')
                 finally:
                     for ctx in contexts.values():
