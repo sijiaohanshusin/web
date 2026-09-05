@@ -144,7 +144,7 @@ def action(request):
             return JsonResponse({"documents": {kind: render_to_string("showcase/preview.html", {"component": render_member(sc, design, kind)}) for kind in ("card", "page")},
                                  "ticket": services.preview_ticket(sc, design)})
         component = render_member(sc, design, target)
-        return JsonResponse({"document": render_to_string("showcase/preview.html", {"component": component}), "ticket": services.preview_ticket(sc, design)})
+        return JsonResponse({"document": render_to_string("showcase/preview.html", {"component": component}), "ticket": services.preview_ticket(sc, design, target)})
     sc = services.change(request.user, operation, data.get("revision"), data.get("design"), data.get("consent"), data.get("ticket", ""))
     return JsonResponse({**state_data(sc), "message": {"save": "草稿已保存，公开内容未改变。", "publish": "已发布，成员墙现在展示这一版。", "withdraw": "已撤回，页面与图片已停止公开访问。"}[operation]})
 

@@ -301,12 +301,15 @@ def profile_edit(request):
 
 def showcase_summary(user):
     from showcase.models import Showcase
+    from showcase.schema import upgrade_design
 
     sc = Showcase.objects.filter(user=user).first()
     if not sc:
-        return {"label": "尚未创建私有草稿", "reason": ""}
+        return {"label": "从第一张成员卡片开始", "reason": "无需担任职位，也不需要先做完整个人页。", "ready": 0}
     label = "被管理员下架" if sc.blocked else "已有公开版本" if sc.published and user.can_design_showcase else "已撤回" if sc.withdrawal_reason else "尚未公开"
-    return {"label": label, "reason": sc.moderation_reason if sc.blocked else "", "saved_at": sc.updated_at}
+    draft = upgrade_design(sc.draft)
+    ready = sum(bool(value) for value in (draft["nickname"].strip(), draft["content"]["intro"].strip(), draft["content"]["tags"]))
+    return {"label": label, "reason": sc.moderation_reason if sc.blocked else "", "saved_at": sc.updated_at, "ready": ready}
 
 
 class PasswordChangeView(auth_views.PasswordChangeView):

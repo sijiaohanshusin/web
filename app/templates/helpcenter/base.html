@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% load static %}
+{% block body_class %}help-page help-{{ audience|default:'home' }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/helpcenter.css' %}">{% if audience == 'admin' %}<meta name="robots" content="noindex,nofollow">{% endif %}{% endblock %}
+{% block content %}<div class="hc-shell container">
+<nav class="hc-breadcrumb" aria-label="面包屑"><a href="{% url 'helpcenter:index' %}">帮助中心</a>{% if audience %}<span>/</span><a href="{% url 'helpcenter:guide' audience %}">{{ guide.title }}</a>{% endif %}{% if article %}<span>/</span><span>当前任务</span>{% endif %}</nav>
+{% block help_content %}{% endblock %}
+</div>{% endblock %}
+{% block extra_js %}<script src="{% static 'js/helpcenter.js' %}" defer></script>{% endblock %}

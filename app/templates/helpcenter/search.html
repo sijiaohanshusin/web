@@ -1,0 +1,4 @@
+{% extends 'helpcenter/base.html' %}
+{% block title %}搜索帮助 | HEU ESTA{% endblock %}
+{% block help_content %}<header class="hc-guide-hero"><div><p class="hc-kicker">FIND YOUR NEXT STEP</p><h1>找到下一步</h1><p>按任务名称、按钮或提示文字搜索。</p></div></header>{% include 'helpcenter/search_form.html' %}
+{% if query %}<p class="hc-result-count">“{{ query }}” · {{ results|length }} 项结果</p>{% endif %}<div class="hc-tasks">{% for item in results %}<a class="hc-task" href="{{ item.url }}"><div><small>{% if item.audience == 'recruit' %}招新注册{% elif item.audience == 'member' %}会员使用{% else %}内部管理{% endif %}</small><h2>{{ item.title }}</h2><p>{{ item.summary }}</p></div><span aria-hidden="true">→</span></a>{% empty %}<div class="hc-empty"><h2>{% if query %}换一个简短关键词试试{% else %}从一个具体问题开始{% endif %}</h2><p>例如“验证码”“报名”“活动签到”或“展示”。</p><a href="{% url 'helpcenter:index' %}">按身份浏览全部指南 →</a></div>{% endfor %}</div>{% endblock %}

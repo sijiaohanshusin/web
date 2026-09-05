@@ -48,6 +48,6 @@
     </div>
     {% endif %}
 
-    {% if not preview and member.has_page %}<a class="sc-card-link" href="{{ member.url }}" aria-label="了解{{ member.nickname }}"><span aria-hidden="true">→</span></a>{% elif preview or member.has_page %}<span class="sc-card-link" aria-hidden="true">→</span>{% endif %}
+    {% if not preview and member.has_page %}<a class="sc-card-link" href="{{ member.url }}" aria-label="了解{{ member.nickname }}"><span aria-hidden="true">→</span></a>{% elif member.has_page %}<span class="sc-card-link" aria-hidden="true">→</span>{% endif %}
 </article>
 {% endwith %}

@@ -63,8 +63,10 @@
                 <h2>我的成员展示</h2>
                 <p><span class="badge badge-gray">{{ showcase_summary.label }}</span></p>
                 {% if showcase_summary.reason %}<p>{{ showcase_summary.reason }}</p>{% endif %}
-                <p class="form-help">卡片与个人页独立设计。保存草稿不会公开，只有本人确认发布后才会出现在成员墙。</p>
+                <p class="form-help">先做一张卡片，个人页以后再补。昵称、短介绍、技能标签：已准备 {{ showcase_summary.ready }} / 3 项，后两项可选。没有照片也可以展示。</p>
+                <p class="form-help">自动保存只保留私有草稿；必须由你预览并确认发布，才会出现在成员墙。</p>
                 <a class="btn btn-primary" href="{% url 'accounts:showcase' %}">设计我的展示</a>
+                <a class="btn btn-ghost" href="/help/member/showcase/">查看图文引导</a>
             </section>
             {% endif %}
             {% if position_appointments %}

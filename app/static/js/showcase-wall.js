@@ -88,6 +88,7 @@
             if (current === sequence) document.getElementById('member-results').removeAttribute('aria-busy');
         }
     }
+    if (!form) return;
     form.addEventListener('submit', event => { event.preventDefault(); update(queryUrl()); });
     form.addEventListener('change', event => { if (event.target.tagName === 'SELECT') update(queryUrl()); });
     form.elements.q.addEventListener('compositionstart', () => { composing = true; clearTimeout(timer); controller?.abort(); sequence++; });

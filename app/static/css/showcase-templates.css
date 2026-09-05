@@ -613,6 +613,38 @@
 .sc-archive-colophon blockquote { margin:24px 0 0; padding:14px 14px; border:1px solid #aa6d427a; color:#90532e; font:10px/1.8 var(--font-serif); }
 .sc-page--type>.sc-page-signature { margin:0; padding:17px 26px; border-color:var(--sc-archive-line); color:#537072; }
 
+/* Card hierarchy stays legible at real wall size, not only in a full-screen mockup. */
+.sc-card--plate .sc-card-dossier-mark,.sc-card--plate .sc-card-kicker,
+.sc-card-dossier-foot,.sc-card-archive-foot { display:none; }
+.sc-card--plate .sc-photo { height:56%; }
+.sc-card--plate .sc-card-surface::before { border-color:#72cbd522; }
+.sc-card.sc-card--plate .sc-name { font-family:var(--font-body); font-size:clamp(22px,8cqi,30px); }
+.sc-card--plate .sc-meta,.sc-card--type .sc-meta { font-size:13px; line-height:1.7; }
+.sc-card--plate .sc-card-intro { font-size:14px; }
+.sc-card--plate .sc-tags li,.sc-card--type .sc-tags li { font-size:11px; padding:3px 7px; }
+.sc-card--plate .sc-card-work { font-size:12px; }
+.sc-card.sc-card--type .sc-card-content { gap:12px; }
+
+/* Reading-first profile: real cover and readable metadata, not decorative instruments. */
+.sc-dossier-grid { grid-template-columns:minmax(250px,.85fr) minmax(0,1.4fr); gap:20px; padding:28px; }
+.sc-dossier-workbench { grid-column:2; grid-row:1; display:block; height:auto; min-height:370px; }
+.sc-dossier-cover { height:100%; min-height:370px; }
+.sc-dossier-spec { grid-column:1/-1; padding:20px 24px; }
+.sc-dossier-spec dl { display:flex; flex-wrap:wrap; gap:22px 40px; }
+.sc-dossier-spec dl div { flex:1 1 150px; }
+.sc-dossier-spec dt,.sc-dossier-spec dd { font-size:13px; }
+.sc-page--plate .sc-page-hero { min-height:0; }
+.sc-page--plate .sc-prose,.sc-page--type .sc-prose { font-size:16px; line-height:1.9; }
+.sc-page--plate .sc-work-copy p,.sc-page--type .sc-work-copy p { font-size:14px; line-height:1.8; }
+.sc-page--type .sc-archive-colophon .sc-meta,.sc-page--type .sc-archive-colophon .sc-direction-detail { font-size:14px; }
+.sc-page--type .sc-archive-colophon .sc-official { font-size:12px; }
+.sc-archive-colophon dt { font-size:12px; }
+.sc-archive-colophon dd,.sc-archive-colophon blockquote { font-size:14px; }
+.sc-archive-contents li { font-size:14px; padding:10px 0; }
+.sc-archive-contents a { color:inherit; text-decoration:underline; text-underline-offset:4px; }
+.sc-archive-contents a:focus-visible { outline:2px solid #226d74; outline-offset:4px; }
+.sc-section { scroll-margin-top:100px; }
+
 /* Shared motion, scaling and fallbacks */
 @media (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
     .sc-page--plate .sc-dossier-cover:hover img { transform:scale(1.025); }
@@ -634,8 +666,8 @@
 
 @media (max-width:1050px) {
     .sc-dossier-grid { grid-template-columns:minmax(210px,.8fr) minmax(0,1.4fr); }
-    .sc-dossier-workbench { grid-column:1/-1; grid-row:2; height:500px; }
-    .sc-dossier-spec { grid-column:2; grid-row:1; }
+    .sc-dossier-workbench { grid-column:2; grid-row:1; height:auto; }
+    .sc-dossier-spec { grid-column:1/-1; grid-row:2; }
     .sc-page--plate .sc-dossier-modules { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .sc-page--plate .sc-section--works,.sc-page--plate .sc-section--gallery { grid-column:1/-1; }
     .sc-page--plate .sc-section:nth-child(n) { border-right:0; }
@@ -653,7 +685,8 @@
     .sc-page--plate .sc-page-hero { min-height:0; padding:25px 21px; }
     .sc-page--plate .sc-avatar { width:96px; height:96px; }
     .sc-dossier-number { margin-top:28px; }
-    .sc-dossier-workbench { height:430px; }
+    .sc-dossier-workbench { height:340px; min-height:0; }
+    .sc-dossier-cover { min-height:0; }
     .sc-dossier-instruments { grid-template-columns:1fr; }
     .sc-instrument--chip { display:none; }
     .sc-page--plate .sc-dossier-modules { grid-template-columns:1fr; padding:0 13px 13px; }
@@ -681,7 +714,7 @@
     .sc-card.sc-card--type .sc-card-quote { flex-basis:34%; }
     .sc-card.sc-card--type .sc-avatar { width:43px; height:43px; }
     .sc-card--type .sc-official { margin-left:55px; }
-    .sc-dossier-workbench { height:360px; grid-template-rows:minmax(215px,1fr) 125px; }
+    .sc-dossier-workbench { height:290px; }
     .sc-page--type .sc-archive-statement .sc-page-intro { font-size:36px; }
     .sc-page--type .sc-works article { display:block; }
     .sc-page--type .sc-works .sc-image-link,.sc-page--type .sc-work-placeholder { min-height:0; }

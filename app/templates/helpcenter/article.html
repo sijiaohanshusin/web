@@ -1,0 +1,17 @@
+{% extends 'helpcenter/base.html' %}
+{% block title %}{{ article.title }} | {{ guide.title }} | HEU ESTA{% endblock %}
+{% block description %}{{ article.summary }}{% endblock %}
+{% block help_content %}
+<div class="hc-article-layout">
+<aside class="hc-sidebar"><details open><summary>本册任务目录</summary><nav aria-label="手册章节">{% for item in articles %}<a href="{{ item.url }}" {% if item.slug == article.slug %}aria-current="page"{% endif %}>{{ item.order|stringformat:'02d' }} <span>{{ item.title }}</span></a>{% endfor %}</nav></details></aside>
+<article class="hc-article" data-help-article="{{ article.key }}" data-help-version="{{ article.version }}">
+<header><p class="hc-kicker">{{ guide.tag }} / TASK {{ article.order|stringformat:'02d' }}</p><h1>{{ article.title }}</h1><p class="hc-deck">{{ article.summary }}</p><div class="hc-meta"><span>约 {{ article.minutes }} 分钟</span><span>{% if article.access == 'admin' %}系统管理员专用{% elif article.access == 'officer' %}内部使用 · 站务人员{% else %}公开指南{% endif %}</span></div><a class="hc-action" href="{{ article.action_url }}">打开操作页面 ↗</a></header>
+<details class="hc-toc"><summary>这篇文章包含什么</summary>{{ toc }}</details>
+{% if audience == 'admin' %}<aside class="hc-caution"><strong>执行前检查</strong><p>确认目标账号或记录、当前权限和影响范围。高风险操作按交接规范留痕，遇到权限不足先联系负责人。</p></aside>{% endif %}
+<div class="hc-prose">{{ html }}</div>
+<section class="hc-checkpoints"><h2>完成后，核对一下</h2><p class="hc-check-status" role="status" aria-live="polite">检查点仅记录在当前浏览器，不会操作网站数据。</p>{% for item in article.checkpoints %}<label><input type="checkbox" data-checkpoint="{{ forloop.counter0 }}"> <span>{{ item }}</span></label>{% endfor %}<button type="button" data-reset-checks>重置检查</button></section>
+{% if related %}<aside class="hc-related"><h2>接下来可能用到</h2>{% for item in related %}<a href="{{ item.url }}">{{ item.title }} →</a>{% endfor %}</aside>{% endif %}
+<nav class="hc-chapters" aria-label="相邻章节">{% if previous %}<a href="{{ previous.url }}"><small>上一项</small>{{ previous.title }}</a>{% else %}<a href="{% url 'helpcenter:guide' audience %}"><small>返回</small>本册目录</a>{% endif %}{% if next %}<a href="{{ next.url }}"><small>下一项 →</small>{{ next.title }}</a>{% endif %}</nav>
+<footer class="hc-source">核验日期 {{ article.verified }} · 适用版本 {{ article.version }}<br>截图可点击放大。<a href="{% url 'core:feedback' %}">页面与说明不一致？反馈给站务</a></footer>
+</article></div>
+{% endblock %}

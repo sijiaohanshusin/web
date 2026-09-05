@@ -1,0 +1,63 @@
+name: Website quality gates
+on:
+  pull_request:
+  push:
+    branches: [main, 'codex/**']
+permissions:
+  contents: read
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  django-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: heuesta_ci
+          POSTGRES_USER: heuesta_ci
+          POSTGRES_PASSWORD: disposable-ci-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd 'pg_isready -U heuesta_ci -d heuesta_ci'
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12', cache: pip, cache-dependency-path: app/requirements.txt}
+      - run: pip install -r app/requirements.txt fonttools brotli
+      - run: python manage.py test --noinput
+        working-directory: app
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.ci
+          HEUESTA_ISOLATED_CI: '1'
+          CI_DB_PASSWORD: disposable-ci-only
+      - run: python scripts/preflight.py --candidate
+  browser-and-plugins:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: pip install -r app/requirements.txt playwright
+      - run: python -m playwright install --with-deps chromium
+      - run: python scripts/check_experience.py
+      - run: python scripts/check_pages.py
+      - run: python scripts/check_register.py
+      - run: python scripts/check_perf.py
+      - run: node --test scripts/showcase_editor_state.test.cjs
+      - run: node scripts/showcase_wall_smoke.js
+      - run: npm ci && npm test
+        working-directory: ops/forum/plugins/nodebb-plugin-heuesta-mailbox
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence
+          path: .shots/
+          retention-days: 14

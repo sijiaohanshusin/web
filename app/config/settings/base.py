@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "core",
     "accounts",
     "showcase",
+    "helpcenter",
     "files",
     "dashboard",
     "notify",

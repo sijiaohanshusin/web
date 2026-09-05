@@ -8,7 +8,7 @@ function target(extra = {}) {
     const events = {};
     return Object.assign({events, addEventListener(name, fn) { events[name] = fn; }}, extra);
 }
-function setup(reduce = false) {
+function setup(reduce = false, empty = false) {
     const requests = [], timers = new Map(), animations = [], observers = [];
     let nextTimer = 0, result, hydrated = 0;
     const q = target({value:''});
@@ -30,7 +30,7 @@ function setup(reduce = false) {
         gsap:{fromTo(node) { animations.push(node); }, killTweensOf(node) { node.killed = true; }, set(node) { node.cleared = true; }},
     };
     const originalQuery = wall.querySelector;
-    wall.querySelector = selector => selector === '.sc-wall-heading' ? heading : originalQuery();
+    wall.querySelector = selector => selector === '.sc-wall-heading' ? heading : empty ? null : originalQuery();
     const win = target({ESTA:{motion, hydrateImageFades() { hydrated++; }}});
     const context = {window:win, location, URL, URLSearchParams, AbortController,
         document:{getElementById(id) { return {'member-wall':wall,'filter-feedback':feedback,'member-results':result,'member-count':count}[id]; },
@@ -52,6 +52,8 @@ function setup(reduce = false) {
     };
 }
 (async () => {
+    const empty = setup(false, true);
+    assert.equal(empty.requests.length, 0, 'empty wall initializes without a search form');
     let env = setup();
     env.input('old'); env.tick();
     env.input('new');

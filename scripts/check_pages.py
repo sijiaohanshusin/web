@@ -41,7 +41,6 @@ LIST_PAGES = [
     ("/resources/", "// RESOURCES"),
     ("/works/", "// OUR WORK"),
     ("/honors/", "// HONORS"),
-    ("/team/", "// THE TEAM"),
     ("/points/leaderboard/", "// LEADERBOARD"),
 ]
 

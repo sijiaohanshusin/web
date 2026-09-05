@@ -71,7 +71,7 @@
     return heading("版式与身份","从一张名片开始，设计别人认识你的第一眼。","MEMBER CARD / LAYOUT")+
       panel("选择卡片版式",templateGrid("card")+help("切换仅改变布局，已填写的内容会保留。"))+
       panel("公开身份",'<div class="se-identity-editor">'+avatar+'<div>'+identity+'</div></div><div class="se-official"><span class="se-label">官方身份 · 来自任命记录</span>'+$("#official-identity").innerHTML+help("现任职位与任期由系统同步，个人设计不会改变官方身份。")+'</div>')+
-      panel("外观细节",sharedStyles("card"));
+      '<details class="se-panel se-advanced"><summary>外观细节 · 可选</summary>'+sharedStyles("card")+'</details>';
   }
   function background() {
     const bg=get("card.background"), a=asset(bg.image);
@@ -81,9 +81,9 @@
       inner = (a?'<div class="se-row-between"><span class="se-label">'+esc(a.name)+'</span><div class="se-row">'+btn("更换背景照片",'data-pick="card.background.image"')+btn("移除引用",'data-clear="card.background.image"',"se-subtle")+'</div></div>':imageControl("card.background.image","选择背景照片"))+
         (a?'<div class="se-spaced"><div class="se-crop" id="crop-control" tabindex="0" role="group" aria-label="照片焦点，点击或使用方向键调整"><img src="'+a.large_url+'" alt="调整照片取景" style="object-position:'+bg.x+'% '+bg.y+'%;transform:scale('+bg.zoom+')"><span class="se-crop-point" style="left:'+bg.x+'%;top:'+bg.y+'%"></span></div></div>':"")+
         help("拖动取景焦点，或用方向键微调。取景不会修改原素材。")+
-        '<div class="se-grid-two">'+range("card.background.x","水平焦点",0,100)+range("card.background.y","垂直焦点",0,100)+'</div>'+range("card.background.zoom","裁切缩放",1,1.5,.01)+
+        '<details class="se-advanced"><summary>精细调整 · 焦点、缩放与遮罩</summary><div class="se-grid-two">'+range("card.background.x","水平焦点",0,100)+range("card.background.y","垂直焦点",0,100)+'</div>'+range("card.background.zoom","裁切缩放",1,1.5,.01)+
         '<div class="se-grid-two">'+field("card.background.blur","背景模糊",{choices:options.blurs})+field("card.background.mask","文字区域遮罩",{choices:options.masks})+'</div>'+help("遮罩保留安全下限，确保昵称和身份信息清晰。")+
-        btn("恢复取景",'data-reset-crop',"se-subtle");
+        btn("恢复取景",'data-reset-crop',"se-subtle")+'</details>';
     } else inner=presets+help(bg.mode==="gradient"?"精选渐变让纯文字也有完整的设计效果。":"纯色背景保持克制，让文字成为主角。")+sharedStyles("card");
     return heading("背景与照片","把真实的工作瞬间，变成你的独特背景。","MEMBER CARD / BACKGROUND")+
       panel("背景来源",segment("card.background.mode",{photo:"本人照片",gradient:"预设渐变",solid:"纯色"})+help("卡片背景独立设置，不会覆盖个人页封面。"))+
@@ -295,7 +295,7 @@
   function schedulePreview(delay=350){clearTimeout(previewTimer);if(!composing&&!model.busy)previewTimer=setTimeout(updatePreview,delay);}
   function scheduleAutosave(delay=1400){
     clearTimeout(autosaveTimer);
-    if(model.dirty&&!composing&&!model.busy)autosaveTimer=setTimeout(()=>saveDraft(true),delay);
+    if(model.dirty&&!composing&&!model.busy&&!saveError&&!conflictServer)autosaveTimer=setTimeout(()=>saveDraft(true),delay);
   }
   async function updatePreview(){
     if(model.busy||composing)return;
@@ -329,6 +329,7 @@
     }catch(error){if(error.name!=="AbortError")$("#preview-status").textContent="模板缩略图暂未更新；编辑内容已保留";}
   }
   async function saveDraft(auto=false){
+    if(conflictServer){if(!auto)recoverConflict();return;}
     if(!model.dirty){if(!auto)toast("草稿已经是最新版本。");return;}
     if(saveInFlight||model.busy){autosaveQueued=true;return;}
     const snapshot=model.snapshot();
@@ -341,10 +342,10 @@
     }catch(error){
       saveError=error.message||"自动保存失败";
       status(auto?"自动保存暂停 · 输入已保留":"保存失败 · 输入已保留",true);
-      if(!auto||error.code==="conflict")errors(error);
+      errors(error);
     }finally{
       saveInFlight=false;status();schedulePreview(0);requestTemplates();
-      if(model.dirty||autosaveQueued)scheduleAutosave(900);
+      if(!saveError&&(model.dirty||autosaveQueued))scheduleAutosave(900);
     }
   }
   async function operation(action){
@@ -395,7 +396,7 @@
       selectedAsset=added?.id||selectedAsset;
       toast("图片已安全处理。选择用途后，再保存草稿。");render();if($("#asset-picker").open)renderPicker();
     }catch(error){errors(error);}
-    finally{model.busy=false;status();schedulePreview();requestTemplates();}
+    finally{model.busy=false;status();schedulePreview();scheduleAutosave();requestTemplates();}
   }
   async function deleteAsset(id){
     if(model.busy||model.dirty||references(model.draft).has(id))return toast("请先移除引用并保存，再删除素材。");
@@ -501,7 +502,7 @@
         const field=$('[data-field="'+CSS.escape(path)+'"]');if(field){field.setAttribute("aria-invalid","true");field.focus();}
       }
       else if(el.id==="download-draft"){const url=URL.createObjectURL(new Blob([JSON.stringify(model.draft,null,2)],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="我的展示-未保存副本.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-      else if(el.id==="load-server-version"&&conflictServer){if(!await confirm("载入服务器版本？","当前页面尚未保存的内容会被替换。你可以先取消并下载副本。"))return;model.load(conflictServer);confirmed=false;saveError="";$("#version-conflict").close();$("#form-errors").hidden=true;render();schedulePreview(0);requestTemplates();}
+      else if(el.id==="load-server-version"&&conflictServer){if(!await confirm("载入服务器版本？","当前页面尚未保存的内容会被替换。你可以先取消并下载副本。"))return;model.load(conflictServer);conflictServer=null;confirmed=false;saveError="";$("#version-conflict").close();$("#form-errors").hidden=true;render();schedulePreview(0);requestTemplates();}
     }catch(error){errors(error);}
   });
   $("#editor-confirm").addEventListener("cancel",()=>finishConfirm(false));

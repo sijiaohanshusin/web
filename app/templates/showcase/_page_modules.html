@@ -1,5 +1,5 @@
 {% for module in member.page_modules %}
-<section class="sc-section sc-section--{{ module.kind }}">
+<section id="showcase-module-{{ module.kind }}" class="sc-section sc-section--{{ module.kind }}">
     <h3><span class="sc-label">0{{ forloop.counter }}</span><span>{{ module.label }}</span></h3>
     {% if module.kind == 'intro' %}<div class="sc-prose">{{ member.about|linebreaksbr }}</div>{% endif %}
     {% if module.kind == 'skills' %}<div class="sc-prose">{{ member.skills|linebreaksbr }}</div>{% endif %}

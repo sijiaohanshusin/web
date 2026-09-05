@@ -5,17 +5,11 @@
             <p class="sc-label">HEU ESTA / MEMBER PROFILE</p>
             <div class="sc-page-identity">{% include 'showcase/identity.html' with member=member design=member.page only %}</div>
             {% if 'intro' in member.page.modules and member.intro %}<p class="sc-page-intro">{{ member.intro }}</p>{% endif %}
-            <div class="sc-dossier-number" aria-hidden="true">ESTA / {% if member.cohort %}{{ member.cohort|slice:'-2:' }}{% else %}--{% endif %}</div>
-            <div class="sc-dossier-coordinate" aria-hidden="true"><span>HEU ESTA MEMBER</span><span>ENGINEERING DOSSIER</span></div>
         </header>
         <section class="sc-dossier-workbench" aria-label="个人页封面">
             <div class="sc-dossier-cover">
                 {% if member.cover %}<img src="{{ member.cover }}" alt="成员选择的个人页封面">{% else %}<div class="sc-dossier-cover-empty" aria-hidden="true"><span>IDEA</span><span>SIGNAL</span><span>BUILD</span></div>{% endif %}
                 <span class="sc-dossier-caption" aria-hidden="true">⌖ WORKBENCH_01</span>
-            </div>
-            <div class="sc-dossier-instruments" aria-hidden="true">
-                <div class="sc-instrument sc-instrument--chip"><span>PCB / MACRO</span><i></i></div>
-                <div class="sc-instrument sc-instrument--scope"><span>OSCILLOSCOPE</span><svg viewBox="0 0 360 120" preserveAspectRatio="none"><path d="M0 62h28l7-25 12 58 14-83 15 92 14-72 13 46 12-20 11 4h30l8-24 12 54 13-78 14 88 13-69 13 43 10-16 14 2h56" fill="none" vector-effect="non-scaling-stroke"/></svg></div>
             </div>
         </section>
         <aside class="sc-dossier-spec">
@@ -27,7 +21,6 @@
                 <div><dt>MAJOR FIELD</dt><dd>{{ member.direction|default:'探索中' }}{% if member.direction_detail %}<br>{{ member.direction_detail }}{% endif %}</dd></div>
                 {% if 'skills' in member.page.modules and member.tags %}<div><dt>FOCUS AREA</dt><dd>{% for tag in member.tags %}{{ tag }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</dd></div>{% endif %}
             </dl>
-            <div class="sc-dossier-circuit" aria-hidden="true"></div>
         </aside>
     </div>
     <div class="sc-page-modules sc-dossier-modules">{% include 'showcase/_page_modules.html' with member=member only %}</div>
@@ -39,20 +32,19 @@
         <header class="sc-page-hero sc-archive-statement">
             <p class="sc-label"><span>01</span> 个人宣言 · PERSONAL STATEMENT</p>
             {% if 'intro' in member.page.modules and member.intro %}<p class="sc-page-intro">{{ member.intro }}</p>{% else %}<p class="sc-page-intro">{{ member.nickname }}的成员档案。</p>{% endif %}
-            <div class="sc-archive-blueprint" aria-hidden="true"><span>BUILD USEFUL THINGS<br>SOLVE REAL PROBLEMS</span></div>
         </header>
         <aside class="sc-archive-colophon">
             <p class="sc-label">身份档案 · IDENTITY COLOPHON</p>
             <div class="sc-page-identity">{% include 'showcase/identity.html' with member=member design=member.page only %}</div>
             <dl>
-                {% if member.cohort %}<div><dt>加入协会</dt><dd>{{ member.cohort }} 级</dd></div>{% endif %}
+                {% if member.cohort %}<div><dt>入学届别</dt><dd>{{ member.cohort }} 级</dd></div>{% endif %}
                 <div><dt>专注方向</dt><dd>{{ member.direction|default:'探索中' }}{% if member.direction_detail %} · {{ member.direction_detail }}{% endif %}</dd></div>
                 {% if 'skills' in member.page.modules and member.tags %}<div><dt>关键词</dt><dd>{{ member.tags|join:' · ' }}</dd></div>{% endif %}
                 {% if member.position %}<div><dt>现任职位</dt><dd>{{ member.position.name }} · {{ member.position.term }}</dd></div>{% endif %}
             </dl>
             <div class="sc-archive-contents">
                 <p class="sc-label">目录 · CONTENTS</p>
-                <ol>{% for module in member.page_modules %}<li><span>0{{ forloop.counter }}</span><span>{{ module.label }}</span><span>P.{{ forloop.counter|add:'1'|stringformat:'02d' }}</span></li>{% endfor %}</ol>
+                <ol>{% for module in member.page_modules %}<li><span>0{{ forloop.counter }}</span><a href="#showcase-module-{{ module.kind }}">{{ module.label }}</a><span aria-hidden="true">↓</span></li>{% endfor %}</ol>
             </div>
             <blockquote>记录思考，沉淀经验，<br>让每一次实践成为下一次创造的起点。</blockquote>
         </aside>

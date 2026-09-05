@@ -163,6 +163,8 @@ def check_env_example():
     print("\n6. 环境变量：没有默认值的那些，env.example 里必须都有")
     required: set[str] = set()
     for path in list(APP.rglob("*.py")) + [REPO / "ops" / "entrypoint.sh"]:
+        if path == APP / "config" / "settings" / "ci.py":
+            continue  # Disposable CI secrets do not belong in the production example.
         if "__pycache__" in str(path) or not path.exists():
             continue
         text = path.read_text(encoding="utf-8", errors="ignore")
@@ -296,7 +298,10 @@ def main() -> int:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     print("上线前地面检查（不碰生产、不改任何东西）")
-    check_git()
+    if "--candidate" in sys.argv:
+        print("候选版本检查：不验证 main 发布位置；这不是上线授权。")
+    else:
+        check_git()
     check_migrations()
     check_deploy_settings()
     check_static()
@@ -319,7 +324,7 @@ def main() -> int:
         for f in failures:
             print(f"  · {f}")
         return 1
-    print("地面检查全部通过 —— 可以按 docs/2026改版计划.md 的上线步骤走")
+    print("候选版本本地检查通过；发布仍需 main 对齐、备份和公网验收。" if "--candidate" in sys.argv else "地面检查全部通过 —— 可以按 docs/2026改版计划.md 的上线步骤走")
     return 0
 
 

@@ -36,7 +36,7 @@ def fixtures():
                   "large_image": work_photo, "description": "从原理验证到可用界面，记录一次完整的设计迭代。"}]
         gallery = [{"image": "/team/design-demo/photos/builder/", "caption": "在实践里校准每一个细节。"},
                    {"image": "/team/design-demo/photos/maker/", "caption": "从一块电路板开始。"}]
-        members.append({"url": f"/team/design-demo/member-{index}/", "nickname": name, "initial": name[0], "cohort": year,
+        members.append({"url": f"/team/design-demo/member-{index}/", "has_page": True, "nickname": name, "initial": name[0], "cohort": year,
             "direction": DIRECTIONS[direction], "direction_key": direction, "direction_detail": "设计与技术" if index == 4 else "",
             "position": {"name": "硬件副主席", "term": "2025–2026 届"} if index == 1 else None,
             "card": design["card"], "page": design["page"], "background": url, "background_small": url,

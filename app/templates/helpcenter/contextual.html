@@ -1,0 +1,1 @@
+{% if tasks %}<aside class="container" aria-label="当前页面帮助"><p class="form-help">查看帮助：{% for item in tasks %}<a href="{{ item.url }}">{{ item.title }}</a>{% if not forloop.last %} · {% endif %}{% endfor %}</p></aside>{% endif %}

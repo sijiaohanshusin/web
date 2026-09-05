@@ -1,4 +1,4 @@
-{% load static %}
+{% load static help_links %}
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -70,6 +70,7 @@
         {% endif %}
     </nav>
     <div class="dash-side-foot">
+        <a href="{% url 'helpcenter:guide' 'admin' %}">管理手册与操作帮助</a>
         {% if user.is_staff or user.is_superuser %}
             <a href="{% url 'admin:index' %}" target="_blank">高级后台（Admin）↗</a>
         {% endif %}
@@ -99,6 +100,7 @@
     {% endif %}
 
     {% block content %}{% endblock %}
+    {% contextual_help %}
 </main>
 
 {% block extra_js %}{% endblock %}

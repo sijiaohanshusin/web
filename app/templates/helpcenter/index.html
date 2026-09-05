@@ -1,0 +1,8 @@
+{% extends 'helpcenter/base.html' %}
+{% block title %}帮助中心 | HEU ESTA{% endblock %}
+{% block help_content %}
+<header class="hc-hero"><p class="hc-kicker">HEU ESTA / FIELD GUIDE</p><h1>把操作弄明白，<br><span>把时间留给创造。</span></h1><p>选择你的身份，找到眼前的任务。每篇都有步骤、截图和完成检查。</p>{% include 'helpcenter/search_form.html' %}</header>
+<div class="hc-guides">{% for item in guides %}<a class="hc-guide hc-guide--{{ item.key }}" href="{% url 'helpcenter:guide' item.key %}"><span class="hc-guide-number">0{{ forloop.counter }} / {{ item.tag }}</span><h2>{{ item.label }}</h2><p>{{ item.summary }}</p><span class="hc-guide-bottom">{{ item.count }} 个操作任务 <b aria-hidden="true">↗</b></span></a>{% endfor %}</div>
+<section class="hc-shortcuts"><div><p class="hc-kicker">QUICK ANSWERS</p><h2>先解决最常见的卡点</h2></div><div><a href="/help/recruit/verify/">收不到邮箱验证码 <span>→</span></a><a href="/help/recruit/submit/">注册完成后，还需要报名吗 <span>→</span></a><a href="/help/member/review/">老会员为什么还不能登录 <span>→</span></a><a href="/help/member/showcase/">只做一张成员卡片，从哪里开始 <span>→</span></a></div></section>
+<p class="hc-note">需要具体问题协助？<a href="{% url 'core:feedback' %}">提交网站问题反馈</a>，写明页面、操作步骤和提示文字。</p>
+{% endblock %}

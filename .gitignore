@@ -27,6 +27,7 @@ app/staticfiles/
 
 # 使用手册逐页渲染与临时截图（仅用于本地视觉验收）
 /docs/manuals/rendered/
+/docs/help/dist/
 /.tmp-admin.png
 /.tmp-manual-test.png
 

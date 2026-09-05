@@ -25,4 +25,7 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <url><loc>https://heuesta.cn/help/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://heuesta.cn/help/recruit/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://heuesta.cn/help/member/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
 </urlset>

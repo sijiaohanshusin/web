@@ -1649,26 +1649,18 @@ class DeployPerfContractTests(TestCase):
         self.assertIn("immutable", block, "/static/ 少了 immutable")
         self.assertIn("max-age=31536000", block, "/static/ 的 max-age 不见了")
 
-    def test_all_self_hosted_fonts_are_preloaded(self):
-        """少 preload 一个，那一档的文字就会先用系统黑体画一遍再跳。
-
-        四个字体各有分工：mono 是数字与编号，Heavy 是首屏大标题，
-        Regular/Bold 是页面上剩下的全部文字。正文两档还必须**成对**出现 ——
-        只有 Regular 时浏览器会把它描粗当加粗用（合成假粗）。
-        """
+    def test_only_shared_body_fonts_are_preloaded(self):
         import re
 
         text = _template_text("base.html")
         preloads = re.findall(r'<link rel="preload"[^>]*as="font"[^>]*>', text)
-        self.assertEqual(len(preloads), 6, f"字体 preload 不是六条：{len(preloads)}")
-        blob = " ".join(preloads)
-        for font in ("JetBrainsMono-subset.woff2", "SmileySans-subset.woff2",
-                     "SourceHanSansCN-Regular-subset.woff2",
-                     "SourceHanSansCN-Bold-subset.woff2",
-                     "SourceHanSerifCN-SemiBold-subset.woff2",
-                     "ESTADigits.woff2"):
-            with self.subTest(font=font):
-                self.assertIn(font, blob)
+        self.assertEqual(len(preloads), 2)
+        for weight in ("Regular", "Bold"):
+            self.assertIn(f"SourceHanSansCN-{weight}-subset.woff2", " ".join(preloads))
+
+    def test_auth_styles_are_not_loaded_on_public_content_pages(self):
+        self.assertNotContains(self.client.get("/help/"), "css/auth.css")
+        self.assertContains(self.client.get("/accounts/register/"), "css/auth.css")
 
     def test_body_font_family_is_self_hosted_not_the_system_stack(self):
         """正文是站上读得最多的文字，不能交给访客的操作系统决定。

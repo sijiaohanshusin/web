@@ -55,8 +55,8 @@ def digest(data):
     return hashlib.sha256(json.dumps(upgrade_design(data), sort_keys=True, ensure_ascii=True).encode()).hexdigest()
 
 
-def preview_ticket(showcase, data):
-    return signing.dumps({"user": showcase.user_id, "revision": showcase.revision, "hash": digest(data)}, salt="member-showcase-preview")
+def preview_ticket(showcase, data, scope="both"):
+    return signing.dumps({"user": showcase.user_id, "revision": showcase.revision, "hash": digest(data), "scope": scope}, salt="member-showcase-preview")
 
 
 @transaction.atomic
@@ -89,7 +89,10 @@ def change(user, action, revision, raw=None, consent=False, ticket=""):
                 claim = signing.loads(ticket, salt="member-showcase-preview", max_age=3600)
             except signing.BadSignature:
                 raise ValidationError("请先预览当前设计，再发布。")
-            if claim != {"user": current.pk, "revision": revision, "hash": digest(data)}:
+            scope = claim.get("scope") if isinstance(claim, dict) else None
+            if scope not in ({"both"} if data["publication"]["page"] else {"card", "both"}):
+                raise ValidationError("请先预览本次要公开的全部内容。")
+            if claim != {"user": current.pk, "revision": revision, "hash": digest(data), "scope": scope}:
                 raise ValidationError("设计已变化，请先预览最新内容。")
             sc.published = data
             sc.public_name = data["nickname"]

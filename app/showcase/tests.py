@@ -112,10 +112,25 @@ class ShowcaseTests(TestCase):
         self.assertEqual(self.send("publish", consent=True, ticket=ticket).status_code, 400)
 
     def test_publish_flow_and_public_uuid(self):
-        preview = self.send("preview").json()
+        preview = self.send("preview", target="both").json()
         self.assertEqual(self.send("publish", consent=True, ticket=preview["ticket"]).status_code, 200)
         self.assertContains(self.public(), "林序")
         self.assertEqual(uuid.UUID(str(self.sc.pk)).version, 4)
+
+    def test_card_preview_cannot_authorize_personal_page(self):
+        ticket = self.send("preview", target="card").json()["ticket"]
+        self.assertEqual(self.send("publish", consent=True, ticket=ticket).status_code, 400)
+        self.sc.refresh_from_db()
+        self.assertIsNone(self.sc.published)
+
+    def test_card_preview_can_authorize_card_only(self):
+        self.data["publication"]["page"] = False
+        ticket = self.send("preview", target="card").json()["ticket"]
+        self.assertEqual(self.send("publish", consent=True, ticket=ticket).status_code, 200)
+
+    def test_page_preview_cannot_authorize_card(self):
+        ticket = self.send("preview", target="page").json()["ticket"]
+        self.assertEqual(self.send("publish", consent=True, ticket=ticket).status_code, 400)
 
     def test_new_showcase_defaults_to_card_only_publication(self):
         design = empty_design()
@@ -137,6 +152,11 @@ class ShowcaseTests(TestCase):
         self.assertContains(wall, "林序")
         self.assertNotContains(wall, reverse("team:detail", args=[self.sc.pk]))
         self.assertEqual(self.public().status_code, 404)
+
+    def test_card_only_preview_has_no_misleading_detail_arrow(self):
+        self.data["publication"]["page"] = False
+        document = self.send("preview", target="card").json()["document"]
+        self.assertNotIn('class="sc-card-link"', document)
 
     def test_card_only_publication_can_enable_page_later(self):
         self.data["publication"]["page"] = False

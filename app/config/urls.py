@@ -5,6 +5,7 @@ from django.urls import include, path
 from showcase.views import deny_direct_asset
 
 urlpatterns = [
+    path("help/", include("helpcenter.urls")),
     path("media/showcase/<path:path>", deny_direct_asset),
     path("showcase/", include("showcase.urls")),
     path("", include("core.urls")),
