@@ -99,10 +99,12 @@
         </div>
     {% endif %}
 
+    <p class="form-help dash-table-fallback">窄屏下可左右滑动表格查看其余列。</p>
     {% block content %}{% endblock %}
     {% contextual_help %}
 </main>
 
+<script src="{% static 'js/dashboard-tables.js' %}" defer></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

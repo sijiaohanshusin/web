@@ -60,13 +60,13 @@
 <form method="post" action="{% url 'dashboard:member_action' %}">
     {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
     <div class="dash-table-wrap">
-        <table class="table">
-            <thead><tr><th style="width:36px;"><input type="checkbox" id="check-all" title="全选"></th><th>姓名 / 用户名</th><th>届别</th><th>学院 / 方向</th><th>等级 / 职位</th><th>注册时间</th></tr></thead>
+        <table class="table member-table">
+            <thead><tr><th style="width:36px;"><input type="checkbox" id="check-all" title="全选"></th><th data-sticky-key>姓名 / 用户名</th><th>届别</th><th>学院 / 方向</th><th>等级 / 职位</th><th>注册时间</th></tr></thead>
             <tbody>
             {% for u in page.object_list %}
             <tr>
                 <td><input type="checkbox" name="ids" value="{{ u.pk }}" {% if u.is_superuser or u == user %}disabled{% endif %}></td>
-                <td><strong>{{ u.real_name|default:u.username }}</strong><small class="table-sub">@{{ u.username }} · {{ u.student_id|default:"—" }}</small></td>
+                <td data-sticky-key><strong>{{ u.real_name|default:u.username }}</strong><small class="table-sub">@{{ u.username }} · {{ u.student_id|default:"—" }}</small></td>
                 <td>{{ u.grade|default:"—" }}{% if u.grade %} 级{% endif %}</td>
                 <td>{{ u.college|default:"—" }}<small class="table-sub">{{ u.specialty_label }}</small></td>
                 <td><span class="badge" style="color:#fff;background:{{ u.level_color }};border-color:{{ u.level_color }};">{{ u.level_label }}</span>{% if u.position %} <span class="badge" style="color:#fff;background:{{ u.position.color }};border-color:{{ u.position.color }};">{{ u.position.name }}</span>{% endif %}</td>

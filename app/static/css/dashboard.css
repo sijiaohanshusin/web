@@ -93,6 +93,21 @@
 
 .dash-table-wrap { border: 1px solid var(--line-d); border-radius: 14px; overflow: auto; background: rgba(255, 255, 255, .015); }
 .dash-table-wrap .table th { position: sticky; top: 0; background: var(--black-2); }
+.dash-table-wrap:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+.dash-scroll-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0; color: var(--muted); font-size: var(--fs-xs); }
+.dash-scroll-controls[hidden] { display: none; }
+.dash-scroll-controls > span { max-width: 38em; }
+.dash-scroll-buttons { display: flex; gap: 6px; flex-shrink: 0; }
+.dash-scroll-buttons .btn { min-width: 44px; min-height: 44px; padding: 8px 12px; }
+.dash-scroll-buttons .btn:disabled { opacity: .45; cursor: default; }
+/* Only the member identity column is pinned; other tables retain native layout. */
+.member-table [data-sticky-key] { overflow-wrap: anywhere; min-width: 140px; max-width: 170px; }
+.has-horizontal-scroll .member-table [data-sticky-key] { position: sticky; left: 0; z-index: 1; background: var(--black-2); box-shadow: 1px 0 0 var(--line-d); }
+.has-horizontal-scroll .member-table th[data-sticky-key] { z-index: 2; }
+@media (max-width: 480px) {
+    .dash-scroll-controls { flex-wrap: wrap; gap: 8px; }
+    .dash-scroll-buttons { margin-left: auto; }
+}
 .dash-row-actions { white-space: nowrap; }
 /* 徽章里的中文不要在词中间断行（「招新成员」断成「招新成/员」）。列多了之后
    表格宽度不够时应当让 .dash-table-wrap 横向滚，而不是把每个徽章挤成两行。 */
