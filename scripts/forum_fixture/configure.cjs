@@ -24,7 +24,7 @@ nconf.defaults({base_dir: __dirname, views_dir: __dirname + '/build/public/templ
     for (const [key, value] of Object.entries({
         title: 'HEU ESTA 隔离演示论坛', defaultLang: 'zh-CN',
         allowGuestSearching: 1, emailConfirmRequired: 0, disableEmailSubscriptions: 1,
-        postDelay: 0, newbiePostDelay: 0, newbiePostDelayThreshold: 0,
+        postDelay: 0, initialPostDelay: 0, newbiePostDelay: 0, newbiePostDelayThreshold: 0,
         minimumPostLength: 1, minimumTitleLength: 2, 'min:rep:post-links': 0,
         'activitypub:enabled': 0, 'email:notifications': 0,
     })) await meta.configs.set(key, value);

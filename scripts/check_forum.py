@@ -49,6 +49,27 @@ def api(page, path, method='GET', body=None):
     }''', {'path': path, 'method': method, 'body': body})
 
 
+def submit_and_review(page, admin, api_path, checks, name):
+    with page.expect_response(lambda r: urlsplit(r.url).path == api_path and r.request.method == 'POST') as pending:
+        page.locator('[component="composer"] [data-action="post"]:visible').click()
+    response = pending.value
+    assert response.status == 200, response.text()
+    data = response.json()['response']
+    assert data.get('queued'), 'Fresh accounts must follow the actual default moderation queue'
+    checks.append(f'{name}: submission enters review rather than silently disappearing')
+    admin.goto(FORUM + '/post-queue')
+    row = admin.locator(f'[data-id="{data["id"]}"]').first
+    expect(row).to_be_visible()
+    capture(admin, f'forum-{name}-review')
+    endpoint = f'/api/v3/posts/queue/{data["id"]}'
+    with admin.expect_response(lambda r: urlsplit(r.url).path == endpoint and r.request.method == 'POST') as accepted:
+        row.locator('[data-action="accept"]').click()
+    assert accepted.value.status == 200, accepted.value.text()
+    post = accepted.value.json()['response']['post']
+    checks.append(f'{name}: forum administrator approves through the actual review page')
+    return f'{FORUM}/topic/{post["tid"]}'
+
+
 def run():
     assert os.environ.get('HEUESTA_FORUM_AUDIT') == '1'
     assert os.environ.get('GITHUB_ACTIONS') == 'true'
@@ -67,6 +88,10 @@ def run():
     call_command('migrate', verbosity=0)
     password = secrets.token_urlsafe(28)
     users = make_roles('forum-audit', password)
+    for role, user in users.items():
+        if user:
+            user.email = 'admin@example.invalid' if role == 'admin' else f'audit-{role}@example.invalid'
+            user.save(update_fields=['email'])
     # Intentionally exercise Unicode usernames through real SSO, not a fabricated JWT.
     users['member'].username = '手册演示.成员'
     users['member'].save(update_fields=['username'])
@@ -91,7 +116,7 @@ def run():
                 browser = p.chromium.launch()
                 contexts, pages = {}, {}
                 try:
-                    for role in ('guest', 'recruit', 'preparatory', 'member', 'officer'):
+                    for role in ('guest', 'recruit', 'preparatory', 'member', 'officer', 'admin'):
                         ctx = browser.new_context(viewport={'width': 1440, 'height': 1000}, reduced_motion='reduce')
                         contexts[role] = ctx
                         ctx.route('**/*', lambda route: route.continue_() if urlsplit(route.request.url).hostname == '127.0.0.1' else route.abort())
@@ -108,33 +133,38 @@ def run():
                         assert (uid > 0) == (role not in ('guest', 'recruit')), role
                         checks.append(f'{role}: real main-site login and forum SSO eligibility')
                         result = api(page, f"/api/category/{fixture['mailboxCid']}")
-                        assert (result['status'] == 200) == (role in ('member', 'officer')), (role, result['status'])
+                        assert (result['status'] == 200) == (role in ('member', 'officer', 'admin')), (role, result['status'])
                         result = api(page, f"/api/topic/{fixture['mailboxTid']}")
-                        assert (result['status'] == 200) == (role in ('member', 'officer')), role
+                        assert (result['status'] == 200) == (role in ('member', 'officer', 'admin')), role
                         listing = api(page, '/api/categories')
-                        assert ('公共邮箱' in listing['text']) == (role in ('member', 'officer')), role
+                        assert ('公共邮箱' in listing['text']) == (role in ('member', 'officer', 'admin')), role
                         preview = api(page, f"/api/heuesta-mailbox/preview/{fixture['previewToken']}")
-                        assert preview['status'] == (200 if role in ('member', 'officer') else 404), role
+                        assert preview['status'] == (200 if role in ('member', 'officer', 'admin') else 404), role
                         if preview['status'] == 200:
                             assert '<script' not in preview['text'] and 'https://tracking.invalid' not in preview['text']
                         checks.append(f'{role}: mailbox listing topic API and HTML preview privacy')
                     member = pages['member']
+                    admin = pages['admin']
+                    assert admin.evaluate('app.user.isAdmin')
+                    assert not pages['officer'].evaluate('app.user.isAdmin'), 'Main-site rank must not grant NodeBB administration'
+                    checks.append('forum administration remains separately granted')
                     member.goto(FORUM + f"/category/{fixture['discussionCid']}")
                     member.locator('[component="category/post"]').click()
                     member.locator('[component="composer"] input.title').fill('手册演示：第一次发帖')
                     member.locator('[component="composer"] textarea.write').fill('## 我想交流的内容\n\n这是隔离环境中的演示帖子，请不要用于正式通知。')
                     capture(member, 'forum-compose')
-                    member.locator('[component="composer"] [data-action="post"]:visible').click()
-                    member.wait_for_url('**/topic/**')
+                    topic_url = submit_and_review(member, admin, '/api/v3/topics', checks, 'topic')
+                    member.goto(topic_url)
                     expect(member.locator('[component="post/content"]').first).to_contain_text('隔离环境中的演示帖子')
-                    topic_url = member.url
                     checks.append('member creates a real topic through the composer')
                     reply = pages['preparatory']
                     reply.goto(topic_url)
                     reply.locator('[component="topic/reply"]').first.click()
                     reply.locator('[component="composer"] textarea.write').fill('这是预备会员的演示回复，发布后应当显示在主题中。')
                     capture(reply, 'forum-reply-compose')
-                    reply.locator('[component="composer"] [data-action="post"]:visible').click()
+                    tid = topic_url.rsplit('/', 1)[-1]
+                    submit_and_review(reply, admin, f'/api/v3/topics/{tid}', checks, 'reply')
+                    reply.goto(topic_url)
                     expect(reply.locator('[component="post/content"]').last).to_contain_text('预备会员的演示回复')
                     capture(reply, 'forum-topic')
                     checks.append('preparatory member replies through the real composer')
