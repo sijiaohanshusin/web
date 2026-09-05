@@ -24,18 +24,18 @@
             {% csrf_token %}
             <input type="hidden" name="form" value="grant">
             <div class="form-group">
-                <label>勋章 <span class="req">*</span></label>
-                <select class="input" name="medal_id" required>
+                <label for="grant-medal">勋章 <span class="req">*</span></label>
+                <select class="input" id="grant-medal" name="medal_id" required>
                     <option value="">选择勋章…</option>
-                    {% for m in medals %}<option value="{{ m.pk }}">{{ m.icon }} {{ m.name }}</option>{% endfor %}
+                    {% for m in medals %}<option value="{{ m.pk }}"{% if grant_values.medal_id == m.pk|stringformat:"s" %} selected{% endif %}>{{ m.icon }} {{ m.name }}</option>{% endfor %}
                 </select>
             </div>
             <div class="form-group">
-                <label>成员用户名/学号 <span class="req">*</span></label>
-                <input class="input" name="user_id" list="member-list" required placeholder="输入用户ID">
-                <small class="form-help">在“会员管理”页可查用户 ID；或直接填数字 ID</small>
+                <label for="grant-member">成员姓名 / 用户名 / 学号 <span class="req">*</span></label>
+                <input class="input" id="grant-member" name="user_id" value="{{ grant_values.user_id }}" required placeholder="填写完整姓名、用户名、学号或 #ID" aria-describedby="grant-member-help">
+                <small class="form-help" id="grant-member-help">可在“会员管理”页核对成员。姓名重复时请改用唯一用户名、学号或 #ID，不会自动选择同名成员。</small>
             </div>
-            <div class="form-group"><label>授予理由</label><input class="input" name="reason" maxlength="200"></div>
+            <div class="form-group"><label for="grant-reason">授予理由</label><input class="input" id="grant-reason" name="reason" value="{{ grant_values.reason }}" maxlength="200"></div>
             <button type="submit" class="btn btn-primary">授予</button>
         </form>
     </div>

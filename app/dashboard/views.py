@@ -415,6 +415,7 @@ def feedbacks(request):
 
 @admin_required
 def medals(request):
+    grant_values = {}
     if request.method == "POST":
         form = request.POST.get("form")
         if form == "create_medal":
@@ -428,20 +429,30 @@ def medals(request):
                 messages.success(request, f"勋章「{name}」已创建。")
             return redirect("dashboard:medals")
         if form == "grant":
-            medal = get_object_or_404(Medal, pk=request.POST.get("medal_id"))
-            user = get_object_or_404(User, pk=request.POST.get("user_id"))
-            reason = request.POST.get("reason", "").strip()
-            _, created = UserMedal.objects.get_or_create(
-                user=user, medal=medal,
-                defaults={"reason": reason, "granted_by": request.user},
-            )
-            if created:
-                notify_user(
-                    user, f"你获得了勋章「{medal.icon} {medal.name}」",
-                    kind=Notification.Kind.MEDAL, body=reason, url="/accounts/profile/",
-                )
-            messages.success(request, f"已授予 {user.display_name}「{medal.name}」。" if created else "该成员已拥有此勋章。")
-            return redirect("dashboard:medals")
+            grant_values = {
+                field: request.POST.get(field, "").strip()
+                for field in ("medal_id", "user_id", "reason")
+            }
+            medal = Medal.objects.filter(pk=_form_pk(grant_values["medal_id"])).first()
+            user = _resolve_member(request, grant_values["user_id"])
+            reason = grant_values["reason"]
+            if medal is None:
+                messages.error(request, "请选择仍然存在的勋章；勋章可能已被其他管理员删除。")
+            if len(reason) > 200:
+                messages.error(request, "授予理由不能超过 200 字，请缩短后重试。")
+            if medal is not None and user is not None and len(reason) <= 200:
+                with transaction.atomic():
+                    _, created = UserMedal.objects.get_or_create(
+                        user=user, medal=medal,
+                        defaults={"reason": reason, "granted_by": request.user},
+                    )
+                    if created:
+                        notify_user(
+                            user, f"你获得了勋章「{medal.icon} {medal.name}」",
+                            kind=Notification.Kind.MEDAL, body=reason, url="/accounts/profile/",
+                        )
+                messages.success(request, f"已授予 {user.display_name}「{medal.name}」。" if created else "该成员已拥有此勋章。")
+                return redirect("dashboard:medals")
         if form == "delete_medal":
             medal = get_object_or_404(Medal, pk=request.POST.get("medal_id"))
             name = medal.name
@@ -451,6 +462,7 @@ def medals(request):
 
     context = {
         "active_nav": "medals",
+        "grant_values": grant_values,
         # order_by 必须显式写：`annotate()` 会建 GROUP BY，而带 GROUP BY 的查询
         # **不再套用 Meta.ordering**（生成的 SQL 里压根没有 ORDER BY），于是列表
         # 变成数据库返回的任意顺序，页面照常渲染、没有任何报错。
@@ -486,16 +498,7 @@ def _form_pk(raw: str) -> int | None:
 
 
 def _resolve_member(request, raw: str, what: str = "成员"):
-    """把管理员手打的标识解析成一个人；认不准就 messages 说清楚并返回 None。
-
-    **这里刻意不用 `get_object_or_404`。** 任命表单是这一页上唯一要人手打值的
-    地方，而页面上看得见的成员标识是学号 —— 按 pk 硬查的后果是「填学号 404、
-    填用户名 500」，而且 404 会把已经选好的职位一起丢掉。查找口径见
-    `User.find_by_identifier`（同一件事在仓库里原来有三份实现，已合并）。
-
-    多个同名时**不替调用方挑一个**：`real_name` 没有唯一约束，挑错就是把职位
-    任命到另一个人头上，而页面会显示「已任命」。
-    """
+    """Resolve typed member identities without losing form input or guessing names."""
     hits = User.find_by_identifier(raw)
     if len(hits) == 1:
         return hits[0]
