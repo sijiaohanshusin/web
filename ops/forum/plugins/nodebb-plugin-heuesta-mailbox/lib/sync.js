@@ -1,36 +1,9 @@
 'use strict';
 
 const { parseImapMessage, stableMessageId } = require('./mail-parser');
+const { isCredentialError, safeError, sanitizedError } = require('./errors');
 
 const UID_WINDOW_SIZE = 500;
-
-function errorCode(error) {
-	return String(error && (error.code || error.responseCode || error.serverResponseCode) || '').toUpperCase();
-}
-
-function isCredentialError(error) {
-	const code = errorCode(error);
-	const message = String(error && error.message || '').toLowerCase();
-	return code.includes('AUTH') || message.includes('invalid credentials') ||
-		message.includes('application-specific password required') || message.includes('username and password not accepted');
-}
-
-function safeError(error) {
-	const code = errorCode(error);
-	if (isCredentialError(error)) {
-		return 'Gmail IMAP 登录失败，请检查账号、两步验证和应用专用密码';
-	}
-	if (['CONNECT_TIMEOUT', 'GREETING_TIMEOUT', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'EAI_AGAIN', 'ENETUNREACH'].includes(code)) {
-		return `Gmail IMAP 暂时无法连接（${code}），稍后自动重试`;
-	}
-	if (code === 'MESSAGE_MISSING') {
-		return '邮件在重试前已离开收件箱，已跳过';
-	}
-	const message = String(error && error.message || '未知同步错误')
-		.replace(/[\r\n]+/g, ' ')
-		.slice(0, 240);
-	return code ? `Gmail IMAP 错误 ${code}: ${message}` : `Gmail IMAP 错误: ${message}`;
-}
 
 class MailboxSynchronizer {
 	constructor(options) {
@@ -119,7 +92,7 @@ class MailboxSynchronizer {
 				lastError: message,
 				needsCredentialUpdate: isCredentialError(error) ? 1 : 0,
 			});
-			throw new Error(message);
+			throw sanitizedError(error);
 		}
 	}
 

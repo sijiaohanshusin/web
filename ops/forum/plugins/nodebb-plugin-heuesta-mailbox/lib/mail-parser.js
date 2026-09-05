@@ -64,9 +64,11 @@ async function downloadTextParts(client, uid, nodes) {
 			uid: true,
 			maxBytes: MAX_TEXT_PART_BYTES,
 		});
-		if (result && result.content) {
-			values.push(await streamToText(result.content));
+		if (!result || !result.content) {
+			// ImapFlow can return false after disconnection or removal, not just throw.
+			throw Object.assign(new Error('Mail text part is not available'), { code: 'MAIL_PART_UNAVAILABLE' });
 		}
+		values.push(await streamToText(result.content));
 	}
 	return values.join('\n\n').trim();
 }

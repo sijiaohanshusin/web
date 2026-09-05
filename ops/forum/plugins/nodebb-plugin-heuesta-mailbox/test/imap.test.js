@@ -36,3 +36,19 @@ test('retries transient connection failures without rerunning mailbox callbacks'
 	assert.ok(client);
 	assert.equal(created, 3);
 });
+
+test('does not retry ImapFlow authenticationFailed errors with a generic command code', async () => {
+	let attempts = 0;
+	const imap = new GmailImap({ appPassword: 'abcdefghijklmnop', retryDelayMs: 0 });
+	imap.createClient = () => ({
+		connect: async () => {
+			attempts += 1;
+			throw Object.assign(new Error('Command failed'), {
+				code: 'CommandFailed', authenticationFailed: true, serverResponseCode: 'AUTHENTICATIONFAILED',
+			});
+		},
+		close: () => {},
+	});
+	await assert.rejects(imap.connectClient());
+	assert.equal(attempts, 1);
+});

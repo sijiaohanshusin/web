@@ -257,7 +257,7 @@ def run():
         User.objects.filter(pk__in=[u.pk for u in users.values() if u]).delete()
         (OUT / 'checks.json').write_text(json.dumps({'checks': checks, 'errors': errors}, ensure_ascii=False, indent=2), encoding='utf-8')
     assert not errors, errors
-    print(f'PASS: {len(checks)} real forum checks; production untouched; no IMAP transport claim')
+    print(f'PASS: {len(checks)} real forum checks with isolated TLS/IMAP transport; no Gmail or production access')
 
 
 if __name__ == '__main__':

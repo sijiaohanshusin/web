@@ -3,7 +3,7 @@
 const assert = require('node:assert/strict');
 const { Readable } = require('node:stream');
 const test = require('node:test');
-const { MailboxSynchronizer, safeError } = require('../lib/sync');
+const { MailboxSynchronizer, safeError, isCredentialError } = require('../lib/sync');
 
 function synchronizer(overrides = {}) {
 	return new MailboxSynchronizer({
@@ -31,6 +31,34 @@ test('sanitizes credential and connection failures', () => {
 	assert.doesNotMatch(safeError({ code: 'AUTHENTICATIONFAILED', message: 'secret response' }), /secret/);
 	assert.match(safeError({ code: 'ETIMEDOUT' }), /稍后自动重试/);
 	assert.match(safeError({ code: 'CONNECT_TIMEOUT' }), /稍后自动重试/);
+});
+
+test('unknown messages and codes cannot escape into status, retries, or thrown errors', async () => {
+	const canary = 'SYNTHETIC-PRIVATE-CANARY';
+	const error = Object.assign(new Error(`server echoed password=${canary}; body=${canary}`), { code: canary });
+	assert.doesNotMatch(safeError(error), /SYNTHETIC-PRIVATE-CANARY/);
+	const state = {};
+	const sync = synchronizer({
+		store: { updateState: async patch => Object.assign(state, patch) },
+		imap: { isConfigured: () => true, withInbox: async () => { throw error; } },
+	});
+	await assert.rejects(sync.runSync(), thrown => !thrown.message.includes(canary));
+	assert.doesNotMatch(JSON.stringify(state), /SYNTHETIC-PRIVATE-CANARY/);
+	let retry;
+	sync.store = {
+		isMessageComplete: async () => false,
+		addRetry: async (id, message) => { retry = message; },
+	};
+	await sync.processMetadata({ download: async () => { throw error; } }, [metadata(1)], '123', 0);
+	assert.equal(typeof retry, 'string');
+	assert.doesNotMatch(retry, /SYNTHETIC-PRIVATE-CANARY/);
+});
+
+test('uses ImapFlow credential markers without leaking server responses', () => {
+	const error = { code: 'CommandFailed', authenticationFailed: true, message: 'private server response' };
+	assert.equal(isCredentialError(error), true);
+	assert.match(safeError(error), /应用专用密码/);
+	assert.equal(isCredentialError({ code: 'CommandFailed', serverResponseCode: 'AUTHENTICATIONFAILED' }), true);
 });
 
 test('first successful connection records a baseline without importing history', async () => {

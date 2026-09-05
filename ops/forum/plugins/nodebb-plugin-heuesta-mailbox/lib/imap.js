@@ -1,6 +1,7 @@
 'use strict';
 
 const { ImapFlow } = require('imapflow');
+const { isCredentialError } = require('./errors');
 
 const EXPECTED_ACCOUNT = 'heuesta@gmail.com';
 
@@ -53,8 +54,7 @@ class GmailImap {
 			} catch (error) {
 				client.close();
 				lastError = error;
-				const code = String(error && (error.code || error.responseCode) || '').toUpperCase();
-				if (code.includes('AUTH') || attempt === this.connectAttempts) {
+				if (isCredentialError(error) || attempt === this.connectAttempts) {
 					throw error;
 				}
 				await new Promise(resolve => setTimeout(resolve, this.retryDelayMs * attempt));

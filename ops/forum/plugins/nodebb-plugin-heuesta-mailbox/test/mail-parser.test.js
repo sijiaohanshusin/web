@@ -123,3 +123,18 @@ test('prefers plain parts while retaining HTML as a fallback', () => {
 	assert.deepEqual(parts.plain.map(node => node.part), ['1']);
 	assert.deepEqual(parts.html.map(node => node.part), ['2']);
 });
+
+test('an unavailable text download is retryable, not an empty completed message', async () => {
+	await assert.rejects(
+		parseImapMessage({ download: async () => false }, message({ bodyStructure: textNode('1') }), '123'),
+		{ code: 'MAIL_PART_UNAVAILABLE' }
+	);
+});
+
+test('a successfully downloaded empty text part remains a valid empty email', async () => {
+	const parsed = await parseImapMessage(
+		{ download: async () => ({ content: Readable.from([]) }) },
+		message({ bodyStructure: textNode('1') }), '123'
+	);
+	assert.equal(parsed.body, '(邮件没有可显示的文本正文)');
+});
