@@ -2,7 +2,8 @@ import re
 
 from django import forms
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UsernameField
+from django.core.validators import RegexValidator
 
 from .choices import COLLEGE_CHOICES, cohort_choices
 from .models import ReturningMembershipRequest
@@ -64,9 +65,13 @@ def BIRTHDAY_FIELD():
 
 
 class BaseRegisterForm(UserCreationForm):
-    username = forms.RegexField(
-        label="用户名", regex=r"^[A-Za-z0-9_]{4,20}$", max_length=20,
-        error_messages={"invalid": "用户名须为 4-20 位字母、数字或下划线。"},
+    username = UsernameField(
+        label="用户名", min_length=2, max_length=20,
+        validators=[RegexValidator(
+            r"^[A-Za-z0-9\u3400-\u9fff_.+\-]+\Z",
+            "用户名可使用中文、英文字母、数字，以及 _ . - +；不支持空格、表情或其他符号。",
+        )],
+        help_text="登录使用，2–20 个字符；支持中文、英文、数字及 _ . - +，至少包含一个汉字、字母或数字",
     )
     real_name = forms.CharField(label="姓名", max_length=30)
     student_id = forms.CharField(label="学号", max_length=20)
@@ -106,7 +111,6 @@ class BaseRegisterForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["username"].help_text = "登录使用，4-20 位字母、数字或下划线"
         # Django 的 UserCreationForm.__init__ 会给 USERNAME_FIELD 挂 autofocus。
         # 必须摘掉：分步之后 username 在第三段里，而 autofocus 在 HTML 解析时就
         # 生效、比 defer 的 form-enhance.js 早 —— 浏览器把它滚进视口，脚本随后
@@ -117,6 +121,13 @@ class BaseRegisterForm(UserCreationForm):
         # 进度条全挤出屏幕，而这一页不止表单一样东西。
         self.fields["username"].widget.attrs.pop("autofocus", None)
         _style(self.fields, skip=("privacy_consent", "website"))
+
+    def clean_username(self):
+        username = super().clean_username()
+        # Punctuation-only names have no usable forum slug. Keep existing users unchanged.
+        if username is not None and not any(char.isalnum() for char in username):
+            raise forms.ValidationError("用户名至少包含一个汉字、字母或数字，不能全部是符号。")
+        return username
 
     def clean_student_id(self):
         student_id = self.cleaned_data["student_id"].strip()

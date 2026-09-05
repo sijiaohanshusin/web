@@ -376,7 +376,7 @@ def main() -> int:
         print("\n端到端：走完三段真的注册成功")
         ctx = browser.new_context(viewport=vp)
         page = ctx.new_page()
-        e2e_user = "e2ebot2026"
+        e2e_user = "注册测试.dev+2026"
         e2e_email = "e2e@heuesta.invalid"
         reset_e2e(e2e_user, e2e_email)
         page.goto(base + "/accounts/register/new/", wait_until="load")
