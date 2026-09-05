@@ -211,6 +211,28 @@ def run():
                     screenshot(page, steps, f'onboarding-{audience}-{width}')
                     checks.append(f'{audience} onboarding {width}: keyboard expansion, profile step, permission filtering')
                 page.close()
+            for audience in ('member', 'admin'):
+                page = contexts['officer' if audience == 'admin' else 'guest'].new_page()
+                for width in (1440, 390, 320):
+                    page.set_viewport_size({'width': width, 'height': 920})
+                    page.goto(base + f'/help/{audience}/forum/')
+                    article = page.locator('.hc-article')
+                    for image in article.locator('.hc-prose img').all():
+                        image.scroll_into_view_if_needed()
+                        expect(image).to_be_visible()
+                        expect(image).to_have_js_property('complete', True)
+                        assert image.evaluate('(img) => img.naturalWidth > 0')
+                    link = article.locator('.hc-prose a[aria-label^="放大截图"]').first
+                    link.focus()
+                    with page.expect_popup() as opened:
+                        page.keyboard.press('Enter')
+                    popup = opened.value
+                    popup.wait_for_load_state()
+                    expect(popup.locator('img')).to_be_visible()
+                    popup.close()
+                    screenshot(page, article.locator('header'), f'help-forum-{audience}-{width}')
+                    checks.append(f'{audience} forum guide {width}: images loaded, keyboard enlargement and no overflow')
+                page.close()
             for ctx in contexts.values():
                 ctx.close()
             browser.close()

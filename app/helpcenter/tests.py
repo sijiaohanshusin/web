@@ -92,6 +92,19 @@ class HelpAccessTests(TestCase):
         for path in ('/help/unknown/', '/help/recruit/unknown/', '/help/recruit/channel/images/missing.png/'):
             self.assertEqual(self.client.get(path).status_code, 404)
 
+    def test_forum_review_help_and_images_require_main_site_management_access(self):
+        image_url = '/help/admin/forum/images/forum-queue-review.png/'
+        self.assertEqual(self.client.get('/help/admin/forum/').status_code, 404)
+        self.assertEqual(self.client.get(image_url).status_code, 404)
+        self.assertEqual(self.client.get('/help/member/forum/images/forum-queue-review.png/').status_code, 404)
+        self.client.force_login(self.officer)
+        page = self.client.get('/help/admin/forum/')
+        self.assertContains(page, '主站站务身份不会自动获得论坛审核权限')
+        response = self.client.get(image_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('no-store', response['Cache-Control'])
+        self.assertTrue(b''.join(response.streaming_content).startswith(b'\x89PNG'))
+
     def test_onboarding_references_are_valid_and_public_routes_do_not_leak(self):
         self.assertEqual(set(content.onboarding_catalog()), {'recruit', 'member', 'admin'})
         guest = AnonymousUser()
