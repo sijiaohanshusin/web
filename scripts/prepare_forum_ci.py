@@ -63,6 +63,10 @@ def main():
     shutil.copyfile(ROOT / 'scripts/forum_fixture/configure.cjs', APP / 'heuesta-audit.cjs')
     run(['node', 'heuesta-audit.cjs'], APP)
     run(['node', 'nodebb', 'build'], APP)
+    banner = APP / 'public/uploads/system/banner.webp'
+    banner.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(ROOT / 'ops/forum/banner.webp', banner)
+    run(['node', str(ROOT / 'ops/forum/theme-v2.js')], APP)
     print('Isolated forum prepared; no production settings or mail credentials used.')
 
 

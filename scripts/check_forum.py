@@ -53,7 +53,8 @@ def submit_and_review(page, admin, api_path, checks, name):
     with page.expect_response(lambda r: urlsplit(r.url).path == api_path and r.request.method == 'POST') as pending:
         page.locator('[component="composer"] [data-action="post"]:visible').click()
     response = pending.value
-    assert response.status == 202, response.text()
+    # NodeBB 4.14 returns 202 for a queued topic, but 200 for a queued reply.
+    assert response.status == (202 if api_path == '/api/v3/topics' else 200), response.text()
     data = response.json()['response']
     assert data.get('queued'), 'Fresh accounts must follow the actual default moderation queue'
     checks.append(f'{name}: submission enters review rather than silently disappearing')
@@ -182,7 +183,7 @@ def run():
                     checks.append('member creates a real topic through the composer')
                     reply = pages['preparatory']
                     reply.goto(topic_url)
-                    reply.locator('[component="topic/reply"]').first.click()
+                    reply.locator('[component="topic/reply"]:visible').first.click()
                     reply.locator('[component="composer"] textarea.write').fill('这是预备会员的演示回复，发布后应当显示在主题中。')
                     capture(reply, 'forum-reply-compose')
                     tid = topic_url.rsplit('/', 1)[-1]

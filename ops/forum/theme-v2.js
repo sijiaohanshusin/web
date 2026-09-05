@@ -3,7 +3,7 @@
    + 帖子页 MCBBS 式增强（楼层号 / 左侧作者信息栏）+ QQ 公告条 + 首页横幅
    幂等：docker exec -w /usr/src/app heuesta-forum-forum-1 node /opt/config/theme-v2.js
 */
-const APP = '/usr/src/app';
+const APP = process.env.NODEBB_APP_DIR || '/usr/src/app';
 const nconf = require(APP + '/node_modules/nconf');
 
 nconf.file({ file: APP + '/config.json' });

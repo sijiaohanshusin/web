@@ -36,7 +36,7 @@ nconf.defaults({
         cookieName: 'heuesta_sso',
         cookieDomain: '.heuesta.cn',
         secret: process.env.NODEBB_JWT_SECRET,
-        behaviour: 'trust',
+        behaviour: 'revalidate',
         adminRevalidate: 'off',
         noRegistration: 'off',
         updateProfile: 'on',

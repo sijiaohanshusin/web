@@ -80,6 +80,9 @@ const LEGACY_GROUPS = ['报名会员', '正式会员', '干事', '管理员'];
     const current = await meta.settings.get('session-sharing');
     await meta.settings.set('session-sharing', {
         ...current,
+        // Trust mode skips existing sessions, leaving stale membership and logout state.
+        // Keep separately granted native administrator access recoverable.
+        behaviour: 'revalidate',
         'payload:groups': 'groups',
         syncGroup: 'on',
         syncGroupList: 'on',
