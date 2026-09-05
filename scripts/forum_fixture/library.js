@@ -72,6 +72,10 @@ exports.init = async () => {
     const third = await db.getObject('heuesta-mailbox:message:gmail:9000000000000000004');
     assert.equal(Number(first.tid), Number(third.tid));
     assert.notEqual(Number(first.tid), Number(second.tid));
+    const topic = await require.main.require('./src/topics').getTopicFields(first.tid, ['deleted', 'scheduled']);
+    assert.equal(Number(topic.deleted || 0), 0);
+    assert.equal(Number(topic.scheduled || 0), 0);
+    checks.push('future received timestamps do not schedule or hide the archived topic');
     fs.writeFileSync(target, JSON.stringify({
         discussionCid: discussion.cid, mailboxCid: archive.categoryCid,
         mailboxTid: first.tid, mailboxPid: JSON.parse(first.pids)[0], previewToken: first.previewToken,

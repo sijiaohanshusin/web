@@ -18,6 +18,13 @@ const DENIED_GROUPS = [
 ];
 const VIEW_PRIVILEGES = ['groups:find', 'groups:read', 'groups:topics:read'];
 
+function postTimestamp(receivedAt, part = 0) {
+	const now = Date.now();
+	const value = Number(receivedAt) + part;
+	// NodeBB schedules/hides future timestamps; retain the original date only in the archive.
+	return Number.isFinite(value) && value > 0 ? Math.min(value, now) : now;
+}
+
 class ForumArchive {
 	constructor(deps) {
 		Object.assign(this, deps);
@@ -203,7 +210,7 @@ class ForumArchive {
 					cid: this.categoryCid,
 					title,
 					content: contents[0],
-					timestamp: mail.internalDate,
+					timestamp: postTimestamp(mail.internalDate),
 					fromQueue: true,
 				});
 				tid = Number(result.topicData.tid);
@@ -218,7 +225,7 @@ class ForumArchive {
 					uid: this.botUid,
 					tid,
 					content: contents[0],
-					timestamp: mail.internalDate,
+					timestamp: postTimestamp(mail.internalDate),
 					fromQueue: true,
 				});
 				pids.push(Number(reply.pid));
@@ -234,7 +241,7 @@ class ForumArchive {
 				uid: this.botUid,
 				tid,
 				content: contents[index],
-				timestamp: mail.internalDate + index,
+				timestamp: postTimestamp(mail.internalDate, index),
 				fromQueue: true,
 			});
 			pids.push(Number(reply.pid));
