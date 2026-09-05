@@ -222,6 +222,7 @@ def run():
                         expect(image).to_be_visible()
                         expect(image).to_have_js_property('complete', True)
                         assert image.evaluate('(img) => img.naturalWidth > 0')
+                        assert image.evaluate('(img) => img.clientWidth <= img.naturalWidth + 1'), 'Do not enlarge mobile screenshots into blurry desktop banners'
                     link = article.locator('.hc-prose a[aria-label^="放大截图"]').first
                     link.focus()
                     with page.expect_popup() as opened:
