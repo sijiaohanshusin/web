@@ -21,7 +21,7 @@ jobs:
           POSTGRES_PASSWORD: disposable-ci-only
         ports: ['5432:5432']
         options: >-
-          --health-cmd 'pg_isready -U heuesta_ci -d heuesta_ci'
+          --health-cmd "pg_isready -U heuesta_ci -d heuesta_ci"
           --health-interval 5s --health-timeout 5s --health-retries 12
     steps:
       - uses: actions/checkout@v4
@@ -49,6 +49,7 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: python scripts/check_experience.py
       - run: python scripts/check_pages.py
+      - run: python scripts/check_a11y.py
       - run: python scripts/check_register.py
       - run: python scripts/check_perf.py
       - run: node --test scripts/showcase_editor_state.test.cjs

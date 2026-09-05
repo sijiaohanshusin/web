@@ -334,6 +334,13 @@ def main() -> int:
         base = f"http://127.0.0.1:{PORT}"
         vp = {"width": 1440, "height": 1000}
         ctx = browser.new_context(viewport=vp)
+        ctx.add_init_script("""window.__a11yTransitionDone = true;
+            addEventListener('pagereveal', event => {
+                if (!event.viewTransition) return;
+                window.__a11yTransitionDone = false;
+                const done = () => { window.__a11yTransitionDone = true; };
+                event.viewTransition.finished.then(done, done);
+            });""")
         page = ctx.new_page()
         errors = []
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
@@ -422,7 +429,8 @@ def main() -> int:
             page.wait_for_function(
                 "() => !document.documentElement.classList.contains('esta-pre-lock')",
                 timeout=20000)
-            page.wait_for_timeout(400)
+            # Native view-transition snapshots intercept hits until finished.
+            page.wait_for_function('window.__a11yTransitionDone', timeout=5000)
             geo = page.evaluate(
                 """() => { const al = document.querySelector('.alert');
                     if (!al) return { missing: true };
@@ -435,6 +443,8 @@ def main() -> int:
                              top: Math.round(r.top), navBottom: Math.round(nav.bottom),
                              inMain: !!w.closest('main'),
                              role: w.getAttribute('role') || '',
+                             hit: hit ? `${hit.tagName}#${hit.id}.${hit.className}` : 'none',
+                             pointerEvents: getComputedStyle(al).pointerEvents,
                              onTop: !!hit && (hit === al || al.contains(hit)) }; }""")
             if geo.get("missing"):
                 check(False, f"{where}登录后拿到了消息提示")
@@ -445,7 +455,7 @@ def main() -> int:
             check(geo["top"] >= geo["navBottom"],
                   f"**{where}提示的顶边在固定导航之下**（原来整条被盖住）",
                   f"提示顶 {geo['top']} / 导航底 {geo['navBottom']}")
-            check(geo["onTop"], f"{where}提示中心点击得到（没有被别的层压着）")
+            check(geo["onTop"], f"{where}提示中心点击得到（没有被别的层压着）", str(geo))
             page.screenshot(path=str(SHOTS / f"a11y-message-{'home' if nxt == '/' else 'inner'}.png"),
                             clip={"x": 0, "y": 0, "width": 1440, "height": 320})
         # 退回未登录，别把开发库留在登录态影响别的脚本
