@@ -88,6 +88,39 @@ class MemberActionTests(TestCase):
         self.pending.refresh_from_db()
         self.assertNotEqual(self.pending.member_level, roles.LEVEL_ADMIN)
 
+    def test_promote_cannot_demote_administrators_or_existing_members(self):
+        formal = User.objects.create_user(username="existing-formal", member_level=roles.LEVEL_FORMAL)
+        self.client.force_login(self.officer)
+        response = self.client.post(reverse("dashboard:member_action"), {
+            "action": "promote_prep", "ids": [self.admin.pk, formal.pk, self.pending.pk],
+        })
+        self.assertEqual(response.status_code, 302)
+        self.admin.refresh_from_db()
+        formal.refresh_from_db()
+        self.pending.refresh_from_db()
+        self.assertEqual(self.admin.member_level, roles.LEVEL_ADMIN)
+        self.assertTrue(self.admin.is_staff)
+        self.assertEqual(formal.member_level, roles.LEVEL_FORMAL)
+        self.assertEqual(self.pending.member_level, roles.LEVEL_PREPARATORY)
+
+    def test_officer_cannot_change_independently_granted_staff_account(self):
+        legacy = User.objects.create_user(username="legacy-staff", member_level=1, is_staff=True)
+        self.client.force_login(self.officer)
+        self.client.post(reverse("dashboard:member_action"), {"action": "promote_formal", "ids": [legacy.pk]})
+        legacy.refresh_from_db()
+        self.assertTrue(legacy.is_staff)
+        self.assertEqual(legacy.member_level, 1)
+
+    def test_member_action_rejects_malformed_identifiers_without_500(self):
+        self.client.force_login(self.officer)
+        response = self.client.post(reverse("dashboard:member_action"), {"action": "promote_formal", "ids": ["not-an-id"]})
+        self.assertEqual(response.status_code, 302)
+
+    def test_member_action_cannot_redirect_off_site(self):
+        self.client.force_login(self.officer)
+        response = self.client.post(reverse("dashboard:member_action"), {"action": "promote_formal", "next": "https://example.com/", "ids": []})
+        self.assertEqual(response.url, reverse("dashboard:members"))
+
     def test_admin_can_make_officer(self):
         self.client.login(username="admin1", password="x")
         self.client.post(reverse("dashboard:member_action"), {"action": "make_officer", "ids": [self.pending.pk]})

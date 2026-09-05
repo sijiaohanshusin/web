@@ -14,6 +14,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 
 import re
 import uuid
@@ -229,10 +230,16 @@ _LEVEL_ACTIONS = {
 
 @officer_required
 @require_POST
+@transaction.atomic
 def member_action(request):
     action = request.POST.get("action", "")
     ids = request.POST.getlist("ids")
-    nxt = request.POST.get("next") or "dashboard:members"
+    nxt = request.POST.get("next") or reverse("dashboard:members")
+    if not url_has_allowed_host_and_scheme(nxt, {request.get_host()}, require_https=request.is_secure()):
+        nxt = reverse("dashboard:members")
+    if any(not value.isascii() or not value.isdecimal() or len(value) > 18 for value in ids):
+        messages.error(request, "成员选择无效，请重新选择列表中的成员。")
+        return redirect(nxt)
     if not ids:
         messages.warning(request, "没有选中任何成员。")
         return redirect(nxt)
@@ -264,10 +271,18 @@ def member_action(request):
         if need_admin and not _is_admin(request.user):
             messages.error(request, f"「{label}」需要管理员权限。")
             return redirect(nxt)
-        count = 0
-        for user in targets:
+        count = skipped = 0
+        for user in targets.select_for_update().order_by("pk"):
+            # Promotion is never a demotion, and officers cannot alter privileged accounts.
+            if (action.startswith("promote_") and user.member_level >= target_level) or (
+                not _is_admin(request.user) and (user.is_staff or roles.is_officer(user))
+            ):
+                skipped += 1
+                continue
             user.set_level(target_level, actor=request.user, note=f"驾驶舱：{label}")
             count += 1
+        if skipped:
+            messages.warning(request, f"已跳过 {skipped} 名无需晋升或需要系统管理员处理的成员。")
         messages.success(request, f"已对 {count} 名成员执行「{label}」。")
         return redirect(nxt)
 
