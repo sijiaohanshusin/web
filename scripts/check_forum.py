@@ -230,11 +230,22 @@ def run():
                     expect(content.locator('details[open]')).to_contain_text('合成邮件')
                     content.locator('summary').click()
                     checks.append('mailbox renders sanitized HTML and working text disclosure without leaking internal markers')
-                    capture(member, 'forum-mailbox')
+                    # Chromium can omit off-viewport iframe paint in a full-page
+                    # capture. Keep one complete mail on screen before shooting.
+                    member.set_viewport_size({'width': 1440, 'height': 1600})
+                    mail_post = member.locator('[component="post"]').first
+                    mail_post.scroll_into_view_if_needed()
+                    expect(frame.content_frame.locator('h2')).to_be_visible()
+                    mail_post.screenshot(path=str(OUT / 'forum-mailbox.png'))
                 finally:
                     for ctx in contexts.values():
                         ctx.close()
                     browser.close()
+    except Exception as error:
+        # Artifact consumers must not mistake an interrupted run for a clean
+        # result merely because the assertion occurred outside the role loop.
+        errors.append(f'Integration aborted: {type(error).__name__}')
+        raise
     finally:
         if proc is not None:
             proc.terminate()
