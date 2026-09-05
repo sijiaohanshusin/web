@@ -46,7 +46,9 @@ class HelpAccessTests(TestCase):
         image = self.client.get(image_url)
         self.assertEqual(image.status_code, 200)
         self.assertIn('no-store', image['Cache-Control'])
-        image.close()
+        # Consume Django's closing iterator so its request-finished hooks keep
+        # the TestCase transaction alive on PostgreSQL as well as SQLite.
+        self.assertTrue(b''.join(image.streaming_content).startswith(b'\x89PNG'))
         other_url = '/help/recruit/channel/images/' + item.screenshots[0] + '/'
         self.assertEqual(self.client.get(other_url).status_code, 404)
 
