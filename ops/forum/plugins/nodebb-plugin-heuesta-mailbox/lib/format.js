@@ -97,6 +97,7 @@ function formatPosts(mail, senderHash, previewToken = '') {
 			`**接收时间：** ${formatBeijingTime(mail.internalDate)}（北京时间）`,
 			'',
 			preview,
+			'',
 			body,
 			attachments,
 			'',

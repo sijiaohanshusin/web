@@ -54,3 +54,17 @@ test('ignores missing posts in the NodeBB post list', () => {
 	const result = enhancePosts({ posts: [null, { content: '<p>Text</p>' }] });
 	assert.equal(result.posts[1].content, '<p>Text</p>');
 });
+
+test('renders existing archives whose preview and text-start share a paragraph', () => {
+	for (const separator of ['\n', '<br>\n', '<br />\n']) {
+		const rendered = enhancePostContent([
+			`<p dir="auto">[heuesta-mailbox-preview:${TOKEN}]${separator}[heuesta-mailbox-text-start]</p>`,
+			'<p dir="auto">Legacy fallback</p>',
+			'<p dir="auto">[heuesta-mailbox-text-end]</p>',
+		].join('\n'));
+		assert.match(rendered, /<iframe/);
+		assert.match(rendered, /<details/);
+		assert.match(rendered, /Legacy fallback/);
+		assert.doesNotMatch(rendered, /\[heuesta-mailbox-/);
+	}
+});
