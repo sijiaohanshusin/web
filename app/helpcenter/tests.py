@@ -91,3 +91,11 @@ class HelpAccessTests(TestCase):
     def test_unknown_articles_and_images_are_404(self):
         for path in ('/help/unknown/', '/help/recruit/unknown/', '/help/recruit/channel/images/missing.png/'):
             self.assertEqual(self.client.get(path).status_code, 404)
+
+    def test_login_and_position_guidance_preserve_supported_inputs(self):
+        login = content.find(AnonymousUser(), 'member', 'login')
+        self.assertIn('注册时设置的用户名', login.body)
+        self.assertNotIn('用户名不是姓名', login.body)
+        positions = content.find(self.admin, 'admin', 'positions')
+        self.assertIn('也可以输入完整', positions.body)
+        self.assertNotIn('必须从自动候选中选择', positions.body)
