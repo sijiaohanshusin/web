@@ -14,11 +14,11 @@
     "提交后已自动登录，没有重复点击注册"
   ],
   "screenshots": [
-    "recruitment-04-register-step-review.png",
-    "recruitment-06-register-mobile.png"
+    "registration-username-new-1440.png",
+    "registration-username-new-390.png"
   ],
-  "verified": "2026-09-04",
-  "version": "9c9b9e8"
+  "verified": "2026-09-05",
+  "version": "6ab5642 候选版"
 }
 ---
 
@@ -30,13 +30,13 @@
 4. 勾选“我已阅读并同意隐私说明”。
 5. 再次检查邮箱、学号和手机号后，点击“完成注册”。
 
-![登录方式与提交确认](asset:recruitment-04-register-step-review.png)
+![桌面端用户名填写区](asset:registration-username-new-1440.png)
 
-*图 5-1　提交前应检查用户名、密码规则和隐私同意项。*
+*图 5-1　登录方式步骤的局部截图，中文与兼容符号可以组合使用。密码在下方填写。*
 
-![手机端注册表单](asset:recruitment-06-register-mobile.png)
+![手机端用户名填写区](asset:registration-username-new-390.png)
 
-*图 5-2　手机端按同样的三步流程填写，使用顶部进度条确认当前位置。*
+*图 5-2　手机端字段与规则相同，输入后继续向下设置密码并核对资料。*
 
 ## 你应该看到
 

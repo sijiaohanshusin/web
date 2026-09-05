@@ -16,8 +16,8 @@
   "screenshots": [
     "admin-02-member-search.png"
   ],
-  "verified": "2026-09-04",
-  "version": "9c9b9e8"
+  "verified": "2026-09-05",
+  "version": "5353ae3 候选版 截图沿用 9c9b9e8"
 }
 ---
 

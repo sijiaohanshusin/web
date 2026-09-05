@@ -23,6 +23,7 @@ $word.DisplayAlerts = 0
 $doc = $null
 try {
     $doc = $word.Documents.Open($env:HELP_DOCX, $false, $true)
+    $doc.Fields.Update() | Out-Null
     $doc.ExportAsFixedFormat($env:HELP_PDF, 17)
 } finally {
     if ($null -ne $doc) { $doc.Close($false); [Runtime.InteropServices.Marshal]::ReleaseComObject($doc) | Out-Null }
@@ -38,6 +39,11 @@ try {
 
 module.convert_to_pdf = word_pdf
 for source in sorted((ROOT / "docs/help/dist").glob("*.docx")):
+    if sys.argv[2:] and source.stem not in sys.argv[2:]:
+        continue
     out = ROOT / ".shots/documents" / source.stem
+    assert out.resolve().is_relative_to((ROOT / '.shots/documents').resolve())
+    for old in out.glob('page-*.png'):
+        old.unlink()
     module.rasterize(str(source), str(out), dpi=120, verbose=False, emit_pdf=True)
     print(f"Rendered {source.stem}: {len(list(out.glob('page-*.png')))} pages", flush=True)

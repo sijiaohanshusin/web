@@ -14,8 +14,8 @@
     "了解注册账号不等于已提交招新报名"
   ],
   "screenshots": [],
-  "verified": "2026-09-04",
-  "version": "9c9b9e8"
+  "verified": "2026-09-05",
+  "version": "6ab5642 候选版"
 }
 ---
 

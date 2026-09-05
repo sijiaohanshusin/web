@@ -16,10 +16,10 @@
   "screenshots": [
     "returning-member-02-register-step-identity.png",
     "returning-member-03-register-step-contact.png",
-    "returning-member-04-register-step-review.png"
+    "registration-username-returning-1440.png"
   ],
-  "verified": "2026-09-04",
-  "version": "9c9b9e8"
+  "verified": "2026-09-05",
+  "version": "6ab5642 候选版 早期步骤截图沿用 9c9b9e8"
 }
 ---
 
@@ -40,9 +40,9 @@
 
 *图 3-2　审核结果会发送至注册邮箱，务必保证可收信。*
 
-![老会员账号设置](asset:returning-member-04-register-step-review.png)
+![老会员账号设置局部](asset:registration-username-returning-1440.png)
 
-*图 3-3　最后设置登录账号并同意隐私说明。*
+*图 3-3　第三步的用户名填写区；接着在下方设置密码并同意隐私说明。*
 
 ## 你应该看到
 
