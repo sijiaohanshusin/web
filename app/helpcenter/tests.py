@@ -113,6 +113,15 @@ class HelpAccessTests(TestCase):
         self.admin.is_active = False
         self.assertEqual(content.onboarding(self.admin, 'admin'), [])
 
+    def test_onboarding_supports_independently_granted_backend_access(self):
+        user = User(username='independent-backend', member_level=3, is_staff=True)
+        stages = content.onboarding(user, 'admin')
+        keys = {a.key for stage in stages for a in stage['articles']}
+        self.assertIn('admin/settings', keys)
+        self.assertNotIn('admin/news', keys)
+        user.is_active = False
+        self.assertEqual(content.onboarding(user, 'admin'), [])
+
     def test_login_and_position_guidance_preserve_supported_inputs(self):
         login = content.find(AnonymousUser(), 'member', 'login')
         self.assertIn('注册时设置的用户名', login.body)

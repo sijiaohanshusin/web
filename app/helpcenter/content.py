@@ -95,7 +95,7 @@ def onboarding_catalog():
 
 def onboarding(user, audience):
     # Do not expose internal stage titles through an otherwise public helper.
-    if audience == 'admin' and not allowed(user, 'officer'):
+    if audience == 'admin' and not (allowed(user, 'officer') or allowed(user, 'admin')):
         return []
     known = {article.key: article for article in visible(user)}
     stages = []
