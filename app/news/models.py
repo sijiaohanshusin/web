@@ -64,6 +64,12 @@ class Post(models.Model):
         return reverse("news:detail", args=[self.pk])
 
     @property
+    def publication_state(self):
+        if not self.is_published:
+            return "unpublished"
+        return "scheduled" if self.published_at > timezone.now() else "live"
+
+    @property
     def body_html(self) -> str:
         return render_markdown(self.body)
 

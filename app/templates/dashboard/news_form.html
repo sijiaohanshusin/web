@@ -17,12 +17,13 @@
             {% endif %}
         {% endfor %}
         <div class="news-form-actions">
-            <button type="submit" class="btn btn-primary">{% if post %}保存修改{% else %}发布公告{% endif %}</button>
+            <button type="submit" class="btn btn-primary">{% if post %}保存修改{% else %}保存公告{% endif %}</button>
             <a class="btn btn-ghost" href="{% url 'dashboard:news' %}">取消</a>
             {% if post %}
                 <a class="btn btn-outline" href="{% url 'news:detail' post.pk %}" target="_blank" rel="noopener">预览 ↗</a>
             {% endif %}
         </div>
+        <p class="form-help">先预览再公开：取消勾选“已发布”并保存，再从列表打开预览。勾选“已发布”且发布时间已到，公告才会对可见范围内的读者开放。</p>
     </form>
 </div>
 

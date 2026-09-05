@@ -39,8 +39,9 @@
                     {% else %}<span class="badge badge-amber">{{ p.get_min_level_display }}</span>{% endif %}
                 </td>
                 <td>
-                    {% if p.is_published %}<span class="badge badge-green">已发布</span>
-                    {% else %}<span class="badge badge-gray">已下架</span>{% endif %}
+                    {% if p.publication_state == 'live' %}<span class="badge badge-green">已发布</span>
+                    {% elif p.publication_state == 'scheduled' %}<span class="badge badge-amber">待定时发布</span>
+                    {% else %}<span class="badge badge-gray">未发布 / 已下架</span>{% endif %}
                 </td>
                 <td>{{ p.view_count }}</td>
                 <td>{{ p.author.display_name|default:"—" }}</td>

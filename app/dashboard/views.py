@@ -794,7 +794,8 @@ def news_manage(request):
         elif action == "toggle_publish":
             item.is_published = not item.is_published
             item.save(update_fields=["is_published"])
-            messages.success(request, f"「{item.title}」已{'重新发布' if item.is_published else '下架'}。")
+            status = {"unpublished": "已下架", "scheduled": "等待定时发布", "live": "已重新发布"}[item.publication_state]
+            messages.success(request, f"「{item.title}」{status}。")
         elif action == "delete":
             if not (_is_admin(request.user) or item.author_id == request.user.pk):
                 messages.error(request, "只能删除自己发布的公告（或需要管理员权限）。")
@@ -839,7 +840,8 @@ def news_edit(request, pk: int | None = None):
             if item.author_id is None:
                 item.author = request.user
             item.save()
-            messages.success(request, f"公告「{item.title}」已{'更新' if pk else '发布'}。")
+            status = {"unpublished": "已保存为未发布", "scheduled": "已保存，等待定时发布", "live": "已保存并发布"}[item.publication_state]
+            messages.success(request, f"公告「{item.title}」{status}。")
             return redirect("dashboard:news")
     else:
         form = PostForm(instance=post)

@@ -14,6 +14,7 @@
             <div class="news-article-meta">
                 {% if post.pinned %}<span class="badge badge-amber">置顶</span>{% endif %}
                 {% if not post.is_published %}<span class="badge badge-gray">未发布（仅管理组可见）</span>{% endif %}
+                {% if post.publication_state == 'scheduled' %}<span class="badge badge-amber">待定时发布（仅管理组可见）</span>{% endif %}
                 <span>{{ post.author.display_name|default:"管理组" }}</span>
                 <span>·</span>
                 <time>{{ post.published_at|date:"Y 年 n 月 j 日" }}</time>
