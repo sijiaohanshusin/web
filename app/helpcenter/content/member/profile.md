@@ -15,10 +15,11 @@
   ],
   "screenshots": [
     "returning-member-08-profile-center.png",
-    "returning-member-09-profile-edit.png"
+    "member-profile-direction.png",
+    "member-profile-showcase-entry.png"
   ],
-  "verified": "2026-09-04",
-  "version": "9c9b9e8"
+  "verified": "2026-09-05",
+  "version": "体验改造候选版 手机资料修改核验 个人中心图沿用9c9b9e8"
 }
 ---
 
@@ -35,9 +36,13 @@
 
 *图 6-1　个人中心同时展示账号档案和可用功能，私密字段已遮挡。*
 
-![编辑资料](asset:returning-member-09-profile-edit.png)
+![手机端选择擅长方向](asset:member-profile-direction.png)
 
-*图 6-2　生日用于站内祝福与分组，不会自动公开。*
+*图 6-2　选择自定义后，还需在下方填写具体方向。保存私有资料不会自动公开。*
+
+![独立成员展示入口](asset:member-profile-showcase-entry.png)
+
+*图 6-3　已激活的科协会员及以上可以进入展示编辑器。招新成员和预备会员只会看到资格说明，不是入口加载失败。*
 
 ## 你应该看到
 

@@ -76,6 +76,36 @@ def visible(user, audience=None):
     return [a for a in articles() if (audience is None or a.audience == audience) and allowed(user, a.access)]
 
 
+@lru_cache(maxsize=1)
+def onboarding_catalog():
+    """Only references live here; task instructions stay in article Markdown."""
+    catalog = json.loads((ROOT / 'onboarding.json').read_text(encoding='utf-8'))
+    known = {article.key: article for article in articles()}
+    if set(catalog) != set(AUDIENCES):
+        raise ValueError('Onboarding audiences do not match the help catalog')
+    for audience, stages in catalog.items():
+        for stage in stages:
+            if not stage['title'] or not stage['articles']:
+                raise ValueError('Empty onboarding stage')
+            for key in stage['articles']:
+                if key not in known or (audience != 'admin' and known[key].access != 'public'):
+                    raise ValueError(f'Invalid onboarding reference: {key}')
+    return catalog
+
+
+def onboarding(user, audience):
+    # Do not expose internal stage titles through an otherwise public helper.
+    if audience == 'admin' and not allowed(user, 'officer'):
+        return []
+    known = {article.key: article for article in visible(user)}
+    stages = []
+    for stage in onboarding_catalog().get(audience, []):
+        items = [known[key] for key in stage['articles'] if key in known]
+        if items:
+            stages.append({'title': stage['title'], 'articles': items})
+    return stages
+
+
 def find(user, audience, slug):
     return next((a for a in visible(user, audience) if a.slug == slug), None)
 

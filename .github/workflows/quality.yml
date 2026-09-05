@@ -58,6 +58,7 @@ jobs:
       - run: python scripts/check_a11y.py
       - run: python scripts/check_roles.py
       - run: python scripts/check_dashboard.py
+      - run: python scripts/check_management.py
       - run: python scripts/check_register.py
       - run: python scripts/check_perf.py
       - run: node --test scripts/showcase_editor_state.test.cjs

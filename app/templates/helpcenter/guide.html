@@ -3,6 +3,14 @@
 {% block help_content %}
 <header class="hc-guide-hero"><div><p class="hc-kicker">{{ guide.tag }}{% if audience == 'admin' %} / 内部使用{% endif %}</p><h1>{{ guide.title }}</h1><p>{{ guide.summary }}</p></div><a class="hc-action" href="{{ guide.action }}">{% if audience == 'admin' %}进入管理驾驶舱{% elif audience == 'recruit' %}开始新会员注册{% else %}打开个人中心{% endif %} ↗</a></header>
 {% include 'helpcenter/search_form.html' %}
+<details class="hc-onboarding">
+    <summary>第一次使用？按这条路线开始 <span>已有账号可以跳过注册</span></summary>
+    <ol>
+    {% for stage in onboarding %}
+        <li><h2>{{ stage.title }}</h2><ul>{% for item in stage.articles %}<li><a href="{{ item.url }}">{{ item.title }}{% if item.access == 'admin' %} · 系统管理员{% endif %} →</a></li>{% endfor %}</ul></li>
+    {% endfor %}
+    </ol>
+</details>
 {% if audience == 'recruit' %}<ol class="hc-journey" aria-label="招新流程"><li><b>01</b> 准备与注册</li><li><b>02</b> 填写并提交报名</li><li><b>03</b> 查看面试进度</li></ol>{% elif audience == 'admin' %}<aside class="hc-caution"><strong>操作前先核对对象与权限</strong><p>只处理职责范围内的数据，批量操作前确认数量。账号权限与关键配置章节仅向系统管理员显示。</p></aside>{% else %}<p class="hc-note">已有账号？直接查看个人中心、活动或展示任务；需要恢复历史身份，从老会员注册开始。</p>{% endif %}
 <div class="hc-tasks">{% for item in articles %}<a href="{{ item.url }}" class="hc-task" data-task-key="{{ item.key }}"><span class="hc-task-no">{{ item.order|stringformat:'02d' }}</span><div><h2>{{ item.title }}</h2><p>{{ item.summary }}</p><small>{{ item.minutes }} 分钟 · {% if item.access == 'admin' %}系统管理员{% elif item.access == 'officer' %}站务人员{% else %}随时查阅{% endif %}</small></div><span aria-hidden="true">→</span></a>{% endfor %}</div>
 {% endblock %}

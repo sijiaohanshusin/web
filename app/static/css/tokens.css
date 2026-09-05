@@ -206,7 +206,9 @@ button, input, select, textarea, optgroup { font-family: inherit; }
         暗场横幅，认成同一个元素之后高度是长出来的。
      3. 卡片封面 ↔ 详情页大图（`vt-cover`）—— 名字由 view-transitions.js 在导航
         那一刻只给参与的那一张卡片，因为 `view-transition-name` 在一页里必须唯一。 */
-@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: no-preference) {
+    @view-transition { navigation: auto; }
+}
 ::view-transition-old(root) {
     /* 纯不透明度的交叉淡入用 linear（UA 默认也是），加缓动只会让中段发灰 */
     animation: vt-fade-out var(--t-fast) linear both;

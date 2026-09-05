@@ -1,0 +1,23 @@
+{
+  "recruit": [
+    {"title": "准备并注册账号", "articles": ["recruit/prepare", "recruit/channel", "recruit/identity", "recruit/contact", "recruit/verify"]},
+    {"title": "完善个人资料", "articles": ["recruit/registered", "member/profile"]},
+    {"title": "提交第一份报名", "articles": ["recruit/direction", "recruit/application", "recruit/submit"]},
+    {"title": "查看进度与通知", "articles": ["recruit/progress", "recruit/group", "recruit/notifications"]},
+    {"title": "了解权限并安全退出", "articles": ["recruit/troubleshooting", "recruit/account"]}
+  ],
+  "member": [
+    {"title": "恢复身份并首次登录", "articles": ["member/channel", "member/register", "member/review", "member/login"]},
+    {"title": "完善私有档案", "articles": ["member/profile", "member/permissions"]},
+    {"title": "使用资料与参加活动", "articles": ["member/resources", "member/activities"]},
+    {"title": "进入论坛交流", "articles": ["member/forum"]},
+    {"title": "自愿发布第一张成员卡片", "articles": ["member/showcase", "member/assets", "member/publish"]}
+  ],
+  "admin": [
+    {"title": "核对权限并进入驾驶舱", "articles": ["admin/permissions", "admin/login", "member/profile"]},
+    {"title": "查找成员与处理审核", "articles": ["admin/members", "admin/review", "admin/recruitment"]},
+    {"title": "预览并发布第一篇公告", "articles": ["admin/news"]},
+    {"title": "组织活动并处理反馈", "articles": ["admin/events", "admin/feedback"]},
+    {"title": "检查结果与安全交接", "articles": ["admin/handover", "admin/forum", "admin/settings"]}
+  ]
+}

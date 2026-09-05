@@ -92,6 +92,27 @@ class HelpAccessTests(TestCase):
         for path in ('/help/unknown/', '/help/recruit/unknown/', '/help/recruit/channel/images/missing.png/'):
             self.assertEqual(self.client.get(path).status_code, 404)
 
+    def test_onboarding_references_are_valid_and_public_routes_do_not_leak(self):
+        self.assertEqual(set(content.onboarding_catalog()), {'recruit', 'member', 'admin'})
+        guest = AnonymousUser()
+        self.assertEqual(content.onboarding(guest, 'admin'), [])
+        for audience in ('recruit', 'member'):
+            stages = content.onboarding(guest, audience)
+            self.assertEqual(len(stages), 5)
+            self.assertTrue(any(a.key == 'member/profile' for s in stages for a in s['articles']))
+            for stage in stages:
+                self.assertTrue(all(a.access == 'public' for a in stage['articles']))
+            self.assertContains(self.client.get(f'/help/{audience}/'), '第一次使用')
+
+    def test_onboarding_filters_system_tasks_before_rendering(self):
+        officer_keys = {a.key for s in content.onboarding(self.officer, 'admin') for a in s['articles']}
+        admin_keys = {a.key for s in content.onboarding(self.admin, 'admin') for a in s['articles']}
+        self.assertNotIn('admin/settings', officer_keys)
+        self.assertIn('admin/settings', admin_keys)
+        self.assertIn('admin/news', officer_keys)
+        self.admin.is_active = False
+        self.assertEqual(content.onboarding(self.admin, 'admin'), [])
+
     def test_login_and_position_guidance_preserve_supported_inputs(self):
         login = content.find(AnonymousUser(), 'member', 'login')
         self.assertIn('注册时设置的用户名', login.body)

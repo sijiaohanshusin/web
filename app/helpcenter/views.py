@@ -42,6 +42,7 @@ def guide(request, audience):
         raise Http404
     return response(request, "helpcenter/guide.html", {
         "guide": content.AUDIENCES[audience], "audience": audience, "articles": articles,
+        "onboarding": content.onboarding(request.user, audience),
     }, audience == "admin")
 
 
