@@ -14,6 +14,7 @@ from notify.services import notify_user
 
 from . import bilibili
 from .models import Feedback, FeedbackReply, SiteConfig
+from .redirects import safe_return_url
 
 # 首页图片走廊的槽位顺序。内容、比例、拍摄要求都在 core/slots.py，这里只定顺序。
 # 视图刻意不去查 MediaSlot：{% slot %} 自己会取（整表缓存，一次查询覆盖所有槽位）。
@@ -177,7 +178,7 @@ def feedback_detail(request, pk: int):
                 messages.success(request, "回复已发送，该反馈已重新打开。")
             else:
                 messages.success(request, "回复已发送。")
-        return redirect(request.POST.get("next") or request.path)
+        return redirect(safe_return_url(request, request.POST.get("next"), request.path))
 
     replies = fb.replies.select_related("author", "author__position")
     context = {

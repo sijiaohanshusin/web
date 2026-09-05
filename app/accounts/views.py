@@ -7,9 +7,10 @@ from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
+
+from core.redirects import safe_return_url
 
 from . import roles, verification
 from .forms import (
@@ -43,11 +44,7 @@ def _safe_next(request) -> str:
     `url_has_allowed_host_and_scheme`，不合法就当没传。
     """
     target = request.POST.get("next") or request.GET.get("next") or ""
-    if target and url_has_allowed_host_and_scheme(
-        target, allowed_hosts={request.get_host()}, require_https=request.is_secure(),
-    ):
-        return target
-    return ""
+    return safe_return_url(request, target, "")
 
 
 def _registration_rate_allowed(request) -> bool:
@@ -201,9 +198,13 @@ class LoginView(auth_views.LoginView):
     authentication_form = LoginForm
     redirect_authenticated_user = True
 
+    def get_redirect_url(self):
+        return safe_return_url(self.request, super().get_redirect_url(), "")
+
 
 class LogoutView(auth_views.LogoutView):
-    pass
+    def get_redirect_url(self):
+        return safe_return_url(self.request, super().get_redirect_url(), "")
 
 
 @never_cache

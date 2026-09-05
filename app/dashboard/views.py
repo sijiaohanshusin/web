@@ -14,7 +14,6 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 
 from django.utils import timezone
-from django.utils.http import url_has_allowed_host_and_scheme
 
 import re
 import uuid
@@ -26,6 +25,7 @@ from accounts.models import Medal, Position, PositionAppointment, ReturningMembe
 from core import bilibili
 from core import slots as slot_registry
 from core.models import CarouselImage, Feedback, MediaSlot, SiteConfig
+from core.redirects import safe_return_url
 from events.forms import EventForm
 from events.models import Event, EventSignup
 from files.forms import ResourceUploadForm
@@ -234,9 +234,7 @@ _LEVEL_ACTIONS = {
 def member_action(request):
     action = request.POST.get("action", "")
     ids = request.POST.getlist("ids")
-    nxt = request.POST.get("next") or reverse("dashboard:members")
-    if not url_has_allowed_host_and_scheme(nxt, {request.get_host()}, require_https=request.is_secure()):
-        nxt = reverse("dashboard:members")
+    nxt = safe_return_url(request, request.POST.get("next"), reverse("dashboard:members"))
     if any(not value.isascii() or not value.isdecimal() or len(value) > 18 for value in ids):
         messages.error(request, "成员选择无效，请重新选择列表中的成员。")
         return redirect(nxt)
@@ -387,7 +385,7 @@ def feedbacks(request):
                 pk = item.pk
                 item.delete()
                 messages.success(request, f"反馈 #{pk} 已删除。")
-        return redirect(request.POST.get("next") or "dashboard:feedbacks")
+        return redirect(safe_return_url(request, request.POST.get("next"), reverse("dashboard:feedbacks")))
 
     tab = request.GET.get("tab", "pending")
     if tab not in ("pending", "all"):
@@ -806,7 +804,7 @@ def news_manage(request):
                     item.cover.delete(save=False)
                 item.delete()
                 messages.success(request, f"公告「{title}」已删除。")
-        return redirect(request.POST.get("next") or "dashboard:news")
+        return redirect(safe_return_url(request, request.POST.get("next"), reverse("dashboard:news")))
 
     items = Post.objects.select_related("author")
     query = request.GET.get("q", "").strip()
@@ -903,7 +901,7 @@ def events_manage(request):
                 title = item.title
                 item.delete()
                 messages.success(request, f"活动「{title}」已删除。")
-        return redirect(request.POST.get("next") or "dashboard:events")
+        return redirect(safe_return_url(request, request.POST.get("next"), reverse("dashboard:events")))
 
     # order_by 显式写：annotate() 的 GROUP BY 会让 Meta.ordering 失效，而这个列表
     # 还要分页 —— 无序查询分页会让同一条记录在两页里重复出现或者干脆消失
@@ -1254,7 +1252,7 @@ def projects_manage(request):
                     f.file.delete(save=False)
                 project.delete()
                 messages.success(request, f"项目「{name}」及其文件已删除。")
-        return redirect(request.POST.get("next") or "dashboard:projects")
+        return redirect(safe_return_url(request, request.POST.get("next"), reverse("dashboard:projects")))
 
     # 同上：annotate() 的 GROUP BY 让 Meta.ordering 失效，而这个列表要分页
     items = Project.objects.select_related("created_by").annotate(
