@@ -14,10 +14,11 @@
     "回复不包含密钥或其他成员私密信息"
   ],
   "screenshots": [
-    "admin-19-feedback-management.png"
+    "admin-19-feedback-management.png",
+    "first-use-feedback-actions.png"
   ],
-  "verified": "2026-09-04",
-  "version": "9c9b9e8"
+  "verified": "2026-09-05",
+  "version": "体验改造候选版 反馈处理和重新打开隔离核验"
 }
 ---
 
@@ -31,9 +32,9 @@
 6. 删除只用于垃圾信息或确认无保留价值的重复记录。
 7. 以普通用户视角检查通知中心是否收到回复。
 
-![反馈管理](asset:admin-19-feedback-management.png)
+![反馈管理操作](asset:first-use-feedback-actions.png)
 
-*图 13-1　反馈记录包含处理状态和回复操作，真实内容已遮挡。*
+*图 13-2　隔离环境的虚构反馈。先通过“回复提交人”沟通，再按实际结果填写处理备注并标记已处理。*
 
 ## 你应该看到
 

@@ -23,6 +23,50 @@ class HelpAccessTests(TestCase):
         for path in ("/help/admin/", "/help/admin/settings/", "/help/admin/members/"):
             self.assertEqual(self.client.get(path).status_code, 404)
 
+    def test_first_use_editions_only_reference_allowed_source_sections_and_images(self):
+        import json
+        import re
+        from django.conf import settings
+        manifest = json.loads((settings.REPO_DIR / 'scripts/manuals/first_use.json').read_text(encoding='utf-8'))
+        for audience in ('recruit', 'member', 'admin'):
+            for page in manifest[audience]['pages']:
+                refs = [page['ref'], page.get('image_ref', page['ref'])]
+                selections = [(page['ref'], item[0], item[1] if len(item)>1 else None) for item in page['sections']]
+                for key in ('lead', 'extra'):
+                    if key in page:
+                        selection = page[key]
+                        refs.append(selection['ref'])
+                        selections.append((selection['ref'], selection['section'], selection.get('items')))
+                for ref in refs:
+                    item = next(a for a in content.articles() if a.key == ref)
+                    self.assertEqual(item.access, 'public' if audience != 'admin' else item.access)
+                    # First-use admin guide deliberately covers daily officer work only.
+                    self.assertNotEqual(item.access, 'admin')
+                for ref, section, numbers in selections:
+                    _, _, body = (content.ROOT / 'content' / f'{ref}.md').read_text(encoding='utf-8').split('---', 2)
+                    headings = re.split(r'^## (.+)$', body, flags=re.M)
+                    sections = dict(zip(headings[1::2], headings[2::2]))
+                    self.assertIn(section, sections)
+                    if numbers:
+                        existing = {int(n) for n in re.findall(r'^(\d+)\. ', sections[section], flags=re.M)}
+                        self.assertTrue(set(numbers) <= existing)
+                item = next(a for a in content.articles() if a.key == page.get('image_ref', page['ref']))
+                for key in ('image', 'image2'):
+                    if key in page:
+                        self.assertIn(page[key], item.screenshots)
+
+    def test_publish_guide_matches_current_scope_specific_button_labels(self):
+        page = self.client.get('/help/member/publish/')
+        for label in ('发布成员卡片', '发布卡片与个人页面', '确认更新公开版本'):
+            self.assertContains(page, label)
+        self.assertNotContains(page, '确认发布我的展示')
+
+    def test_first_use_admin_screenshots_are_not_public(self):
+        for slug, name in [('events','first-use-event-management.png'), ('feedback','first-use-feedback-actions.png')]:
+            path = f'/help/admin/{slug}/images/{name}/'
+            self.assertEqual(self.client.get(path).status_code, 404)
+            self.assertEqual(self.client.get(f'/help/member/activities/images/{name}/').status_code, 404)
+
     def test_officer_only_receives_executable_chapters(self):
         self.client.force_login(self.officer)
         response = self.client.get("/help/admin/")

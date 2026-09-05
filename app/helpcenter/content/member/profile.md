@@ -16,7 +16,8 @@
   "screenshots": [
     "returning-member-08-profile-center.png",
     "member-profile-direction.png",
-    "member-profile-showcase-entry.png"
+    "member-profile-showcase-entry.png",
+    "first-use-profile-direction.png"
   ],
   "verified": "2026-09-05",
   "version": "体验改造候选版 手机资料修改核验 个人中心图沿用9c9b9e8"
@@ -39,6 +40,10 @@
 ![手机端选择擅长方向](asset:member-profile-direction.png)
 
 *图 6-2　选择自定义后，还需在下方填写具体方向。保存私有资料不会自动公开。*
+
+![填写自定义方向说明](asset:first-use-profile-direction.png)
+
+*图 6-4　手机端真实填写区。填写说明后继续向下点击“保存”，返回个人中心核对结果。此图为隔离环境演示。*
 
 ![独立成员展示入口](asset:member-profile-showcase-entry.png)
 

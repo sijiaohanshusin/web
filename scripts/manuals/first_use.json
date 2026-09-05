@@ -1,0 +1,51 @@
+{
+  "edition": "2026 年 9 月 首次上手版",
+  "recruit": {
+    "title": "招新注册首次上手手册",
+    "intro": "面向第一次参加协会招新的同学。按顺序完成注册、资料核对和报名，最后确认自己的报名状态。注册成功不等于已经报名。",
+    "pages": [
+      {"title":"选择新会员注册", "ref":"recruit/channel", "sections":[["按步骤操作"]], "image":"shared-01-register-channel-choice.png"},
+      {"title":"填写身份与方向", "ref":"recruit/identity", "sections":[["按步骤操作"]], "image":"recruitment-02-register-step-identity.png"},
+      {"title":"验证邮箱并填写联系方式", "ref":"recruit/contact", "sections":[["按步骤操作"]], "image":"recruitment-03-register-step-contact.png"},
+      {"title":"设置登录方式并完成注册", "ref":"recruit/verify", "sections":[["按步骤操作"]], "image":"registration-username-new-390.png", "check":2},
+      {"title":"核对并完善个人资料", "ref":"member/profile", "sections":[["按步骤操作",[1,2,4,5,6]]], "image":"first-use-profile-direction.png", "check":1},
+      {"title":"报名第一步与第二步", "ref":"recruit/direction", "sections":[["按步骤操作"]], "image":"recruitment-08-application-step-interests.png"},
+      {"title":"补充经历与自我介绍", "ref":"recruit/application", "sections":[["按步骤操作"]], "image":"first-use-application-mobile.png"},
+      {"title":"检查答卷并提交报名", "ref":"recruit/submit", "sections":[["按步骤操作"]], "image":"recruitment-11-application-step-confirm.png"},
+      {"title":"确认状态与会员权限", "ref":"recruit/progress", "sections":[["按步骤操作"]], "image":"recruitment-12-application-status-submitted.png"},
+      {"title":"加入招新群并接收通知", "ref":"recruit/group", "sections":[["按步骤操作"]], "image":"recruitment-07-application-step-direction.png", "extra":{"ref":"recruit/notifications","section":"按步骤操作","items":[1,2,4,5]}, "finish":"recruit/account"}
+    ]
+  },
+  "member": {
+    "title":"老会员首次上手手册",
+    "intro":"面向需要恢复协会身份或首次使用网站的老会员。已有账号请从登录开始，不要重复注册。先完善私有档案，再使用资料、活动和论坛；公开成员卡片完全自愿。",
+    "pages": [
+      {"title":"选择老会员通道并申报身份", "ref":"member/register", "sections":[["按步骤操作",[1,2]]], "image":"returning-member-02-register-step-identity.png", "lead":{"ref":"member/channel","section":"按步骤操作","items":[1,2,4]}},
+      {"title":"验证邮箱并提交恢复申请", "ref":"member/register", "sections":[["按步骤操作",[3,4,5,6]]], "image":"returning-member-03-register-step-contact.png", "check":1},
+      {"title":"等待审核并首次登录", "ref":"member/login", "sections":[["按步骤操作",[1,2,3,4]]], "image":"shared-02-password-login.png", "lead":{"ref":"member/review","section":"按步骤操作","items":[4,5]}},
+      {"title":"完善私有档案", "ref":"member/profile", "sections":[["按步骤操作"]], "image":"first-use-profile-direction.png", "check":1},
+      {"title":"下载资料并参加活动", "ref":"member/resources", "sections":[["按步骤操作",[1,2,3,4]]], "image":"first-use-event-info.png", "image2":"first-use-event-signed.png", "image_ref":"member/activities", "extra":{"ref":"member/activities","section":"按步骤操作","items":[1,2,3]}},
+      {"title":"进入论坛并发表第一篇主题", "ref":"member/forum", "lead":{"ref":"member/forum","section":"按步骤操作","items":[1]}, "sections":[["发表第一篇主题"]], "image":"forum-first-topic-desktop.png", "image2":"forum-first-topic-mobile.png", "check":1, "omit_trouble":true},
+      {"title":"回复主题与只读邮箱", "ref":"member/forum", "sections":[["回复已有主题"]], "image":"forum-first-reply.png", "extra":{"ref":"member/forum","section":"查看公共邮箱","items":[1,2,3,4]}, "check":3},
+      {"title":"制作第一张成员卡片", "ref":"member/showcase", "sections":[["按步骤操作"]], "image":"workspace-start.png", "lead":{"ref":"member/showcase","section":"先确认资格"}},
+      {"title":"调整卡片并保存草稿", "ref":"member/showcase", "sections":[["让卡片更像你"]], "image":"workspace-card.png", "extra":{"ref":"member/showcase","section":"保存不是公开"}, "check":2},
+      {"title":"预览并自愿公开", "ref":"member/publish", "sections":[["按步骤操作"]], "image":"workspace-publish.png", "extra":{"ref":"member/publish","section":"撤回和下架"}, "extra_label":"需要撤回时", "check":2, "finish":"member/login"}
+    ]
+  },
+  "admin": {
+    "title":"网站管理首次上手手册",
+    "intro":"内部使用。面向首次接手网站日常工作的站务人员。只操作自己职责范围内的记录，先核对对象与可见范围，再保存、预览、发布。账号提权和关键配置仍由系统管理员处理。",
+    "pages": [
+      {"title":"核对权限并进入驾驶舱", "ref":"admin/login", "sections":[["按步骤操作",[1,3,4,5,6]]], "image":"admin-01-dashboard-overview.png", "lead":{"ref":"admin/permissions","section":"按步骤操作","items":[3,6]}},
+      {"title":"完善自己的账号资料", "ref":"member/profile", "sections":[["按步骤操作",[1,2,4,5,6]]], "image":"first-use-profile-direction.png", "check":1, "extra":{"ref":"member/login","section":"按步骤操作","items":[5,6]}},
+      {"title":"找到正确成员再操作", "ref":"admin/members", "sections":[["按步骤操作"]], "image":"admin-02-member-search.png"},
+      {"title":"处理一条老会员申请", "ref":"admin/review", "sections":[["按步骤操作"]], "image":"admin-03-returning-review.png"},
+      {"title":"核对答卷并更新面试结果", "ref":"admin/recruitment", "sections":[["按步骤操作",[1,3,4,5,6,7,8]]], "image":"admin-07-application-detail.png", "check":1},
+      {"title":"先保存第一篇公告草稿", "ref":"admin/news", "sections":[["按步骤操作",[1,2,3,4]]], "image":"admin-news-visibility.png", "image2":"admin-news-publish-switch.png"},
+      {"title":"预览公告再发布或下架", "ref":"admin/news", "sections":[["按步骤操作",[5,6,7,8]]], "image":"admin-news-preview.png", "check":1},
+      {"title":"发布活动并核对签到", "ref":"admin/events", "sections":[["按步骤操作"]], "image":"first-use-event-management.png"},
+      {"title":"审核论坛中的第一篇帖子", "ref":"admin/forum", "sections":[["处理新用户的首帖审核",[1,2,3,4,5]]], "image":"forum-queue-review.png", "check":1},
+      {"title":"处理反馈并完成交接", "ref":"admin/feedback", "sections":[["按步骤操作",[1,2,3,4,5,7]]], "image":"first-use-feedback-actions.png", "extra":{"ref":"admin/handover","section":"每日/每周检查清单","items":[1,2,6]}, "finish":"admin/handover"}
+    ]
+  }
+}

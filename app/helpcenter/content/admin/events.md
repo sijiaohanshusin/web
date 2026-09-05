@@ -15,10 +15,11 @@
   ],
   "screenshots": [
     "admin-12-event-management.png",
-    "admin-13-event-editor.png"
+    "admin-13-event-editor.png",
+    "first-use-event-management.png"
   ],
-  "verified": "2026-09-04",
-  "version": "9c9b9e8"
+  "verified": "2026-09-05",
+  "version": "体验改造候选版 开启关闭签到与成员签到隔离核验"
 }
 ---
 
@@ -32,9 +33,9 @@
 6. 管理员代签到前核对姓名和账号，保留现场依据。
 7. 活动结束后检查报名、签到和个人中心显示是否一致。
 
-![活动管理](asset:admin-12-event-management.png)
+![活动管理操作行](asset:first-use-event-management.png)
 
-*图 8-1　活动列表集中处理发布、签到和删除。*
+*图 8-3　演示活动已有一条报名。“开启签到”与“下架”是不同操作；活动结束后应关闭签到，不必删除记录。*
 
 ![活动编辑](asset:admin-13-event-editor.png)
 

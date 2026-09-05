@@ -15,10 +15,12 @@
   "screenshots": [
     "returning-member-12-member-events.png",
     "returning-member-13-member-projects.png",
-    "returning-member-14-public-works.png"
+    "returning-member-14-public-works.png",
+    "first-use-event-info.png",
+    "first-use-event-signed.png"
   ],
-  "verified": "2026-09-04",
-  "version": "9c9b9e8"
+  "verified": "2026-09-05",
+  "version": "体验改造候选版 活动报名取消签到隔离核验"
 }
 ---
 
@@ -30,9 +32,13 @@
 4. 进入“项目”浏览项目档案、阶段、成员与公开作品。
 5. 项目公开展示不等于授予编辑权限；加入项目需由项目负责人或管理员维护成员关系。
 
-![活动列表](asset:returning-member-12-member-events.png)
+![活动信息核对](asset:first-use-event-info.png)
 
-*图 9-1　活动页集中展示报名入口和时间安排。*
+*图 9-4　打开活动详情，核对时间、地点和名额。隔离环境演示活动，不是正式通知。*
+
+![活动报名成功](asset:first-use-event-signed.png)
+
+*图 9-5　点击“立即报名”后显示已报名与取消入口，现场再按组织者要求签到。*
 
 ![项目列表](asset:returning-member-13-member-projects.png)
 

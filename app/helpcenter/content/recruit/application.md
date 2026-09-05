@@ -16,10 +16,11 @@
   "screenshots": [
     "recruitment-09-application-step-profile.png",
     "recruitment-10-application-step-introduction.png",
-    "recruitment-10b-application-mobile.png"
+    "recruitment-10b-application-mobile.png",
+    "first-use-application-mobile.png"
   ],
-  "verified": "2026-09-04",
-  "version": "9c9b9e8"
+  "verified": "2026-09-05",
+  "version": "体验改造候选版 手机表单隔离核验"
 }
 ---
 
@@ -41,9 +42,9 @@
 
 *图 9-2　自我介绍应真实、具体，不要求已有技术基础。*
 
-![手机端报名](asset:recruitment-10b-application-mobile.png)
+![手机端自我介绍填写区](asset:first-use-application-mobile.png)
 
-*图 9-3　手机端表单位于介绍内容下方，可正常逐步填写。*
+*图 9-4　手机端表单位于介绍内容下方，点击“报名表”锚点即可到达。本图显示“说说你”的实际字段，不是页面顶部的介绍内容。*
 
 ## 你应该看到
 
