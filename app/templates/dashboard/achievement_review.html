@@ -1,4 +1,30 @@
 {% extends "dashboard/base.html" %}{% block title %}成果认领核验{% endblock %}{% block content %}
 <h1>成果认领核验</h1><p>对照年份、团队、实际分工与共同参与者，重名不是认领依据。不能审核自己的申请；通过仅关联署名，不改变作品维护人和权限。</p>
 <form method="get"><label for="claim-status">处理状态</label><select name="status" id="claim-status" class="input">{% for value,label in states %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="btn btn-outline">查看</button></form>{% if error %}<p role="alert">{{ error }}</p>{% endif %}
-{% for c in page %}<section class="panel"><h2>{{ c.title }}</h2><p>申请账号：{{ c.applicant.username }} · 公开署名：{{ c.public_name }} · {{ c.role }}</p>{% if c.contributor %}<p>认领原署名：{{ c.contributor.name }} · {{ c.contributor.cohort }} · {{ c.contributor.role }}</p>{% endif %}<p>{{ c.evidence|linebreaksbr }}</p>{% if c.status == 'pending' %}<form method="post">{% csrf_token %}<input type="hidden" name="claim" value="{{ c.pk }}"><label for="reason-{{ c.pk }}">核验结论（会向申请人显示）</label><textarea class="input" id="reason-{{ c.pk }}" name="reason" maxlength="500" rows="3" required></textarea><button class="btn btn-primary" name="decision" value="approved">核验通过并关联</button><button class="btn btn-outline" name="decision" value="rejected">未通过</button></form>{% else %}<p>{{ c.get_status_display }} · {{ c.reason }}</p>{% endif %}</section>{% empty %}<p>此状态下没有申请。</p>{% endfor %}{% include "includes/pager.html" with page=page %}{% endblock %}
+{% for c in page %}
+<section class="panel">
+    <h2>{{ c.title }}</h2>
+    <p>申请账号：{{ c.applicant.username }} · 公开署名：{{ c.public_name }} · {{ c.role }}</p>
+    {% if c.contributor %}<p>认领原署名：{{ c.contributor.name }} · {{ c.contributor.cohort }} · {{ c.contributor.role }}</p>{% endif %}
+    <p>{{ c.evidence|linebreaksbr }}</p>
+    {% if c.status == 'pending' %}
+        {% if c.applicant_id == request.user.pk %}
+        <p role="status"><strong>这是你本人提交的认领申请</strong>，请另一位站务人员核验。系统管理员也不能自审；申请不会丢失，无需重复提交。</p>
+        <a class="btn btn-outline" href="{% url 'achievements:hub' %}">查看我的认领进度</a>
+        {% else %}
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="claim" value="{{ c.pk }}">
+            <label for="reason-{{ c.pk }}">核验结论（会向申请人显示）</label>
+            <textarea class="input" id="reason-{{ c.pk }}" name="reason" maxlength="500" rows="3" required></textarea>
+            <button class="btn btn-primary" name="decision" value="approved">核验通过并关联</button>
+            <button class="btn btn-outline" name="decision" value="rejected">未通过</button>
+        </form>
+        {% endif %}
+    {% else %}
+    <p>{{ c.get_status_display }} · {{ c.reason }}</p>
+    {% endif %}
+</section>
+{% empty %}<p>此状态下没有申请。</p>{% endfor %}
+{% include "includes/pager.html" with page=page %}
+{% endblock %}

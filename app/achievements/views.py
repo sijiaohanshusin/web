@@ -141,7 +141,10 @@ def review(request):
         claim_id = request.POST.get('claim', '')
         if not claim_id.isascii() or not claim_id.isdigit():
             return HttpResponse(status=400)
-        get_object_or_404(Claim, pk=int(claim_id))
+        claim = get_object_or_404(Claim, pk=int(claim_id))
+        if claim.applicant_id == request.user.pk:
+            messages.warning(request, '不能核验自己的认领申请，请另一位站务人员核验。申请状态未改变，无需重复提交。')
+            return redirect('achievements:review')
         try:
             services.review_claim(request.user, int(claim_id), request.POST.get('decision'), request.POST.get('reason', ''))
             messages.success(request, '核验结果已保存。未改变会员等级、项目权限或原奖项数量。')

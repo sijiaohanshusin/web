@@ -138,6 +138,33 @@ def walkthrough(owner, member, claimant, staff):
             claim_page.screenshot(path=str(OUT / f'hub-{width}.png'), full_page=True)
         results.append('unlinked name: member claim, officer verification, status and association update')
 
+        staff_page.goto(BASE + f'/achievements/work/{work_id}/')
+        staff_page.locator('[name=public_name]').fill('站务本人演示署名')
+        staff_page.locator('[name=role]').fill('软件')
+        staff_page.locator('[name=evidence]').fill('隔离测试：自己的申请应交由另一位站务核验。')
+        staff_page.locator('[name=consent]').check()
+        staff_page.get_by_role('button', name='提交核验申请').click()
+        cancel = staff_page.locator('form[action*="/claims/"]')
+        own_claim_id = cancel.get_attribute('action').split('/')[-3]
+        csrf = cancel.locator('[name=csrfmiddlewaretoken]').input_value()
+        staff_page.goto(BASE + '/achievements/review/')
+        expect(staff_page.get_by_text('这是你本人提交的认领申请', exact=True)).to_be_visible()
+        expect(staff_page.locator('[name=decision]')).to_have_count(0)
+        for width in (1440, 390, 320):
+            staff_page.set_viewport_size({'width': width, 'height': 1000})
+            assert not staff_page.evaluate('document.documentElement.scrollWidth > innerWidth')
+            staff_page.screenshot(path=str(OUT / f'self-review-{width}.png'), full_page=True)
+        stale_reply = staff_context.request.post(BASE + '/achievements/review/', form={
+            'csrfmiddlewaretoken': csrf, 'claim': own_claim_id,
+            'decision': 'approved', 'reason': '旧标签页提交不能自审',
+        })
+        assert stale_reply.status == 200
+        assert '请另一位站务人员核验' in stale_reply.text()
+        staff_page.get_by_role('link', name='查看我的认领进度').click()
+        expect(staff_page.get_by_text('待核验', exact=True)).to_be_visible()
+        staff_page.set_viewport_size({'width': 1440, 'height': 1000})
+        results.append('self-review: hidden controls, three widths, stale POST explained without approval')
+
         staff_page.goto(BASE + '/achievements/honors/manage/')
         staff_page.locator('[name=importance]').fill('80')
         staff_page.locator('[name=is_featured]').check()
