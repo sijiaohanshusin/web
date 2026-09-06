@@ -17,6 +17,19 @@ assert re.fullmatch(r'\d{4}-\d{2}-\d{2}', MANIFEST['verified'])
 OUT /= MANIFEST['verified']
 
 
+def release_boundary_errors(status, cover_text, body_text):
+    if status == 'candidate':
+        return [] if '待上线' in cover_text else ['Candidate manual must state its release boundary']
+    errors = []
+    for stale in ('尚未上线', '待上线', '网站候选版本'):
+        if stale in cover_text + body_text:
+            errors.append('Stale publication status: ' + stale)
+    # In task steps this wording legitimately describes an author's private draft.
+    if '尚未发布' in cover_text:
+        errors.append('Stale publication status: 尚未发布')
+    return errors
+
+
 def run():
     results = []
     for audience in ('recruit', 'member', 'admin'):
@@ -80,11 +93,8 @@ def run():
         if not {'contents', 'quick_index', 'feedback_task'} <= names:
             errors.append('Missing task index or feedback shortcut')
         all_text = re.sub(r'\s+', '', '\n'.join(p.extract_text() for p in reader.pages))
-        for stale in (() if MANIFEST[audience].get('release_status') == 'candidate' else ('尚未上线', '尚未发布', '网站候选版本')):
-            if stale in all_text:
-                errors.append('Stale publication status: ' + stale)
-        if MANIFEST[audience].get('release_status') == 'candidate' and '待上线' not in all_text:
-            errors.append('Candidate manual must state its release boundary')
+        cover_text = re.sub(r'\s+', '', reader.pages[0].extract_text())
+        errors.extend(release_boundary_errors(MANIFEST[audience].get('release_status'), cover_text, all_text))
         for required in ('提交网站问题与建议', '跟进反馈与故障求助', '任务速查与操作路线', '1081376858'):
             if required not in all_text:
                 errors.append('Missing required guidance: ' + required)
