@@ -13,7 +13,7 @@
   - alt 要带奖项名，不能只写「证书」。
 {% endcomment %}
 <figure class="hn-cert">
-    <img src="{{ honor.certificate.url }}" alt="{{ honor.title }} 证书"
+    <img src="{{ honor.certificate_url }}" alt="{{ honor.title }} 证书"
          {% if honor.cert_w %}width="{{ honor.cert_w }}" height="{{ honor.cert_h }}"{% endif %}
          loading="{% if eager %}eager{% else %}lazy{% endif %}" decoding="async">
     <figcaption>{{ honor.year }} · {{ honor.title }}</figcaption>

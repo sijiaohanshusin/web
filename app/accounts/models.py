@@ -126,7 +126,11 @@ class User(AbstractUser):
         with transaction.atomic(using=using):
             result = self._save_with_appointments(*args, **kwargs)
             from showcase.services import revoke_ineligible
+            from projects.work_services import revoke_ineligible_works
+            from achievements.honor_services import revoke_ineligible_honors
             revoke_ineligible(type(self).objects.using(using).filter(pk=self.pk), using)
+            revoke_ineligible_works(type(self).objects.using(using).filter(pk=self.pk), using)
+            revoke_ineligible_honors(type(self).objects.using(using).filter(pk=self.pk), using)
             return result
 
     def _save_with_appointments(self, *args, **kwargs):

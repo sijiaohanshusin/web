@@ -18,16 +18,18 @@ def can_view_list(user) -> bool:
 
 def can_view_files(user, project) -> bool:
     """项目成员或站务管理可以查看、下载项目内文件。"""
-    return is_officer(user) or membership(user, project) is not None
+    return not project.is_member_work and (is_officer(user) or membership(user, project) is not None)
 
 
 def can_edit(user, project) -> bool:
     """项目成员（含负责人）或站务管理可以上传、建目录、删除文件。"""
-    return is_officer(user) or membership(user, project) is not None
+    return not project.is_member_work and (is_officer(user) or membership(user, project) is not None)
 
 
 def can_manage(user, project) -> bool:
     """负责人或站务管理可以管理成员、归档、删除项目。"""
+    if project.is_member_work:
+        return False
     if is_officer(user):
         return True
     m = membership(user, project)

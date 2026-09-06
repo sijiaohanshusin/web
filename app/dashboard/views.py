@@ -1236,7 +1236,7 @@ def campaign_edit(request, pk: int | None = None):
 def projects_manage(request):
     if request.method == "POST":
         action = request.POST.get("action", "")
-        project = get_object_or_404(Project, pk=request.POST.get("id"))
+        project = get_object_or_404(Project, pk=request.POST.get("id"), is_member_work=False)
         if action == "archive":
             project.status = Project.Status.ARCHIVED
             project.save(update_fields=["status", "updated_at"])
@@ -1257,7 +1257,7 @@ def projects_manage(request):
         return redirect(safe_return_url(request, request.POST.get("next"), reverse("dashboard:projects")))
 
     # 同上：annotate() 的 GROUP BY 让 Meta.ordering 失效，而这个列表要分页
-    items = Project.objects.select_related("created_by").annotate(
+    items = Project.objects.filter(is_member_work=False).select_related("created_by").annotate(
         member_total=Count("members", distinct=True),
         file_total=Count("files", distinct=True),
     ).order_by("status", "-updated_at")
@@ -1279,7 +1279,7 @@ def projects_manage(request):
 
 @officer_required
 def project_edit(request, pk: int | None = None):
-    project = get_object_or_404(Project, pk=pk) if pk else None
+    project = get_object_or_404(Project, pk=pk, is_member_work=False) if pk else None
 
     if request.method == "POST":
         # 必须接 request.FILES：表单里有展示封面。漏了它不会报错，只是封面
@@ -1548,13 +1548,13 @@ def honors_manage(request):
     editing = None
     edit_pk = request.GET.get("edit")
     if edit_pk and edit_pk.isdigit():
-        editing = get_object_or_404(Honor, pk=int(edit_pk))
+        editing = get_object_or_404(Honor, pk=int(edit_pk), is_member_honor=False)
 
     if request.method == "POST":
         action = request.POST.get("action", "save")
 
         if action == "delete":
-            honor = get_object_or_404(Honor, pk=request.POST.get("id"))
+            honor = get_object_or_404(Honor, pk=request.POST.get("id"), is_member_honor=False)
             title = str(honor)
             if honor.certificate:
                 honor.certificate.delete(save=False)
@@ -1563,7 +1563,7 @@ def honors_manage(request):
             return redirect("dashboard:honors")
 
         if action == "toggle_public":
-            honor = get_object_or_404(Honor, pk=request.POST.get("id"))
+            honor = get_object_or_404(Honor, pk=request.POST.get("id"), is_member_honor=False)
             honor.is_public = not honor.is_public
             # 撤回公开时连带撤掉首页展示，否则首页会指向一条已经不公开的记录
             if not honor.is_public:
@@ -1573,7 +1573,7 @@ def honors_manage(request):
             return redirect("dashboard:honors")
 
         if action == "toggle_featured":
-            honor = get_object_or_404(Honor, pk=request.POST.get("id"))
+            honor = get_object_or_404(Honor, pk=request.POST.get("id"), is_member_honor=False)
             if not honor.is_public:
                 messages.error(request, "要先公开这条记录，才能放到首页。")
             else:
@@ -1586,7 +1586,7 @@ def honors_manage(request):
         target = None
         pk = request.POST.get("id")
         if pk and pk.isdigit():
-            target = get_object_or_404(Honor, pk=int(pk))
+            target = get_object_or_404(Honor, pk=int(pk), is_member_honor=False)
         form = HonorForm(request.POST, request.FILES, instance=target)
         if form.is_valid():
             item = form.save()
@@ -1603,7 +1603,7 @@ def honors_manage(request):
         "active_nav": "honors",
         "form": form,
         "editing": editing,
-        "items": H.objects.select_related("post").all(),
+        "items": H.objects.select_related("post").filter(is_member_honor=False),
         "summary": H.summary(),
     }
     return render(request, "dashboard/honors.html", context)

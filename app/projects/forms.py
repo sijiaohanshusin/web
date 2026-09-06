@@ -1,11 +1,11 @@
 from django import forms
 
-from .models import Project
+from .models import Project, current_work_year
 
 # 放模块级而不是类属性：`class Meta` 的类体看不见外层类的命名空间
 # （Python 的类作用域不参与嵌套查找），写成 ProjectForm.ARCHIVE_FIELDS 会 NameError。
 ARCHIVE_FIELDS = ("name", "department", "summary", "status")
-SHOWCASE_FIELDS = ("is_public", "is_featured", "highlight", "tags", "cover")
+SHOWCASE_FIELDS = ("is_public", "is_featured", "work_year", "highlight", "tags", "cover")
 
 
 class ProjectForm(forms.ModelForm):
@@ -24,12 +24,17 @@ class ProjectForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['work_year'] = forms.TypedChoiceField(label='作品年份', required=False, coerce=int,
+            choices=[(year, str(year)) for year in range(current_work_year(), 1994, -1)])
         for name, field in self.fields.items():
             # 勾选框和文件选择器有自己的外观，套 .input（文本框样式）会变形
             if isinstance(field.widget, (forms.CheckboxInput, forms.ClearableFileInput)):
                 continue
             existing = field.widget.attrs.get("class", "")
             field.widget.attrs["class"] = f"{existing} input".strip()
+
+    def clean_work_year(self):
+        return self.cleaned_data.get('work_year') or self.instance.work_year or current_work_year()
 
     @property
     def archive_fields(self):

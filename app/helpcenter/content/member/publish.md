@@ -17,7 +17,7 @@
     "workspace-publish.png"
   ],
   "verified": "2026-09-05",
-  "version": "v4 验收版（尚未上线）"
+  "version": "8e7c4de 已上线"
 }
 ---
 

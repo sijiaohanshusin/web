@@ -1,8 +1,20 @@
 import os
+import uuid
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
+from django.core.validators import MaxValueValidator
 from django.urls import reverse
+from django.utils import timezone
+
+
+def current_work_year():
+    return timezone.localdate().year
+
+
+def can_publish_work(user):
+    return bool(user.is_authenticated and user.is_active and (user.member_level >= 3 or user.is_superuser))
 
 
 def project_file_path(instance, filename):
@@ -16,8 +28,8 @@ class Project(models.Model):
     - **展示面**（`/works/`）：给外人看的作品墙，只出 `is_public=True` 的那些，
       内容是封面 + 图集 + 一句话亮点，不碰任何项目文件。
 
-    做成一个模型而不是两个：一个项目就是一件事，拆成「项目」和「作品」两张表，
-    迟早出现「作品墙上的那个和档案里的那个其实是同一个但数据对不上」。
+    既有项目保持原档案；会员自助作品由 MemberWork 保存私有草稿，
+    本人发布时才同步到这里，不因此创建项目成员关系。
 
     **展示用的图必须走 `works/` 而不是 `projects/`**：nginx 对 `/media/projects/`
     与 `/media/resources/` 直接返回 403（那里放的是会员私有文件，靠 X-Accel-Redirect
@@ -44,6 +56,11 @@ class Project(models.Model):
     )
     created_at = models.DateTimeField("创建时间", auto_now_add=True)
     updated_at = models.DateTimeField("更新时间", auto_now=True)
+    work_year = models.PositiveSmallIntegerField("作品年份", default=current_work_year, db_index=True)
+    importance = models.PositiveSmallIntegerField("重要性", default=0, validators=[MaxValueValidator(100)])
+    is_member_work = models.BooleanField(default=False, editable=False, db_index=True)
+    public_credit = models.CharField("公开署名", max_length=120, blank=True)
+    external_url = models.URLField("作品链接", blank=True)
 
     # ---------------- 对外展示（作品墙） ----------------
     is_public = models.BooleanField(
@@ -76,6 +93,7 @@ class Project(models.Model):
         verbose_name = "项目"
         verbose_name_plural = "项目"
         ordering = ["status", "-updated_at"]
+        constraints = [models.CheckConstraint(condition=Q(importance__lte=100), name="project_importance_range")]
 
     def __str__(self):
         return self.name
@@ -87,7 +105,7 @@ class Project(models.Model):
 
     @classmethod
     def public(cls):
-        """作品墙上该出现的项目，按「精选优先、然后最近更新」排。
+        """公开作品按年份降序、重要性降序排列，编辑不会自动顶到前面。
 
         提到模型上是为了让三个消费者用同一个口径：作品墙、作品详情页、首页精选。
         散在各处迟早出现「首页显示了一个作品墙上没有的作品」。
@@ -95,8 +113,18 @@ class Project(models.Model):
         **不排除没有封面的**：缺图是常态，那种情况显示空焊盘占位（说明「这件作品
         还差一张照片」），比把整件作品藏起来诚实。
         """
+        eligible_owner = Q(created_by__is_active=True) & (Q(created_by__member_level__gte=3) | Q(created_by__is_superuser=True))
         return (cls.objects.filter(is_public=True)
-                .order_by("-is_featured", "-updated_at"))
+                .filter(Q(is_member_work=False) | (eligible_owner & Q(member_work__published__isnull=False)))
+                .order_by("-work_year", "-importance", "-is_featured", "-pk"))
+
+    @property
+    def cover_url(self):
+        if not self.cover:
+            return ""
+        if self.is_member_work:
+            return reverse("works:image", args=[os.path.basename(self.cover.name).removesuffix(".jpg")])
+        return self.cover.url
 
     @property
     def tag_list(self) -> list[str]:
@@ -249,3 +277,58 @@ class ProjectShot(models.Model):
 
     def __str__(self):
         return self.caption or f"{self.project} 的展示图 #{self.pk}"
+
+    @property
+    def image_url(self):
+        return self.image.url
+
+
+class MemberWork(models.Model):
+    """Owner-only working copy; Project is its compatible public projection."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="member_works")
+    project = models.OneToOneField(Project, null=True, blank=True, on_delete=models.SET_NULL, related_name="member_work")
+    draft = models.JSONField(default=dict)
+    published = models.JSONField(null=True, blank=True)
+    version = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-updated_at", "-pk"]
+
+    @property
+    def title(self):
+        return self.draft.get("name") or "未命名作品"
+
+    @property
+    def is_public(self):
+        return bool(self.project_id and self.project.is_public and self.published and can_publish_work(self.owner))
+
+
+def work_image_path(instance, filename):
+    return f"projects/member-works/{instance.work_id}/{instance.pk}.jpg"
+
+
+class WorkImage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    work = models.ForeignKey(MemberWork, on_delete=models.CASCADE, related_name="images")
+    image = models.FileField(upload_to=work_image_path)
+    width = models.PositiveIntegerField()
+    height = models.PositiveIntegerField()
+    byte_size = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "pk"]
+
+    def __str__(self):
+        return f"图片 {str(self.pk)[:6]} · {self.width} × {self.height}"
+
+    @property
+    def public_url(self):
+        return reverse("works:image", args=[self.pk])
+
+    @property
+    def image_url(self):
+        return self.public_url

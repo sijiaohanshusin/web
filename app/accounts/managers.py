@@ -7,10 +7,14 @@ class MemberQuerySet(models.QuerySet):
         if not {"is_active", "member_level", "is_superuser"}.intersection(kwargs):
             return super().update(**kwargs)
         from showcase.services import revoke_ineligible
+        from projects.work_services import revoke_ineligible_works
+        from achievements.honor_services import revoke_ineligible_honors
         with transaction.atomic(using=self.db):
             ids = list(self.select_for_update().values_list("pk", flat=True))
             count = super().update(**kwargs)
             revoke_ineligible(self.model.objects.using(self.db).filter(pk__in=ids), self.db)
+            revoke_ineligible_works(self.model.objects.using(self.db).filter(pk__in=ids), self.db)
+            revoke_ineligible_honors(self.model.objects.using(self.db).filter(pk__in=ids), self.db)
             return count
 
 

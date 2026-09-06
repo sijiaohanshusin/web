@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}成果中心 | HEU ESTA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/member-works.css' %}"><link rel="stylesheet" href="{% static 'css/achievements.css' %}"><script src="{% static 'js/achievement-people.js' %}" defer></script>{% endblock %}
+{% block content %}<div class="container page-section mw-scope ac-scope">
+<nav class="ac-nav" aria-label="成果导航"><a href="{% url 'achievements:hub' %}">我的成果</a><a href="{% url 'achievements:catalog' %}">查找与认领</a>{% if user.can_design_showcase %}<a href="{% url 'works:mine' %}">作品管理</a><a href="{% url 'achievements:honors' %}">荣誉管理</a>{% endif %}</nav>
+{% block achievement_content %}{% endblock %}</div>{% endblock %}

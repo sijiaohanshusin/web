@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}作品操作未完成 | HEU ESTA{% endblock %}
+{% block content %}<div class="container page-section"><section class="panel"><h1>本次操作尚未完成</h1><p role="alert">{{ error }}</p><p>不会自动覆盖你的作品或恢复公开。返回编辑页核对后重试。</p>{% if work %}<a class="btn btn-primary" href="{% url 'works:edit' work.pk %}">返回作品</a>{% else %}<a href="{% url 'works:mine' %}">我的作品</a>{% endif %}</section></div>{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "projects/works_detail.html" %}{% load static %}
+{% block title %}本人预览 | {{ project.name }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/member-works.css' %}">{% endblock %}
+{% block content %}
+<section class="container mw-scope page-section"><div class="panel mw-confirm"><p class="nf-eyebrow">PRIVATE PREVIEW / 仅本人可见</p><h1>这是即将公开的版本。</h1><p>下面与作品详情共用同一组件。确认后直接发布到协会作品墙，不进入站务审批，也不只是保存到个人展示页。</p><form method="post" action="{% url 'works:publish' work.pk %}">{% csrf_token %}<input type="hidden" name="token" value="{{ publish_token }}"><label class="mw-check"><input type="checkbox" name="consent" required>我确认这些图文、署名和链接可面向互联网公开，并已取得共同作者的同意。</label><div class="mw-actions"><a class="btn btn-outline" href="{% url 'works:edit' work.pk %}">返回编辑</a><button class="btn btn-primary">{% if work.is_public %}确认更新公开作品{% else %}确认发布作品{% endif %}</button></div></form></div></section>
+{{ block.super }}
+{% endblock %}

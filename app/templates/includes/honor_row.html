@@ -11,7 +11,7 @@
 
 有对应喜报时整行是链接，没有就是一行静态文本 —— 不做「点了没反应」的假链接。
 {% endcomment %}
-{% if honor.story_url %}<a class="hn-row hn-lv-{{ honor.level_slug }} is-link" href="{{ honor.story_url }}">{% else %}<div class="hn-row hn-lv-{{ honor.level_slug }}">{% endif %}
+{% if honor.story_url %}<a {% if honor.pk %}id="honor-{{ honor.pk }}"{% endif %} class="hn-row hn-lv-{{ honor.level_slug }} is-link" href="{{ honor.story_url }}">{% else %}<div {% if honor.pk %}id="honor-{{ honor.pk }}"{% endif %} class="hn-row hn-lv-{{ honor.level_slug }}">{% endif %}
     <span class="hn-badge">{{ honor.get_level_display }}</span>
     {% if show_year %}<span class="hn-year-tag">{{ honor.year }}</span>{% endif %}
     <span class="hn-body">
@@ -24,3 +24,7 @@
     </span>
     {% if honor.story_url %}<span class="hn-go" aria-hidden="true">看喜报 →</span>{% endif %}
 {% if honor.story_url %}</a>{% else %}</div>{% endif %}
+{% if show_connections %}<div class="hn-connections">
+{% if honor.public_contributors %}{% include "achievements/people_read.html" with people=honor.public_contributors %}{% endif %}
+{% with linked=honor.linked_work %}{% if linked %}<p><a href="{{ linked.public_url }}">关联作品：{{ linked.name }} →</a></p>{% endif %}{% endwith %}
+{% if user.is_authenticated %}<p><a href="{% url 'achievements:record' 'honor' honor.pk %}">我也参与过 · 查看与认领</a></p>{% endif %}</div>{% endif %}

@@ -24,7 +24,7 @@
                 {% for tag in project.tag_list %}<li>{{ tag }}</li>{% endfor %}
             </ul>
             {% endif %}
-            <span class="wk-detail-date">{{ project.created_at|date:"Y 年 n 月" }}起</span>
+            <span class="wk-detail-date">{{ project.work_year }} 年作品</span>
         </div>
     </div>
 </section>
@@ -38,7 +38,7 @@
         {% endcomment %}
         {% if project.cover %}
         <figure class="wk-shot wk-shot-lead" data-vt-part="cover">
-            <img src="{{ project.cover.url }}" alt="{{ project.name }}"
+            <img src="{{ project.cover_url }}" alt="{{ project.name }}"
                  {% if project.cover_w %}width="{{ project.cover_w }}" height="{{ project.cover_h }}"{% endif %}
                  decoding="async">
         </figure>
@@ -55,7 +55,7 @@
         <div class="wk-gallery">
             {% for shot in shots %}
             <figure class="wk-shot">
-                <img src="{{ shot.image.url }}" alt="{{ shot.caption|default:project.name }}"
+                <img src="{{ shot.image_url }}" alt="{{ shot.caption|default:project.name }}"
                      {% if shot.width %}width="{{ shot.width }}" height="{{ shot.height }}"{% endif %}
                      loading="lazy" decoding="async">
                 {% if shot.caption %}<figcaption>{{ shot.caption }}</figcaption>{% endif %}
@@ -66,6 +66,12 @@
     </div>
 
     <aside class="wk-detail-side">
+        {% if contributors %}<section class="panel"><h2>共同参与</h2>{% include "achievements/people_read.html" with people=contributors %}</section>{% endif %}
+        {% if related_honors %}<section class="panel"><h2>这件作品获得的荣誉</h2><ul>{% for honor in related_honors %}<li><a href="{{ honor.public_url }}">{{ honor.year }} · {{ honor.title }}</a></li>{% endfor %}</ul></section>{% endif %}
+        {% if not preview and user.is_authenticated %}<section class="panel"><h2>我也参与过</h2><a href="{% url 'achievements:record' 'work' project.pk %}">查看参与记录或认领署名 →</a></section>{% endif %}
+        {% if project.public_credit %}<div class="panel"><h2>创作者</h2><p>{{ project.public_credit }}</p></div>{% endif %}
+        {% if project.external_url %}<div class="panel"><h2>进一步了解</h2><a href="{{ project.external_url }}" target="_blank" rel="noopener noreferrer nofollow">公开演示或代码 ↗</a></div>{% endif %}
+        {% if owner_work %}<div class="panel"><h2>这是你的公开版本</h2><a href="{% url 'works:edit' owner_work.pk %}">编辑草稿或撤回作品 →</a></div>{% endif %}
         {% if team %}
         <div class="panel">
             <h2>做的人</h2>

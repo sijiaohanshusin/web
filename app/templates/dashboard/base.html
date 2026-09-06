@@ -31,6 +31,9 @@
             {% if pending_count %}<em class="dash-badge">{{ pending_count }}</em>{% endif %}
         </a>
         <a href="{% url 'showcase:moderation' %}"><span class="dash-nav-icon">{% include "includes/icon.html" with name="image" %}</span>成员展示管理</a>
+        <a href="{% url 'works:ranking' %}"><span class="dash-nav-icon">{% include "includes/icon.html" with name="image" %}</span>作品排序</a>
+        <a href="{% url 'achievements:review' %}"><span class="dash-nav-icon">{% include "includes/icon.html" with name="medal" %}</span>成果认领核验</a>
+        <a href="{% url 'achievements:honor_ranking' %}"><span class="dash-nav-icon">{% include "includes/icon.html" with name="medal" %}</span>荣誉排序</a>
         <a href="{% url 'dashboard:news' %}" class="{% if active_nav == 'news' %}active{% endif %}">
             <span class="dash-nav-icon">{% include "includes/icon.html" with name="news" %}</span>公告管理
         </a>

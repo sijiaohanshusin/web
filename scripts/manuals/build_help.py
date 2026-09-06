@@ -36,10 +36,13 @@ def field(paragraph, code):
 
 
 def link(paragraph, label, url):
-    element = OxmlElement("w:hyperlink")
     if url.startswith('#'):
-        element.set(qn("w:anchor"), url[1:])
+        # Word exports anchor-only hyperlinks with an erroneous external "h"
+        # address on some Windows builds. An explicit local field is portable.
+        element = OxmlElement("w:fldSimple")
+        element.set(qn("w:instr"), f'HYPERLINK \\l "{url[1:]}"')
     else:
+        element = OxmlElement("w:hyperlink")
         element.set(qn("r:id"), paragraph.part.relate_to(url, RT.HYPERLINK, is_external=True))
     run = OxmlElement("w:r")
     props = OxmlElement("w:rPr")

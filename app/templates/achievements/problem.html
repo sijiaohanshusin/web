@@ -1,0 +1,1 @@
+{% extends "achievements/base.html" %}{% block achievement_content %}<section class="panel mw-empty"><p class="nf-eyebrow">NOT APPLIED / 操作未生效</p><h1>先核对一下。</h1><p role="alert">{{ error }}</p><p>已保存的草稿和公开内容没有被此操作覆盖。可以返回原页面核对，或从成果中心重新打开。</p><a class="btn btn-primary" href="{% url 'achievements:hub' %}">回成果中心</a></section>{% endblock %}

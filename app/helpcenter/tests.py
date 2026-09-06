@@ -30,6 +30,8 @@ class HelpAccessTests(TestCase):
         manifest = json.loads((settings.REPO_DIR / 'scripts/manuals/first_use.json').read_text(encoding='utf-8'))
         for audience in ('recruit', 'member', 'admin'):
             for page in manifest[audience]['pages']:
+                if page.get('route'):
+                    resolve(page['route'].split('?')[0])
                 refs = [page['ref'], page.get('image_ref', page['ref'])]
                 selections = [(page['ref'], item[0], item[1] if len(item)>1 else None) for item in page['sections']]
                 for key in ('lead', 'extra'):
@@ -60,6 +62,62 @@ class HelpAccessTests(TestCase):
         for label in ('发布成员卡片', '发布卡片与个人页面', '确认更新公开版本'):
             self.assertContains(page, label)
         self.assertNotContains(page, '确认发布我的展示')
+
+    def test_offline_guides_have_feedback_and_valid_quick_index(self):
+        import json
+        from django.conf import settings
+        manifest = json.loads((settings.REPO_DIR / 'scripts/manuals/first_use.json').read_text(encoding='utf-8'))
+        for audience in ('recruit', 'member', 'admin'):
+            book = manifest[audience]
+            titles = {page['title'] for page in book['pages']}
+            self.assertIn('提交网站问题与建议', titles)
+            self.assertIn('跟进反馈与故障求助', titles)
+            for label, title in book['index']:
+                self.assertTrue(label)
+                self.assertIn(title, titles)
+            self.assertTrue(any('BUG' in label for label, _ in book['index']))
+        member = manifest['member']['pages']
+        self.assertTrue(any(p['title'] == '添加第一件个人作品' for p in member))
+        self.assertTrue(any(p['title'] == '选择卡片精选与开启个人页' for p in member))
+        self.assertTrue(any(p['title'] == '添加图集与外部链接' for p in member))
+        for title in ('上传作品到协会作品墙', '发布到作品墙并管理作品', '检查作品墙中的发布结果'):
+            self.assertTrue(any(p['title'] == title for p in member))
+            self.assertTrue(any(target == title for _, target in manifest['member']['index']))
+
+    def test_works_submission_help_describes_member_publication_and_staff_ranking(self):
+        page = self.client.get('/help/member/activities/')
+        for label in ('上传作品到协会作品墙', '作品名称', '保存并预览', '确认发布作品', '重要性', '不会自动登上作品墙', '无需站务审批或代发', '检查作品墙中的发布结果'):
+            self.assertContains(page, label)
+        self.assertNotContains(page, '没有面向普通会员的独立作品提交表单')
+        self.assertContains(page, '/works/mine/')
+        self.assertContains(page, '/feedback/')
+
+    def test_feedback_help_matches_form_and_followup_contract(self):
+        page = self.client.get('/help/member/troubleshooting/')
+        for label in ('提交反馈', '我最近的反馈', '发送回复', '1081376858', '不支持上传截图'):
+            self.assertContains(page, label)
+        self.assertContains(page, '/feedback/')
+
+    def test_offline_guides_cover_shared_achievement_workflows(self):
+        import json
+        from django.conf import settings
+        manifest = json.loads((settings.REPO_DIR / 'scripts/manuals/first_use.json').read_text(encoding='utf-8'))
+        expected = {
+            'recruit': ('关联注册前参与的成果',),
+            'member': ('添加共同参与者', '录入荣誉并关联作品', '预览发布荣誉与撤回', '认领以前的成果并查看进度'),
+            'admin': ('核验成果认领', '调整作品与荣誉排序'),
+        }
+        for audience, titles in expected.items():
+            pages = {page['title'] for page in manifest[audience]['pages']}
+            index = {title for _, title in manifest[audience]['index']}
+            for title in titles:
+                self.assertIn(title, pages)
+                self.assertIn(title, index)
+
+    def test_personal_works_help_uses_current_controls(self):
+        page = self.client.get('/help/member/personal-page/')
+        for label in ('添加作品', '作品名称', '外部作品地址', '选择为成员卡片的精选作品', '添加图片', '添加链接'):
+            self.assertContains(page, label)
 
     def test_first_use_admin_screenshots_are_not_public(self):
         for slug, name in [('events','first-use-event-management.png'), ('feedback','first-use-feedback-actions.png')]:

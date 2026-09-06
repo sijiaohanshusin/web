@@ -14,6 +14,9 @@ class HonorAdmin(admin.ModelAdmin):
     search_fields = ("title", "contest", "awardee", "note")
     raw_id_fields = ("post",)
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_member_honor=False)
+
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):

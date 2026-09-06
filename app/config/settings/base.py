@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "points",
     "recruitment",
     "projects",
+    "achievements",
 ]
 
 # ---- simpleui（Admin 美化）----
@@ -45,6 +46,8 @@ SIMPLEUI_LOGO = "/static/img/logo.png"
 SIMPLEUI_DEFAULT_THEME = "layui.css"
 
 MIDDLEWARE = [
+    "achievements.middleware.AchievementPrivacyMiddleware",
+    "projects.middleware.WorksPrivacyMiddleware",
     "showcase.middleware.ShowcasePrivacyMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}我的作品 | HEU ESTA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/member-works.css' %}">{% endblock %}
+{% block content %}
+<div class="container page-section mw-scope">
+    <a href="{% url 'achievements:hub' %}">← 成果中心 · 作品、荣誉与认领</a>
+    <div class="mw-heading"><div><p class="nf-eyebrow">MY WORK / 创作档案</p><h1>我的作品</h1><p>从一张照片开始。保存、预览，再由你决定何时公开。</p></div>
+    <form method="post" action="{% url 'works:create' %}">{% csrf_token %}<button class="btn btn-primary">+ 新建作品</button></form></div>
+    <div class="mw-note">这里管理发布到协会作品墙的作品，与个人展示页的作品模块独立。科协会员可自行上传、发布和撤回，无需站务审批。站务只设置作品墙的重要性与首页精选，不替你公开。<a href="{% url 'works:wall' %}">浏览作品墙 →</a></div>
+    <div class="mw-list">
+    {% for work in page %}
+    <article class="panel mw-item"><div><span class="mw-state">{% if work.is_public %}已有公开版本{% else %}仅本人可见{% endif %}</span><h2>{{ work.title }}</h2><p>{{ work.draft.year|default:"年份待填写" }} · {{ work.updated_at|date:"m-d H:i" }} 保存</p></div><div class="mw-actions"><a class="btn btn-outline" href="{% url 'works:edit' work.pk %}">编辑草稿</a>{% if work.is_public %}<a href="{{ work.project.public_url }}">查看公开版本 ↗</a>{% endif %}</div></article>
+    {% empty %}
+    <section class="panel mw-empty"><p class="nf-eyebrow">YOUR FIRST WORK</p><h2>把做出来的东西，讲给大家听。</h2><p>填作品名称和公开署名，上传成品或过程照片。草稿不会出现在作品墙，也不会自动公开账号档案。</p></section>
+    {% endfor %}
+    </div>{% include "includes/pager.html" with page=page %}
+</div>
+{% endblock %}

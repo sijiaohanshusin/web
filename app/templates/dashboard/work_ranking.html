@@ -1,0 +1,7 @@
+{% extends "dashboard/base.html" %}
+{% block title %}作品排序{% endblock %}{% block page_title %}作品排序{% endblock %}
+{% block content %}<p>按作品年份降序，同年按重要性降序。重要性相同时，首页精选靠前，再按作品编号稳定排列。这里不修改作者内容、不代替作者公开，也不会将私有草稿送到前端。</p>
+<form method="get" class="dash-toolbar"><input class="input" name="q" value="{{ query }}" aria-label="作品名称" placeholder="查找公开作品"><button class="btn btn-outline">搜索</button></form>
+{% if error %}<div role="alert">{{ error }}</div>{% endif %}
+<div class="dash-table-wrap"><table class="table"><thead><tr><th>公开作品</th><th>年份</th><th>排序与精选</th></tr></thead><tbody>{% for item in page %}<tr><td><a href="{{ item.public_url }}">{{ item.name }}</a></td><td>{{ item.work_year }}</td><td><form method="post">{% csrf_token %}<input type="hidden" name="project" value="{{ item.pk }}"><label>重要性 0–100 <input class="input" name="importance" type="number" min="0" max="100" required value="{{ item.importance }}"></label><label><input type="checkbox" name="is_featured" {% if item.is_featured %}checked{% endif %}>首页精选</label> <button class="btn btn-outline btn-sm">保存排序</button></form></td></tr>{% empty %}<tr><td colspan="3">暂无公开作品。由会员自主发布后，在此设置排序。</td></tr>{% endfor %}</tbody></table></div>
+{% include "includes/pager.html" with page=page %}{% endblock %}

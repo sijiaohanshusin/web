@@ -4,6 +4,7 @@
 {% block page_title %}荣誉录入{% endblock %}
 
 {% block content %}
+<div class="dash-panel"><h2>历史荣誉维护</h2><p>此处只编辑原协会记录。成员自行维护的奖项由本人发布，站务可<a href="{% url 'achievements:honor_ranking' %}">调整荣誉排序与首页精选</a>，并在<a href="{% url 'achievements:review' %}">成果认领核验</a>中处理历史署名关联。</p></div>
 <div class="dash-panel">
     <h2>{% if editing %}修改「{{ editing.title }}」{% else %}录入一项获奖{% endif %}</h2>
     <p class="form-help">

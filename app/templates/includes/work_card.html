@@ -15,7 +15,7 @@
 <a class="wk-card" href="{{ project.public_url }}" data-vt-card>
     {% if project.cover %}
     <figure class="wk-cover" data-vt-part="cover">
-        <img src="{{ project.cover.url }}" alt="{{ project.name }} 的封面"
+        <img src="{{ project.cover_url }}" alt="{{ project.name }} 的封面"
              {% if project.cover_w %}width="{{ project.cover_w }}" height="{{ project.cover_h }}"{% endif %}
              loading="{% if eager %}eager{% else %}lazy{% endif %}" decoding="async">
     </figure>
@@ -26,6 +26,7 @@
     <div class="wk-card-body">
         <div class="wk-card-meta">
             <span class="wk-dept">{{ project.get_department_display }}</span>
+            <span>{{ project.work_year }}</span>
             {% if project.is_featured %}<span class="wk-star" title="精选作品">精选</span>{% endif %}
         </div>
         <h3 class="wk-card-title">{{ project.name }}</h3>

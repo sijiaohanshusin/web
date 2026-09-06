@@ -16,7 +16,7 @@ def main() -> None:
     parser.add_argument("--page-width", type=int, default=360)
     args = parser.parse_args()
 
-    pages = sorted(args.pages_dir.glob("page-*.png"))
+    pages = sorted(args.pages_dir.glob("page-*.png"), key=lambda p: int(p.stem.split('-')[-1]))
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for old_sheet in args.output_dir.glob("sheet-*.jpg"):
         old_sheet.unlink()

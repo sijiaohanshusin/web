@@ -20,7 +20,7 @@
     "admin-medal-grant-mobile.png"
   ],
   "verified": "2026-09-05",
-  "version": "候选版本：勋章查找修复，尚未上线"
+  "version": "8e7c4de 已上线"
 }
 ---
 

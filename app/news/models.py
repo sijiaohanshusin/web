@@ -1,4 +1,7 @@
+import os
+
 from django.conf import settings
+from django.core.validators import MaxValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
@@ -82,7 +85,8 @@ class Post(models.Model):
 
 class HonorQuerySet(models.QuerySet):
     def public(self):
-        return self.filter(is_public=True)
+        eligible = models.Q(member_draft__owner__is_active=True) & (models.Q(member_draft__owner__member_level__gte=3) | models.Q(member_draft__owner__is_superuser=True))
+        return self.filter(is_public=True).filter(models.Q(is_member_honor=False) | (eligible & models.Q(member_draft__published__isnull=False)))
 
 
 class Honor(models.Model):
@@ -136,6 +140,9 @@ class Honor(models.Model):
         help_text="选填。填了荣誉墙上这一项就能点进完整的喜报。",
     )
     is_public = models.BooleanField("公开", default=True, db_index=True)
+    is_member_honor = models.BooleanField(default=False, editable=False, db_index=True)
+    importance = models.PositiveSmallIntegerField('重要性', default=0, validators=[MaxValueValidator(100)])
+    project = models.ForeignKey('projects.Project', null=True, blank=True, on_delete=models.SET_NULL, related_name='honors', verbose_name='关联作品')
     is_featured = models.BooleanField(
         "首页展示", default=False, help_text="首页只列几项。要先「公开」才有效。",
     )
@@ -147,7 +154,8 @@ class Honor(models.Model):
         verbose_name = "荣誉"
         verbose_name_plural = "荣誉"
         # 年份降序、同年按含金量降序：荣誉墙就是这个顺序，别在视图里再排一遍
-        ordering = ["-year", "-level", "title"]
+        ordering = ["-year", "-importance", "-level", "title", "pk"]
+        constraints = [models.CheckConstraint(condition=models.Q(importance__lte=100), name='honor_importance_range')]
 
     def __str__(self):
         return f"{self.year} {self.title}"
@@ -167,14 +175,33 @@ class Honor(models.Model):
     @property
     def story_url(self) -> str:
         """对应喜报的地址，没有就返回空串（模板据此决定要不要做成链接）。"""
-        if self.post_id and self.post.is_published:
+        if self.post_id and self.post.is_published and self.post.min_level == 0 and self.post.published_at <= timezone.now():
             return self.post.get_absolute_url()
         return ""
+
+    @property
+    def certificate_url(self):
+        if not self.certificate:
+            return ''
+        if self.is_member_honor:
+            return reverse('achievements:certificate', args=[os.path.basename(self.certificate.name).removesuffix('.jpg')])
+        return self.certificate.url
+
+    @property
+    def public_url(self):
+        return reverse('honors:wall') + f'#honor-{self.pk}'
+
+    @property
+    def linked_work(self):
+        from projects.models import Project
+        return Project.public().filter(pk=self.project_id).first() if self.project_id else None
 
     @classmethod
     def wall(cls):
         """荣誉墙 / 首页 08 共用的口径：只出公开的，排序走 Meta.ordering。"""
-        return cls.objects.public().select_related("post")
+        from achievements.models import Contributor
+        return cls.objects.public().select_related("post").prefetch_related(
+            models.Prefetch('contributors', queryset=Contributor.objects.filter(active=True), to_attr='public_contributors'))
 
     @classmethod
     def summary(cls) -> dict:
@@ -183,7 +210,7 @@ class Honor(models.Model):
         「国家级 N 项」这种数字是这一页最有说服力的东西，所以它必须是**数出来的**
         而不是手填的 —— 手填的数字迟早和清单不一致。
         """
-        rows = dict(cls.objects.public().values_list("level").annotate(n=models.Count("id")))
+        rows = dict(cls.objects.public().order_by().values_list("level").annotate(n=models.Count("id")))
         years = cls.objects.public().aggregate(
             lo=models.Min("year"), hi=models.Max("year"),
         )

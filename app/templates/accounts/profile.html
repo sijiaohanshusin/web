@@ -44,9 +44,11 @@
                 <li><span>注册时间</span><span>{{ user.date_joined|date:"Y-m-d" }}</span></li>
             </ul>
             <div class="profile-actions">
+                <a class="btn btn-outline" href="{% url 'achievements:hub' %}">成果中心 · 作品、荣誉与认领</a>
                 <a class="btn btn-outline" href="{% url 'accounts:profile_edit' %}">编辑资料</a>
                 {% if user.can_design_showcase %}
                     <a class="btn btn-ghost" href="{% url 'accounts:showcase' %}">设计我的展示</a>
+                    <a class="btn btn-ghost" href="{% url 'works:mine' %}">我的作品 · 上传与发布</a>
                 {% endif %}
                 <a class="btn btn-ghost" href="{% url 'accounts:password_change' %}">修改密码</a>
                 {% if user.is_officer %}

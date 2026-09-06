@@ -1,0 +1,1 @@
+<ul class="ac-credits">{% for person in people %}<li><strong>{{ person.name }}</strong>{% if person.role %} · {{ person.role }}{% endif %}{% if person.cohort %} · {{ person.cohort }}级{% endif %}</li>{% empty %}<li>暂未逐一列出参与者，请以原团队署名为准。</li>{% endfor %}</ul>

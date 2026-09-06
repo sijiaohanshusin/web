@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}编辑作品 | HEU ESTA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/member-works.css' %}"><link rel="stylesheet" href="{% static 'css/achievements.css' %}"><script src="{% static 'js/member-works.js' %}" defer></script><script src="{% static 'js/achievement-people.js' %}" defer></script>{% endblock %}
+{% block content %}
+<div class="container page-section mw-scope">
+    <a href="{% url 'works:mine' %}">← 我的作品</a>
+    <div class="mw-heading"><div><p class="nf-eyebrow">01 EDIT / 02 PREVIEW / 03 PUBLISH</p><h1>把作品讲清楚。</h1><p>图片、文字和署名由你决定；保存草稿不会修改已公开内容。</p></div><span class="mw-state" role="status" data-save-status>已读取草稿 · v{{ work.version }}</span></div>
+    {% if conflict %}<div class="mw-note" role="alert">检测到版本冲突，下面保留了本次输入。<a href="{% url 'works:edit' work.pk %}" target="_blank" rel="noopener">在新标签页查看服务器版本</a>，对照后合并修改。</div>{% endif %}
+    <div class="mw-editor-grid">
+    <form method="post" enctype="multipart/form-data" class="panel mw-form" id="work-form" data-work-form>
+        {% csrf_token %}{{ form.version }}
+        {% if form.errors %}<div class="mw-errors" role="alert"><h2>请检查后再保存</h2>{{ form.non_field_errors }}<ul>{% for field in form %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}：{{ error }}</a></li>{% endfor %}{% endfor %}</ul><p>内容仍保留。未成功上传的文件需要重新选择。</p></div>{% endif %}
+        <h2><span class="mw-step">01</span> 名称与署名</h2>
+        <div class="mw-fields">{% for field in form %}{% if not field.is_hidden and field.name != 'cover' and field.name != 'gallery' and field.name != 'upload' %}
+        <div class="form-group {% if field.name == 'name' or field.name == 'summary' or field.name == 'credit' or field.name == 'highlight' %}mw-wide{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span aria-label="必填">*</span>{% endif %}</label>{{ field }}{% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}{{ field.errors }}</div>
+        {% endif %}{% endfor %}</div>
+        {% include "achievements/people_form.html" %}
+        <h2><span class="mw-step">02</span> 封面与过程照片</h2>
+        <p class="form-help">首张上传图默认作封面，后续图片加入未满的图集。也可以先写文字，之后补图。上传和保存不会公开图片。</p>
+        <div class="mw-fields">{% for field in form %}{% if field.name == 'upload' or field.name == 'cover' or field.name == 'gallery' %}
+        <div class="form-group mw-wide"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}<p class="form-help">{{ field.help_text }}</p>{{ field.errors }}</div>
+        {% endif %}{% endfor %}</div>
+        <div class="mw-savebar"><button class="btn btn-outline" name="action" value="save">保存草稿</button><button class="btn btn-primary" name="action" value="preview">保存并预览 →</button></div>
+        <noscript><p>无需 JavaScript 也可保存、预览与发布。离开前请先保存。</p></noscript>
+    </form>
+    <aside class="mw-side">
+        <section class="panel"><h2>先查找，避免重复</h2><p>同一团队的作品只需一人维护，其他成员认领参与署名。奖项可从荣誉管理关联到此作品。</p><a href="{% url 'achievements:catalog' %}?kind=work" target="_blank" rel="noopener">查找已有作品 ↗</a></section>
+        <section class="panel"><p class="nf-eyebrow">PUBLICATION</p><h2>公开状态</h2><p>{% if work.is_public %}已有公开版本。下面的草稿修改尚未替换它。{% else %}尚未公开，只有你能查看草稿与图片。{% endif %}</p><p>作品墙按年份降序，同年按重要性降序。重要性和首页精选由站务设置。</p>{% if work.is_public %}<a href="{{ work.project.public_url }}">查看现在公开的版本 ↗</a>{% endif %}</section>
+        <section class="panel"><h2>发布前，确认三件事</h2><ol><li>作品年份与完成情况准确。</li><li>图文和代码没有密码或私人资料。</li><li>共同作者同意公开署名与照片。</li></ol><p>这里提交到协会作品墙，不会自动改动你的成员卡片或项目成员身份。</p></section>
+    </aside></div>
+    {% if images %}<section class="panel mw-assets"><h2>已上传素材 <span>{{ images|length }} / 20</span></h2><p>先在上方移除引用并保存，再删除文件。公开版本仍引用的图片不能删除。</p><div class="mw-asset-grid">{% for image in images %}<figure><a href="{{ image.public_url }}" target="_blank" rel="noopener"><img src="{{ image.public_url }}" alt="作品图片 {{ forloop.counter }}" width="{{ image.width }}" height="{{ image.height }}" loading="lazy"></a><figcaption>{{ image }} · {{ image.byte_size|filesizeformat }}</figcaption><form method="post" action="{% url 'works:delete_image' work.pk image.pk %}" data-confirm="删除这张未引用的图片？">{% csrf_token %}<input type="hidden" name="version" value="{{ work.version }}"><button class="btn btn-ghost btn-sm">删除未引用图片</button></form></figure>{% endfor %}</div></section>{% endif %}
+    <details class="panel mw-danger"><summary>撤回与删除</summary>
+    {% if work.is_public %}<form method="post" action="{% url 'works:withdraw' work.pk %}" data-confirm="确认撤回？新的公开访问会立即关闭，草稿保留。">{% csrf_token %}<input type="hidden" name="version" value="{{ work.version }}"><label class="mw-check"><input type="checkbox" name="confirm" required>我确认撤回公开作品，保留草稿。</label><button class="btn btn-outline">撤回作品</button></form>
+    {% else %}<form method="post" action="{% url 'works:delete' work.pk %}" data-confirm="永久删除这件私有作品和所有素材？">{% csrf_token %}<input type="hidden" name="version" value="{{ work.version }}"><label class="mw-check"><input type="checkbox" name="confirm" required>我确认删除草稿和素材，此操作无法撤销。</label><button class="btn btn-outline">删除私有作品</button></form>{% endif %}</details>
+</div>
+{% endblock %}

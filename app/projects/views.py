@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 from accounts.roles import is_member, is_officer
 
 from . import permissions
-from .models import Project, ProjectFile, ProjectFolder, ProjectMember
+from .models import Project, ProjectFile, ProjectFolder, ProjectMember, can_publish_work
 
 User = get_user_model()
 
@@ -41,7 +41,7 @@ def works_wall(request):
     # 每个方向各有多少件，用来在筛选条上显示真实数字并且**隐藏空分类** ——
     # 点进去一片空白的筛选项比没有这个筛选项更糟。
     counts = dict(
-        Project.public().values_list("department").annotate(n=Count("id"))
+        Project.public().order_by().values_list("department").annotate(n=Count("id"))
     )
 
     paginator = Paginator(items, WALL_PAGE_SIZE)
@@ -51,6 +51,7 @@ def works_wall(request):
         "page": page,
         "dept": dept,
         "total": sum(counts.values()),
+        "can_submit_work": can_publish_work(request.user),
         "dept_tabs": [
             (value, label, counts.get(value, 0))
             for value, label in Project.Department.choices
@@ -67,13 +68,17 @@ def works_detail(request, pk: int):
     一个 id 就能看到还没准备好公开的项目简介。
     """
     project = get_object_or_404(Project.public(), pk=pk)
-    shots = project.shots.all()
+    work = project.member_work if project.is_member_work else None
+    shots = work.images.filter(pk__in=work.published.get('gallery', [])) if work else project.shots.all()
     context = {
         "project": project,
         "shots": shots,
-        "team": project.members.select_related("user", "user__position"),
+        "team": [] if work else project.members.select_related("user", "user__position"),
+        "owner_work": work if work and request.user.pk == work.owner_id else None,
+        "contributors": project.contributors.filter(active=True),
+        "related_honors": project.honors.public(),
         # 会员可以从展示页直接进档案库看文件；外人看不到这个入口
-        "can_open_archive": permissions.can_view_files(request.user, project),
+        "can_open_archive": not work and permissions.can_view_files(request.user, project),
         "more": Project.public().exclude(pk=project.pk)[:3],
     }
     return render(request, "projects/works_detail.html", context)
@@ -95,7 +100,7 @@ def project_list(request):
     # **`annotate()` 会建 GROUP BY，带 GROUP BY 的查询不再套用 Meta.ordering**
     # （SQL 里压根没有 ORDER BY），所以排序必须显式写出来。
     projects = (
-        Project.objects.select_related("created_by")
+        Project.objects.filter(is_member_work=False).select_related("created_by")
         .annotate(member_total=Count("members", distinct=True))
         .order_by("status", "-updated_at")
     )

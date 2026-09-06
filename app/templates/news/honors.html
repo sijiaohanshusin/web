@@ -21,6 +21,7 @@
     <div class="container">
         <p class="nf-eyebrow">// HONORS</p>
         <h1>拿过的<span class="accent">奖</span></h1>
+        {% if user.is_authenticated %}<p><a href="{% url 'achievements:hub' %}">成果中心 · 管理自己的荣誉或认领已有记录 →</a></p>{% endif %}
         {% if summary.total %}
         <p class="page-hero-sub">
             {% if summary.year_from and summary.year_to %}
@@ -99,7 +100,7 @@
             <h3 class="hn-year-no">{{ year }}</h3>
             <div class="hn-year-list">
                 {% for honor in items %}
-                    {% include "includes/honor_row.html" with honor=honor %}
+                    {% include "includes/honor_row.html" with honor=honor show_connections=True %}
                 {% endfor %}
             </div>
         </section>

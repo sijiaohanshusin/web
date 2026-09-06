@@ -30,6 +30,16 @@ failures = []
 warnings = []
 
 
+def local_settings():
+    if '--work-audit' not in sys.argv:
+        return 'config.settings.dev'
+    if '--candidate' not in sys.argv or os.environ.get('HEUESTA_WORK_AUDIT') != '1':
+        raise SystemExit('--work-audit requires --candidate and HEUESTA_WORK_AUDIT=1; production settings cannot be overridden.')
+    if not (REPO / '.shots/member-works-audit.sqlite3').is_file():
+        raise SystemExit('Run the isolated browser audit/migrations before checking its static pages.')
+    return 'config.settings.work_audit'
+
+
 def check(cond, label, detail=""):
     print(f"  {'OK  ' if cond else 'FAIL'} {label}" + (f"  {detail}" if detail else ""))
     if not cond:
@@ -73,7 +83,7 @@ def check_git():
 def check_migrations():
     print("\n2. 迁移：模型改了但没生成迁移，容器起来时 migrate 不会报错，"
           "而后面第一次写库就 500")
-    env = dict(os.environ, DJANGO_SETTINGS_MODULE="config.settings.dev")
+    env = dict(os.environ, DJANGO_SETTINGS_MODULE=local_settings())
     r = subprocess.run([sys.executable, "manage.py", "makemigrations",
                         "--check", "--dry-run"],
                        cwd=APP, capture_output=True, text=True,
@@ -125,7 +135,7 @@ def check_deploy_settings():
 # ---------------------------------------------------------------- 4. 静态管线
 def check_static():
     print("\n4. 静态管线：collectstatic 在生产存储下会不会中断部署")
-    env = dict(os.environ, DJANGO_SETTINGS_MODULE="config.settings.dev")
+    env = dict(os.environ, DJANGO_SETTINGS_MODULE=local_settings())
     r = subprocess.run([sys.executable, "manage.py", "check_static_pipeline"],
                        cwd=APP, capture_output=True, text=True,
                        encoding="utf-8", errors="replace", env=env)

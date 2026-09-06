@@ -26,6 +26,9 @@ class ProjectAdmin(admin.ModelAdmin):
     search_fields = ("name", "summary", "tags")
     inlines = [ProjectMemberInline, ProjectShotInline]
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_member_work=False)
+
 
 @admin.register(ProjectFolder)
 class ProjectFolderAdmin(admin.ModelAdmin):

@@ -19,9 +19,13 @@
         <p class="nf-eyebrow">// OUR WORK</p>
         <h1>做出来的<span class="accent">东西</span></h1>
         <p class="page-hero-sub">
-            这些是协会成员真正做完并且能上电的东西 —— 从面包板到打样回来的 PCB，从点亮一颗灯到跑完一整套控制逻辑。
+            从电路与实物到软件与交互，记录协会成员愿意分享的创作。按年份从新到旧，同年按重要性排序。
             {% if total %}目前公开 <strong>{{ total }}</strong> 件。{% endif %}
         </p>
+        {% if can_submit_work %}
+        <p class="page-hero-sub">上传图片、填写介绍并由本人确认，发布后直接出现在协会作品墙，无需站务审批。</p>
+        <a class="btn btn-primary" href="{% url 'works:mine' %}">我的作品 · 上传与发布 →</a>
+        {% endif %}
     </div>
 </section>
 
@@ -62,8 +66,7 @@
 
     {% else %}
         {% comment %}
-        空态。全新部署时这就是站务和访客看到的第一屏，所以它必须是设计过的，
-        而且**要给出下一步**：访客去看新生指南，站务去驾驶舱把项目公开出来。
+        空态。访客可以继续浏览新生指南，符合资格的成员可从自己的作品入口发布。
         {% endcomment %}
         <div class="panel empty-state">
             <p class="nf-eyebrow">// NOTHING HERE YET</p>
@@ -72,13 +75,12 @@
                 {% if dept %}
                     这个方向还没有公开的作品。<a href="{% url 'works:wall' %}">看看全部</a>。
                 {% else %}
-                    协会的项目档案里东西不少，但整理成能对外展示的样子还要一点时间 ——
-                    照片要拍、说明要写。先去<a href="{% url 'core:recruit' %}">新生指南</a>看看我们平时在做什么。
+                    暂时还没有公开作品。先去<a href="{% url 'core:recruit' %}">新生指南</a>看看我们平时在做什么。
                 {% endif %}
             </p>
-            {% if user.is_authenticated and user.is_officer %}
+            {% if can_submit_work %}
             <p class="empty-state-hint">
-                站务：在<a href="{% url 'dashboard:projects' %}">驾驶舱 · 项目</a>里给项目勾上「公开到作品墙」并传一张封面，这一页就有内容了。
+                从<a href="{% url 'works:mine' %}">我的作品</a>上传图片、保存草稿，预览后由你决定发布，无需站务审核。
             </p>
             {% endif %}
         </div>

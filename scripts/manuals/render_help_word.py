@@ -1,4 +1,5 @@
 """Use the required DOCX renderer with Word as the Windows PDF conversion backend."""
+import argparse
 import importlib.util
 import os
 from pathlib import Path
@@ -6,7 +7,12 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-renderer = Path(sys.argv[1]).resolve()
+parser = argparse.ArgumentParser()
+parser.add_argument('renderer')
+parser.add_argument('stems', nargs='*')
+parser.add_argument('--revision')
+args = parser.parse_args()
+renderer = Path(args.renderer).resolve()
 spec = importlib.util.spec_from_file_location("docx_renderer", renderer)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
@@ -38,8 +44,14 @@ try {
 
 
 module.convert_to_pdf = word_pdf
-for source in sorted((ROOT / "docs/help/dist").glob("*.docx")):
-    if sys.argv[2:] and source.stem not in sys.argv[2:]:
+source_dir = ROOT / 'docs/help/dist'
+if args.revision:
+    import re
+    if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', args.revision):
+        raise ValueError('Invalid revision date')
+    source_dir /= args.revision
+for source in sorted(source_dir.glob("*.docx")):
+    if args.stems and source.stem not in args.stems:
         continue
     out = ROOT / ".shots/documents" / source.stem
     assert out.resolve().is_relative_to((ROOT / '.shots/documents').resolve())

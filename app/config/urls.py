@@ -3,10 +3,14 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from showcase.views import deny_direct_asset
+from projects.member_views import deny_direct_image
 
 urlpatterns = [
+    path("achievements/", include("achievements.urls")),
+    path("media/honors/member/<path:path>", deny_direct_image),
     path("help/", include("helpcenter.urls")),
     path("media/showcase/<path:path>", deny_direct_asset),
+    path("media/projects/member-works/<path:path>", deny_direct_image),
     path("showcase/", include("showcase.urls")),
     path("", include("core.urls")),
     path("accounts/", include("accounts.urls")),
