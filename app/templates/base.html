@@ -23,7 +23,6 @@
     <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
     {% if request.path|slice:':10' == '/accounts/' %}<link rel="stylesheet" href="{% static 'css/auth.css' %}">{% endif %}
     <link rel="stylesheet" href="{% static 'css/core.css' %}">
-    <link rel="stylesheet" href="{% static 'css/nav-state.css' %}">
     <link rel="stylesheet" href="{% static 'vendor/lenis.css' %}">
     {% comment %}
     three 是 ES module，用裸标识符引入。importmap 必须出现在任何 module 脚本

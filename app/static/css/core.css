@@ -2492,3 +2492,34 @@ div.proj-card { display: flex; }
 }
 .pf-team-lede { color: var(--muted); font-size: var(--fs-sm); line-height: var(--lh-prose); margin: 0 0 14px; }
 .pf-team-lede strong { color: #fff; }
+
+/* Current location and recruitment promotion are distinct; no extra blocking CSS. */
+.nav-links > a[aria-current], .nav-group[data-nav-current] > summary {
+    position: relative; color: var(--accent-2);
+}
+.nav-links > a[aria-current]::before, .nav-group[data-nav-current] > summary::before {
+    content: ""; position: absolute; left: calc(50% - 9px); bottom: -7px;
+    width: 18px; height: 2px; background: currentColor;
+}
+.nav-links .nav-group-menu a[aria-current] {
+    color: var(--accent-2); box-shadow: inset 2px 0 currentColor;
+}
+.nav-open-signal { display: inline-flex; margin-left: 5px; vertical-align: middle; }
+.nav-open-signal i {
+    display: block; width: 5px; height: 5px; border-radius: 50%; background: #e1ae64;
+    box-shadow: 0 0 0 3px #dca35315; animation: nav-welcome 1.4s ease-out 1;
+}
+.site-nav.nav-on-light .nav-links > a[aria-current],
+.site-nav.nav-on-light .nav-group[data-nav-current] > summary { color: #087d92; }
+@keyframes nav-welcome {
+    0% { box-shadow: 0 0 0 0 #dca35366; }
+    100% { box-shadow: 0 0 0 7px #dca35300; }
+}
+@media (max-width: 1024px) {
+    .nav-links > a[aria-current]::before, .nav-group[data-nav-current] > summary::before {
+        left: 0; bottom: 10px; top: 10px; height: auto; width: 2px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .nav-open-signal i { animation: none; }
+}
