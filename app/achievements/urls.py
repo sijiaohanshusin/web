@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, recognition_views
 
 app_name = 'achievements'
 urlpatterns = [
@@ -11,6 +11,9 @@ urlpatterns = [
     path('claims/<int:pk>/cancel/', views.cancel_claim, name='cancel_claim'),
     path('honors/', views.honors_mine, name='honors'),
     path('honors/new/', views.honor_create, name='honor_create'),
+    path('honors/<uuid:pk>/images/upload/', recognition_views.upload, name='certificate_upload'),
+    path('honors/<uuid:pk>/recognize/', recognition_views.start, name='recognition_start'),
+    path('recognition/<uuid:pk>/', recognition_views.status, name='recognition_status'),
     path('honors/manage/', views.honor_ranking, name='honor_ranking'),
     path('honors/<uuid:pk>/', views.honor_edit, name='honor_edit'),
     path('honors/<uuid:pk>/preview/', views.honor_preview, name='honor_preview'),

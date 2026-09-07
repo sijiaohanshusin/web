@@ -96,6 +96,7 @@ jobs:
       - run: python scripts/check_management.py
       - run: python scripts/check_member_works.py
       - run: python scripts/check_achievements.py
+      - run: python scripts/check_honor_ai.py
       - run: python scripts/manuals/capture_first_use.py
       - run: python scripts/check_register.py
       - run: python scripts/check_perf.py

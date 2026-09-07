@@ -1,0 +1,30 @@
+{
+  "edition": {
+    "edition": "2026 年 9 月 证书自动填写体验版",
+    "verified": "2026-09-07",
+    "site_version": "6ed8255 + 荣誉识别候选改造",
+    "output_suffix": "honor-ai-preview"
+  },
+  "books": {
+    "member": {
+      "metadata": {
+        "release_status": "candidate",
+        "release_note": "AI 自动填写待上线。界面与流程在隔离环境验证；真实阿里多模态模型、免费额度与扣费保护尚待联调。未启用时继续手动录入，现有成果体系正常使用。新增图 7、图 8 为2026-09-07模拟演示，其余截图沿用原版本。"
+      },
+      "after": "录入荣誉并关联作品",
+      "image_dates": {
+        "manual-achievement-hub.png": "2026-09-06",
+        "manual-honor-preview.png": "2026-09-06",
+        "manual-contributors.png": "2026-09-06",
+        "manual-honor-fields.png": "2026-09-06",
+        "manual-honor-consent.png": "2026-09-06",
+        "manual-claim-form.png": "2026-09-06"
+      },
+      "index": [["上传证书／AI 自动填写","上传证书自动填写"],["识别错误／核对／公开证书","核对识别结果并发布"]],
+      "pages": [
+        {"title":"上传证书自动填写","ref":"member/achievements","route":"/achievements/honors/","entry":"我的荣誉 → 录入荣誉 → 上传证书，少填一点。","goal":"功能启用后，用一张证书整理字段；手动填写始终保留。","sections":[["上传证书自动填写",[1,2,3,4,5]]],"image":"manual-honor-ai-source.png","image_height":67,"image_verified":"2026-09-07","image_label":"证书选择与外部识别同意（隔离环境候选界面）","extra":{"ref":"member/achievements","section":"识别不可用时"},"extra_label":"失败处理","check":0,"omit_trouble":true},
+        {"title":"核对识别结果并发布","ref":"member/achievements","route":"/achievements/honors/","entry":"荣誉编辑页 → 识别建议 → 保存并预览","goal":"保留人工判断，只在本人确认后公开奖项和已脱敏证书。","sections":[["核对识别结果并发布",[1,2,3,4,5]]],"image":"manual-honor-ai-review.png","image_height":85,"image_verified":"2026-09-07","image_label":"模拟结果与人工核对；不代表真实模型准确率","check":2,"omit_trouble":true}
+      ]
+    }
+  }
+}

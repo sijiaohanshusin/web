@@ -41,7 +41,7 @@ class HonorForm(forms.Form):
     title = forms.CharField(label='奖项全称', max_length=120)
     contest = forms.CharField(label='赛事 / 赛道', max_length=80, required=False)
     year = forms.TypedChoiceField(label='获奖年份', coerce=int)
-    level = forms.TypedChoiceField(label='奖项级别', coerce=int, choices=Honor.Level.choices)
+    level = forms.TypedChoiceField(label='奖项级别', coerce=int, choices=[('', '请选择 / 待核对')] + list(Honor.Level.choices))
     awardee = forms.CharField(label='公开团队署名', max_length=120, help_text='准确填写队伍名或经同意的署名。同一团队同一奖项只录入一次。')
     note = forms.CharField(label='公开说明', max_length=200, required=False, widget=forms.Textarea(attrs={'rows': 3}),
                            help_text='请勿填写手机号、学号或未脱敏证书编号。')
@@ -54,7 +54,7 @@ class HonorForm(forms.Form):
 
     def __init__(self, draft, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['year'].choices = [(y, str(y)) for y in range(timezone.localdate().year, 1994, -1)]
+        self.fields['year'].choices = [('', '请选择获奖年份')] + [(y, str(y)) for y in range(timezone.localdate().year, 1994, -1)]
         self.fields['project'].queryset = Project.public()
         self.fields['certificate'].queryset = draft.images.all()
         for field in self.fields.values():

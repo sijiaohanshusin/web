@@ -150,3 +150,13 @@ BILIBILI_API_ENABLED = True
 # 单个上传文件最大 200MB（nginx 侧同样限制 client_max_body_size）
 DATA_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024
 FILE_UPLOAD_PERMISSIONS = 0o644
+
+# Disabled until a real-image evaluation and the provider's free-only switch are verified.
+HONOR_AI_ENABLED = os.environ.get('HONOR_AI_ENABLED', '0') == '1'
+DASHSCOPE_API_KEY = os.environ.get('DASHSCOPE_API_KEY', '')
+DASHSCOPE_WORKSPACE_ID = os.environ.get('DASHSCOPE_WORKSPACE_ID', '')
+HONOR_AI_MODEL = os.environ.get('HONOR_AI_MODEL', 'qwen3.7-flash')
+HONOR_AI_FREE_TIER_CONFIRMED = os.environ.get('HONOR_AI_FREE_TIER_CONFIRMED', '0') == '1'
+HONOR_AI_FREE_TIER_EXPIRES = os.environ.get('HONOR_AI_FREE_TIER_EXPIRES', '')
+HONOR_AI_USER_DAILY_LIMIT = int(os.environ.get('HONOR_AI_USER_DAILY_LIMIT', '20'))
+HONOR_AI_DAILY_LIMIT = int(os.environ.get('HONOR_AI_DAILY_LIMIT', '100'))
