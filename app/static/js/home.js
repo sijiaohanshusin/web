@@ -7,6 +7,10 @@
     var finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
     /* ---------- 滚动渐入（交错延迟走 CSS 变量，动画结束零残留） ---------- */
+    if (!("IntersectionObserver" in window)) return;
+    document.documentElement.classList.add("reveal-ready");
+    // A failed enhancement must never leave navigable homepage content invisible.
+    setTimeout(function () { document.documentElement.classList.remove("reveal-ready"); }, 8000);
     var revealObserver = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
             if (entry.isIntersecting) {

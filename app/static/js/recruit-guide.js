@@ -117,4 +117,30 @@
         });
     }
     update();
+    // Correct only the initial fragment landing, never fight subsequent user scrolling.
+    var landingActive = !!location.hash;
+    var navEntry = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+    if (navEntry && navEntry.type === 'back_forward') landingActive = false;
+    var stopLanding = function () { landingActive = false; };
+    ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach(function (event) {
+        window.addEventListener(event, stopLanding, {passive:true, once:true});
+    });
+    function settleFragment() {
+        if (!landingActive) return;
+        var id;
+        try { id = decodeURIComponent(location.hash.slice(1)); } catch (_) { return; }
+        if (!['intro','training','hardware','software','resources'].includes(id)) return;
+        var section = document.getElementById(id);
+        var header = document.getElementById('site-nav');
+        var inset = (header ? header.getBoundingClientRect().height : 75) + 24;
+        var top = window.scrollY + section.getBoundingClientRect().top - inset;
+        if (window.ESTA && window.ESTA.motion && window.ESTA.motion.lenis) window.ESTA.motion.scrollTo(top, {immediate:true});
+        else window.scrollTo({top:top, behavior:'instant'});
+    }
+    window.addEventListener('load', settleFragment, {once:true});
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(settleFragment);
+    document.querySelectorAll('.recruit-content img').forEach(function (img) {
+        if (!img.complete) img.addEventListener('load', settleFragment, {once:true});
+    });
+    setTimeout(function () { settleFragment(); landingActive = false; }, 2500);
 })();

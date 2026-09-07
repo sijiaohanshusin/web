@@ -1,4 +1,4 @@
-{% load static brand help_links %}
+{% load static brand help_links navigation %}
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
     {% if request.path|slice:':10' == '/accounts/' %}<link rel="stylesheet" href="{% static 'css/auth.css' %}">{% endif %}
     <link rel="stylesheet" href="{% static 'css/core.css' %}">
+    <link rel="stylesheet" href="{% static 'css/nav-state.css' %}">
     <link rel="stylesheet" href="{% static 'vendor/lenis.css' %}">
     {% comment %}
     three 是 ES module，用裸标识符引入。importmap 必须出现在任何 module 脚本
@@ -94,26 +95,26 @@
         site.js 只负责加「按 Esc 关」「点外面关」「开一个关掉其他」。
         {% endcomment %}
         <nav class="nav-links" id="nav-links" aria-label="主导航">
-            <a href="{% url 'core:home' %}">首页</a>
-            <a href="{% url 'core:recruit' %}">新生指南</a>
-            {% if recruitment_open %}<a href="{% url 'recruitment:index' %}" class="nav-hot">招新</a>{% endif %}
+            <a href="{% url 'core:home' %}"{% nav_current 'core:home' %}>首页</a>
+            <a href="{% url 'core:recruit' %}"{% nav_current 'core:recruit' %}>新生指南</a>
+            {% if recruitment_open %}<a href="{% url 'recruitment:index' %}"{% nav_current 'recruitment:index' %} class="nav-recruit">招新<span class="nav-open-signal" title="招新开放中"><i aria-hidden="true"></i><span class="sr-only">开放中</span></span></a>{% endif %}
 
-            <details class="nav-group" data-nav-group>
+            <details class="nav-group" data-nav-group{% nav_group 'about' %}>
                 <summary>了解协会</summary>
                 <div class="nav-group-menu">
-                    <a href="{% url 'works:wall' %}">作品墙<small>我们做过的东西</small></a>
-                    <a href="{% url 'honors:wall' %}">荣誉墙<small>历年获奖记录</small></a>
-                    <a href="{% url 'team:wall' %}">协会成员<small>认识一起做事的人</small></a>
-                    <a href="{% url 'news:list' %}">公告<small>通知与动态</small></a>
-                    <a href="{% url 'events:list' %}">活动<small>培训与讲座</small></a>
+                    <a href="{% url 'works:wall' %}"{% nav_current 'works:wall' %}>作品墙<small>我们做过的东西</small></a>
+                    <a href="{% url 'honors:wall' %}"{% nav_current 'honors:wall' %}>荣誉墙<small>历年获奖记录</small></a>
+                    <a href="{% url 'team:wall' %}"{% nav_current 'team:wall' %}>协会成员<small>认识一起做事的人</small></a>
+                    <a href="{% url 'news:list' %}"{% nav_current 'news:list' %}>公告<small>通知与动态</small></a>
+                    <a href="{% url 'events:list' %}"{% nav_current 'events:list' %}>活动<small>培训与讲座</small></a>
                 </div>
             </details>
 
-            <details class="nav-group" data-nav-group>
+            <details class="nav-group" data-nav-group{% nav_group 'learn' %}>
                 <summary>学习资源</summary>
                 <div class="nav-group-menu">
                     <a href="/learn/electronics/">电子学学习中心<small>27 章自编教材</small></a>
-                    <a href="{% url 'files:list' %}">资料站<small>课件与竞赛资料</small></a>
+                    <a href="{% url 'files:list' %}"{% nav_current 'files:list' %}>资料站<small>课件与竞赛资料</small></a>
                     {% if not user.is_authenticated or user.is_member %}
                     <a href="{{ forum_url }}" target="_blank" rel="noopener">会员论坛<small>提问与讨论 ↗</small></a>
                     {% endif %}
@@ -121,7 +122,7 @@
                 </div>
             </details>
 
-            {% if user.is_authenticated and user.is_member %}<a href="{% url 'projects:list' %}">项目</a>{% endif %}
+            {% if user.is_authenticated and user.is_member %}<a href="{% url 'projects:list' %}"{% nav_current 'projects:list' %}>项目</a>{% endif %}
         </nav>
         <div class="nav-auth">
             {% if user.is_authenticated %}

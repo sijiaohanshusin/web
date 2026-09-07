@@ -5,6 +5,7 @@
 {% block title %}{% firstof campaign.name "招新报名" %} | {{ site_config.site_name_en }}{% endblock %}
 {% block description %}哈尔滨工程大学电子科技协会招新报名：选择方向、提交报名，并在线跟踪面试进展。{% endblock %}
 {% block body_class %}page-recruitment{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/recruit-robot.css' %}"><script src="{% static 'js/recruit-robot.js' %}" defer></script>{% endblock %}
 
 {% block content %}
 {% comment %}
@@ -17,6 +18,7 @@
 
 <section class="rec-hero nf-scope">
     <div class="container">
+        {% include "recruitment/robot.html" %}
         <p class="nf-eyebrow">// JOIN US</p>
         <h1 class="rec-hero-title">
             {% if campaign %}加入<span class="accent">电子科技协会</span>{% else %}招新通道<span class="accent">暂时关闭</span>{% endif %}

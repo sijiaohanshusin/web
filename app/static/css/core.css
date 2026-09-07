@@ -430,8 +430,8 @@ select.input option { background: var(--bg-2); }
    用 animation 而非 transition：入场动画与组件自身的 hover transition
    （方向卡/B站卡的 transform 过渡）互不抢占，延迟也不会残留到 hover 上。
    fill 只用 backwards：动画结束后元素回到自然样式，零残留。 */
-.reveal { opacity: 0; }
-.reveal:not(.is-visible) { will-change: opacity, transform; }
+.reveal { opacity: 1; }
+.reveal-ready .reveal:not(.is-visible) { opacity: 0; will-change: opacity, transform; }
 .reveal.is-visible {
     opacity: 1;
     animation: reveal-up 1s var(--ease-out) backwards;
