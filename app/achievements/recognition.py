@@ -291,10 +291,11 @@ def process_one():
         if current:
             if not can_publish_work(current.certificate.draft.owner):
                 code, result = 'ineligible', {}
-            current.status = 'failed' if code else 'succeeded'
-            current.result, current.usage, current.error_code = result, usage, code
-            current.finished_at = timezone.now()
-            current.save()
+            # A deleted certificate cascades to its task. Never let Model.save()
+            # fall back to inserting that stale task again during completion.
+            RecognitionTask.objects.filter(pk=task.pk, status='running').update(
+                status='failed' if code else 'succeeded', result=result, usage=usage,
+                error_code=code, finished_at=timezone.now())
     return True
 
 

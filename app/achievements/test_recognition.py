@@ -166,6 +166,28 @@ class RecognitionTests(TestCase):
         self.assertEqual(stored.result, {})
         self.assertEqual(stored.error_code, 'ineligible')
 
+    def test_deleted_certificate_cannot_resurrect_task_during_completion(self):
+        from . import recognition
+        from .models import Certificate, RecognitionGate, RecognitionTask
+        image = self.upload()
+        self.start(image)
+        checks = 0
+
+        def eligible(_):
+            nonlocal checks
+            checks += 1
+            if checks == 2:
+                # Simulate deletion after the worker read its final task snapshot.
+                Certificate.objects.get(pk=image).delete()
+            return True
+
+        with patch.object(recognition, 'can_publish_work', side_effect=eligible), patch.object(
+                recognition, 'call_model', return_value=({'title': 'Local certificate'}, {})):
+            self.assertTrue(recognition.process_one())
+        self.assertEqual(checks, 2)
+        self.assertFalse(RecognitionTask.objects.exists())
+        self.assertIsNone(RecognitionGate.objects.get(pk=1).lease)
+
     def test_malformed_image_and_unconfirmed_quota_never_queue(self):
         response = self.start('not-a-uuid')
         self.assertEqual(response.status_code, 400)
