@@ -18,6 +18,7 @@ BASE = 'http://127.0.0.1:8831'
 OUT = ROOT / '.shots/honor-ai'
 PASSWORD = 'Local-Only-Honor-Demo!'
 SAMPLE = {'title':'虚构赛事 · 智能系统设计一等奖','contest':'虚构赛事 · 硬件赛道','year':'2026',
+    'year_evidence':'2026年虚构赛事智能系统设计竞赛',
     'level':'省级','level_evidence':'省赛一等奖','awardee':'演示联合队',
     'work_name':'桌面信号源','teachers':'演示导师',
     'contributors':[{'name':'演示甲','role':'队员'}, {'name':'演示乙','role':'队员'}]}
@@ -91,6 +92,21 @@ def run(owner, draft):
         expect(page.locator('#hr-image')).to_have_value(str(image.pk))
         expect(page.locator('#hr-start')).to_be_enabled()
         page.unroute('**/recognize/')
+        # A low-resolution name is a suggestion, never a silent automatic fill.
+        page.locator('[name=awardee]').fill('')
+        low = recognition.normalize_result(SAMPLE, image_size=(307,433))
+        page.route('**/recognize/',lambda route:route.fulfill(status=202,content_type='application/json',
+            body=json.dumps({'status':'succeeded','result':low,'matches':[]})))
+        page.locator('#hr-start').click()
+        expect(page.locator('#hr-status')).to_contain_text('识别完成')
+        expect(page.locator('#hr-result')).to_contain_text('分辨率')
+        expect(page.locator('[name=awardee]')).to_have_value('')
+        expect(page.locator('[name=people-0-name]')).to_have_value('')
+        page.locator('.hr-suggestion').filter(has_text='参与者建议').get_by_role('button').click()
+        expect(page.locator('[name=people-0-name]')).to_have_value('演示甲')
+        page.locator('#hr-undo').click()
+        expect(page.locator('[name=people-0-name]')).to_have_value('')
+        page.unroute('**/recognize/')
         with page.expect_response('**/recognize/'):
             page.locator('#hr-start').click()
         expect(page.locator('#hr-status')).to_contain_text('识别完成')
@@ -105,7 +121,7 @@ def run(owner, draft):
         from achievements import honor_services
         db(honor_services.withdraw,owner,draft.pk,draft.version)
         assert visitor.request.get(BASE+image.public_url).status==404
-        results.append('real upload/job/poll + mocked model, input race, differences, undo, service failure recovery, publish/withdraw privacy')
+        results.append('real upload/job/poll + mocked model, input race, differences, undo, low-resolution name adoption, service failure recovery, publish/withdraw privacy')
 
         for width in (1440,768,390,320):
             page.set_viewport_size({'width':width,'height':900})

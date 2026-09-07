@@ -45,7 +45,7 @@
     const button=document.createElement('button');button.type='button';button.className='btn btn-outline';button.textContent='采用此建议';
     button.addEventListener('click',()=>{if(accept()){button.disabled=true;button.textContent='已填入，请核对';}});box.append(button);
   };
-  const fillPeople = (people, baseline) => {
+  const fillPeople = (people, baseline, requiresReview=false) => {
     const group=form.querySelector('[data-people-set]');
     const hasNames=Array.from(group.querySelectorAll('[name$="-name"]')).some(f=>f.value.trim());
     const altered=Array.from(group.querySelectorAll('input,select')).some(f=>(mutations.get(f)||0)!==(baseline.get(f)?.revision||0));
@@ -67,23 +67,24 @@
       return true;
     };
     if(!people.length)return;
-    if(hasNames||altered)suggestion('参与者建议（不关联账号）',people.map(x=>x.name).join('、'),applyPeople);
+    if(hasNames||altered||requiresReview)suggestion('参与者建议（不关联账号）',people.map(x=>x.name).join('、'),applyPeople);
     else {applyPeople();paragraph(`已填入${people.length}位参与者建议；姓名、身份和公开同意仍需本人核对。`);}
   };
   const show = (data, baseline) => {
     output.replaceChildren();applied=[];undo.hidden=true;review.hidden=false;
     photo.src=image.url;
     const result=data.result;
+    const reviewFields=new Set(result.review_fields||[]);
     paragraph(result.notice);
     for(const [name,value] of Object.entries(result.fields||{})){
       if(!Object.hasOwn(labels,name))continue;
       const field=form.elements[name], before=baseline.get(field);
       if(!field||!before)continue;
       const formatted=name==='level'?({'30':'国家级','20':'省级','10':'校级','5':'其他'}[value]||value):value;
-      if(!before.value&&!field.value&&(mutations.get(field)||0)===before.revision){put(field,value);paragraph(`${labels[name]}：${formatted} · 已填入，待核对`);}
+      if(!reviewFields.has(name)&&!before.value&&!field.value&&(mutations.get(field)||0)===before.revision){put(field,value);paragraph(`${labels[name]}：${formatted} · 已填入，待核对`);}
       else if(field.value!==String(value))suggestion(labels[name],formatted,()=>{if(field.value&&!window.confirm(`采用建议会替换“${labels[name]}”当前内容，确定吗？`))return false;put(field,value);return true;});
     }
-    fillPeople(result.contributors||[],baseline);
+    fillPeople(result.contributors||[],baseline,reviewFields.has('contributors'));
     (result.warnings||[]).forEach(w=>paragraph(w.replace(/^(title|contest|year|level|awardee)：/,(_,key)=>labels[key]+'：')));
     for(const match of data.matches||[]){
       const link=document.createElement('a');link.href=match.url;link.target='_blank';link.rel='noopener';link.textContent=`可能已有记录：${match.year} ${match.title}，查看或认领`;paragraph('').append(link);

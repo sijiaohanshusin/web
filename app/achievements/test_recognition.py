@@ -60,6 +60,7 @@ class RecognitionTests(TestCase):
         self.assertEqual(first.status_code, 202)
         self.assertEqual(first.json()['id'], second.json()['id'])
         raw = {'title': '全国电子竞赛 省赛一等奖', 'contest': '全国电子竞赛', 'year': '2026',
+            'year_evidence': '2026年全国电子竞赛',
             'level': '省级', 'level_evidence': '省赛一等奖', 'awardee': '演示队',
             'contributors': [{'name': '演示甲', 'role': '队员', 'username': 'admin'}]}
         with patch.object(recognition, 'call_model', return_value=(raw, {'input_tokens': 123, 'output_tokens': 67})) as call:
@@ -89,6 +90,43 @@ class RecognitionTests(TestCase):
         self.assertNotIn('script', str(data))
         self.assertNotIn('PRIVATE-ID', str(data))
         self.assertTrue(data['warnings'])
+
+    def test_teacher_list_is_preserved_without_creating_participants(self):
+        from .recognition import normalize_result
+        data = normalize_result({'title': '示例竞赛一等奖', 'teachers': ['演示导师甲', '演示导师乙'],
+                                 'contributors': [{'name': '演示成员', 'role': '参赛队员'}]})
+        self.assertEqual(data['fields']['note'], '指导教师：演示导师甲、演示导师乙')
+        self.assertEqual(len(data['contributors']), 1)
+        unsafe = normalize_result({'title': '示例竞赛一等奖', 'teachers': ['安全导师', '<script>bad</script>']})
+        self.assertNotIn('note', unsafe['fields'])
+        self.assertTrue(any('指导教师' in warning for warning in unsafe['warnings']))
+
+    def test_year_requires_explicit_event_evidence_not_issuance_or_academic_range(self):
+        from .recognition import normalize_result
+        for evidence in (None, '2010年12月12日', '签发于2010年', '2010–2011学年度五四表彰',
+                         '2011年度创新竞赛', '颁发日期：2010-12-12'):
+            with self.subTest(evidence=evidence):
+                result = normalize_result({'title': '示例奖项', 'year': '2010', 'year_evidence': evidence})
+                self.assertNotIn('year', result['fields'])
+        for evidence in ('第九届（2026）全国大学生测试竞赛', '2026 Interdisciplinary Contest In Modeling'):
+            result = normalize_result({'title': '示例奖项', 'year': '2026', 'year_evidence': evidence})
+            self.assertEqual(result['fields']['year'], '2026')
+
+    def test_empty_recognition_is_not_presented_as_success(self):
+        from .recognition import normalize_result, RecognitionError
+        with self.assertRaises(RecognitionError) as caught:
+            normalize_result({})
+        self.assertEqual(caught.exception.code, 'invalid')
+
+    def test_small_image_names_require_explicit_adoption(self):
+        from .recognition import normalize_result
+        sample = {'title': '校内表彰', 'awardee': '待核对的名字',
+                  'contributors': [{'name': '待核对的名字', 'role': ''}]}
+        low = normalize_result(sample, image_size=(307, 433))
+        self.assertEqual(set(low['review_fields']), {'awardee', 'contributors'})
+        self.assertTrue(any('分辨率' in warning for warning in low['warnings']))
+        normal = normalize_result(sample, image_size=(1000, 700))
+        self.assertEqual(normal['review_fields'], [])
 
     def test_quota_error_stops_new_calls_and_preserves_input(self):
         from . import recognition
@@ -239,3 +277,25 @@ class RecognitionTests(TestCase):
             self.assertEqual(caught.exception.code, code)
             self.assertNotIn('PRIVATE_PROVIDER_BODY', str(caught.exception))
             self.assertNotIn('test-not-a-real-key', str(caught.exception))
+
+    def test_official_general_endpoint_without_workspace(self):
+        from . import recognition
+        from .models import RecognitionTask
+        with override_settings(DASHSCOPE_WORKSPACE_ID=''):
+            self.assertEqual(recognition.available(), '')
+            task = RecognitionTask.objects.get(pk=self.start(self.upload()).json()['id'])
+            _, call = self.provider_response(task, {
+                'choices': [{'finish_reason': 'stop', 'message': {'content': '{}'}}]})
+            self.assertEqual(call.args[0], 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions')
+            with override_settings(HONOR_AI_FREE_TIER_CONFIRMED=False):
+                self.assertEqual(recognition.available(), 'configuration')
+
+    def test_invalid_workspace_is_rejected_before_network(self):
+        from . import recognition
+        from .models import RecognitionTask
+        task = RecognitionTask.objects.get(pk=self.start(self.upload()).json()['id'])
+        with override_settings(DASHSCOPE_WORKSPACE_ID='evil.example/path'), patch(
+                'achievements.recognition.requests.post') as call:
+            with self.assertRaises(recognition.RecognitionError):
+                recognition.call_model(task)
+            call.assert_not_called()

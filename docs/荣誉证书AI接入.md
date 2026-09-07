@@ -2,15 +2,17 @@
 
 ## 当前边界
 
-实现位于 `achievements`，复用既有荣誉、参与者、预览及受保护证书。默认关闭，仅完成模拟供应商与本地浏览器验证；不要将其宣传为已经验证真实识别准确率的服务。
+实现位于 `achievements`，复用既有荣誉、参与者、预览及受保护证书。默认关闭。2026-09-07 已经使用获授权的五张原始证书完成真实 API 对照测试；小样本不代表全量准确率，生产免费额度保护尚未验收。见 [真实联调记录](audit/2026-09-07-honor-ai-live.md)。
 
 候选模型是北京地域 `qwen3.7-flash`，不是仅输出文字的 OCR 通道。使用图片输入、关闭思考模式、JSON 输出及服务端字段白名单。原始证书文字、模型原始响应和 Key 不写日志。阿里提供的 JSON 不是可信指令，不会被执行、直接入库或公开。
+
+实测后优先建议显式配置 `HONOR_AI_MODEL=qwen3.7-plus`：英文年份和低清姓名在本轮比 Flash 更可靠，响应稍慢。代码默认值未擅自切换；两种模型分别核对额度，不能把某模型余额视为另一模型余额。没有自动换模型机制。
 
 ## 上线前配置
 
 1. 核对该模型在北京业务空间的免费额度余额、到期时间和通用 API Key 权限，并在阿里云控制台开启“免费额度用完即停”。本地限流和 `HONOR_AI_FREE_TIER_CONFIRMED` 只是额外门槛，不能替代阿里侧计费保护。
-2. 通过服务器受保护环境文件设置 `DASHSCOPE_API_KEY`、`DASHSCOPE_WORKSPACE_ID`、`HONOR_AI_FREE_TIER_EXPIRES`。到期时间必须为含时区的 ISO 格式。实际 Key 不进入聊天、仓库、脚本或前端。聊天中使用过的临时 Key 测试后撤销。
-3. 使用获授权且已脱敏的少量样本评估完整、模糊、多人、省赛与全国赛事同名等情况，核对实际 Token 消耗及字段准确率。不能根据模拟结果推算准确率，也不能保证几十张一定免费。
+2. 通过服务器受保护环境文件设置 `DASHSCOPE_API_KEY`、`HONOR_AI_MODEL`、`HONOR_AI_FREE_TIER_EXPIRES`。可选 `DASHSCOPE_WORKSPACE_ID`；留空时使用官方北京通用地址 `https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions`，填写时使用该空间的官方北京专属地址，不接受任意 URL。到期时间必须为含时区的 ISO 格式。实际 Key 不进入仓库、脚本或前端。聊天中使用过的临时 Key 测试后应撤销，正式环境另配。
+3. 获授权的五张原件已经实测，图片直接经安全编码发送，无公开 URL、无正式站写入。后续扩大样本仍须有发送授权，并尽量减少无关个人信息。不能根据模拟结果推算准确率，也不能保证几十张一定免费。
 4. 验收后设置 `HONOR_AI_FREE_TIER_CONFIRMED=1`，最后才设置 `HONOR_AI_ENABLED=1`；默认用户每天20次，全站100次、每用户每分钟3次。第一次联调可先缩小为2次/5次。
 
 ## 进程与发布顺序
@@ -34,6 +36,12 @@
 
 识别仅建议标题、赛事、年份、层级、团队、说明及最多20位参与者的姓名/身份。无法确认的字段为空并提示核对；同名账号不绑定，关联作品仍通过原搜索选择。近似记录仅从公开荣誉中检索，不包含他人草稿。
 
+年份必须同时有含该年份的赛事/表彰原文证据；签发日期、跨学年度或缺失证据均不自动填入。多位指导教师允许安全字符串列表，并合并到现有公开说明，不混入参与者。短边不足400像素的证书，署名及参与者只显示建议，需本人点击采用；尺寸门槛只是保守提示，不代表更大图片就一定准确。空结果显示识别失败，不显示虚假的成功。
+
+## 有限真实复测
+
+运行 `python scripts/evaluate_honor_ai_live.py --live --model qwen3.7-plus <证书路径...>`，一次最多六张，使用隐藏输入读取临时 Key。脚本复用正式编码、提示词、API 调用和校验，但不使用网页任务或写数据库，不替代生产额度保护。出错停止，不自动重试；结果仅落在被 Git 忽略的 `.shots/honor-ai-live/`，包含个人信息的本地记录不得提交。不要在命令行参数或脚本中写 Key。
+
 ## 故障与回退
 
 - `AllocationQuota.FreeTierOnly`：记录当前配置停用标记，拒绝后续模型调用；不改用付费模型，不无限重试。
@@ -46,6 +54,8 @@
 ## 官方依据
 
 - [千问 Flash 多模态能力](https://help.aliyun.com/zh/model-studio/qwen3-7-flash)
+- [千问 Plus 多模态能力](https://help.aliyun.com/zh/model-studio/qwen3-7-plus)
+- [官方 Chat 接口与通用域名兼容](https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions)
 - [结构化输出](https://help.aliyun.com/zh/model-studio/qwen-structured-output)
 - [免费额度规则](https://help.aliyun.com/zh/model-studio/new-free-quota)
 - [用量及免费额度停用开关](https://help.aliyun.com/zh/model-studio/model-usage-statistics)
