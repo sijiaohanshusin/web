@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from core.image_uploads import AutoImageAdminMixin
 
 from . import roles
 from .models import (
@@ -15,7 +16,7 @@ from .models import (
 
 
 @admin.register(User)
-class UserAdmin(DjangoUserAdmin):
+class UserAdmin(AutoImageAdminMixin, DjangoUserAdmin):
     list_display = [
         "username", "real_name", "student_id", "college", "grade",
         "member_level", "position", "position_term_start", "registration_channel", "is_active", "date_joined",

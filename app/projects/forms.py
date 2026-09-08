@@ -1,4 +1,5 @@
 from django import forms
+from core.image_uploads import AutoImageField
 
 from .models import Project, current_work_year
 
@@ -17,6 +18,7 @@ class ProjectForm(forms.ModelForm):
 
     class Meta:
         model = Project
+        field_classes = {'cover': AutoImageField}
         fields = ARCHIVE_FIELDS + SHOWCASE_FIELDS
         widgets = {
             "summary": forms.Textarea(attrs={"rows": 4}),

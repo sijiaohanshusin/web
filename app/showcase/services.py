@@ -1,11 +1,9 @@
 import hashlib
-import io
 import json
 import re
-import warnings
 from pathlib import Path
 
-from PIL import Image, ImageOps, UnidentifiedImageError
+from core.image_uploads import encode_variants
 from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.base import ContentFile
@@ -145,37 +143,7 @@ def moderate(actor, showcase_id, action, reason):
 
 
 def encode_image(upload):
-    if getattr(upload, "size", 0) > 5 * 1024 * 1024:
-        raise ValidationError("单张图片不能超过 5MB。")
-    raw = upload.read(5 * 1024 * 1024 + 1)
-    if len(raw) > 5 * 1024 * 1024:
-        raise ValidationError("单张图片不能超过 5MB。")
-    suffix = Path(upload.name).suffix.lower()
-    formats = {"JPEG": {".jpg", ".jpeg"}, "PNG": {".png"}, "WEBP": {".webp"}}
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", Image.DecompressionBombWarning)
-            source = Image.open(io.BytesIO(raw))
-            if source.format not in formats or suffix not in formats[source.format]:
-                raise ValidationError("仅接受真实的静态 JPEG、PNG、WebP 图片，扩展名必须匹配。")
-            if source.width * source.height > 8_000_000 or getattr(source, "n_frames", 1) != 1:
-                raise ValidationError("图片不得超过 800 万像素，且不能是动画。")
-            source.verify()
-            source = ImageOps.exif_transpose(Image.open(io.BytesIO(raw))).convert("RGB")
-            source.load()
-            outputs = []
-            for maximum in (1600, 640):
-                resized = source.copy()
-                resized.thumbnail((maximum, maximum), Image.Resampling.LANCZOS)
-                # Rebuild pixels to discard EXIF, comments, profiles and other metadata.
-                clean = Image.new("RGB", resized.size)
-                clean.paste(resized)
-                buf = io.BytesIO()
-                clean.save(buf, "JPEG", quality=86, optimize=True)
-                outputs.append((buf.getvalue(), clean.size))
-            return outputs
-    except (UnidentifiedImageError, OSError, ValueError, SyntaxError, Image.DecompressionBombError, Image.DecompressionBombWarning):
-        raise ValidationError("图片损坏或无法安全解码，请换一张静态图片。")
+    return [(content, size) for content, size, _ in encode_variants(upload, (1600, 640), preserve_alpha=False)]
 
 
 def add_asset(user, upload):

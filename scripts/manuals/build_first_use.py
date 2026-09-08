@@ -21,6 +21,25 @@ QA = ROOT / '.shots/first-use'
 AUDIENCES = ('recruit', 'member', 'admin')
 
 
+def load_manifest(variant=None):
+    config = json.loads(MANIFEST.read_text(encoding='utf-8'))
+    if variant:
+        if variant != 'honor-ai':
+            raise ValueError('Unknown manual variant')
+        overlay = json.loads(MANIFEST.with_name('first_use_honor_ai.json').read_text(encoding='utf-8'))
+        config.update(overlay['edition'])
+        for audience, changes in overlay['books'].items():
+            book = config[audience]
+            book.update(changes['metadata'])
+            for page in book['pages']:
+                if page.get('image') in changes.get('image_dates', {}):
+                    page['image_verified'] = changes['image_dates'][page['image']]
+            after = next(i for i, p in enumerate(book['pages']) if p['title'] == changes['after'])
+            book['pages'][after+1:after+1] = changes['pages']
+            book['index'].extend(changes['index'])
+    return config
+
+
 def edition_stem(config, audience):
     suffix = '-' + config['output_suffix'] if config.get('output_suffix') else ('-works-wall-preview' if config[audience].get('release_status') == 'candidate' else '')
     return audience + '-first-use' + suffix
@@ -235,8 +254,8 @@ def make_book(config, audience, revision):
     doc.add_paragraph('点击任务名称跳转。也可以打印后逐项完成。')
     for n, page in enumerate(book['pages'], 1):
         p = doc.add_paragraph()
-        p.paragraph_format.space_before = Pt(1 if len(book['pages']) > 22 else 3)
-        p.paragraph_format.space_after = Pt(3 if len(book['pages']) > 22 else 5)
+        p.paragraph_format.space_before = Pt(0 if len(book['pages']) > 24 else 1 if len(book['pages']) > 22 else 3)
+        p.paragraph_format.space_after = Pt(1 if len(book['pages']) > 24 else 3 if len(book['pages']) > 22 else 5)
         p.add_run(f'{n:02d}   ').bold = True
         link(p, page['title'], f'#task_{n}')
         p.add_run('    '); field(p, f'PAGEREF task_{n} \\h')
@@ -358,8 +377,11 @@ def main():
     global OUT
     parser = argparse.ArgumentParser(); parser.add_argument('--inventory', action='store_true')
     parser.add_argument('--audience', choices=AUDIENCES, help='Rebuild only this audience, preserving other editions.')
+    parser.add_argument('--variant', choices=['honor-ai'], help='Separate candidate edition, without replacing published manuals.')
     args = parser.parse_args()
-    config = json.loads(MANIFEST.read_text(encoding='utf-8'))
+    config = load_manifest(args.variant)
+    if args.variant and args.audience != 'member':
+        parser.error('The honor-ai preview only applies to --audience member')
     if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', config['verified']):
         raise ValueError('Invalid revision date')
     OUT = OUT / config['verified']

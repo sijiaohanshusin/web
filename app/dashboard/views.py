@@ -854,9 +854,6 @@ def news_edit(request, pk: int | None = None):
     return render(request, "dashboard/news_form.html", context)
 
 
-_INLINE_IMAGE_TYPES = {"image/jpeg": ".jpg", "image/png": ".png", "image/gif": ".gif", "image/webp": ".webp"}
-
-
 @officer_required
 @require_POST
 def inline_image_upload(request):
@@ -868,11 +865,14 @@ def inline_image_upload(request):
     file = request.FILES.get("image")
     if not file:
         return JsonResponse({"ok": False, "msg": "没有收到图片。"}, status=400)
-    ext = _INLINE_IMAGE_TYPES.get(file.content_type)
-    if not ext:
-        return JsonResponse({"ok": False, "msg": "仅支持 JPG / PNG / GIF / WebP 图片。"}, status=400)
-    if file.size > 10 * 1024 * 1024:
-        return JsonResponse({"ok": False, "msg": "图片超过 10MB，请压缩后再传。"}, status=400)
+    from core.image_uploads import normalize_upload
+    from django.core.exceptions import ValidationError
+    from pathlib import Path
+    try:
+        file = normalize_upload(file)
+    except ValidationError as exc:
+        return JsonResponse({"ok": False, "msg": ' '.join(exc.messages)}, status=400)
+    ext = Path(file.name).suffix
 
     name = f"uploads/inline/{tz.now():%Y/%m}/{uuid.uuid4().hex[:12]}{ext}"
     saved = default_storage.save(name, file)

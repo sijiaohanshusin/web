@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 
 from . import slots as slot_registry
+from .image_uploads import AutoImageAdminMixin, AutoImageField
 from .models import CarouselImage, Feedback, FeedbackReply, MediaSlot, SiteConfig
 
 
@@ -37,7 +38,7 @@ class FeedbackAdmin(admin.ModelAdmin):
 
 
 @admin.register(CarouselImage)
-class CarouselImageAdmin(admin.ModelAdmin):
+class CarouselImageAdmin(AutoImageAdminMixin, admin.ModelAdmin):
     list_display = ["preview", "title", "caption", "sort_order", "is_active", "created_at"]
     list_editable = ["sort_order", "is_active"]
     list_display_links = ["preview", "title"]
@@ -61,6 +62,7 @@ class MediaSlotForm(forms.ModelForm):
     class Meta:
         model = MediaSlot
         fields = "__all__"
+        field_classes = {'image': AutoImageField}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -71,7 +73,7 @@ class MediaSlotForm(forms.ModelForm):
 
 
 @admin.register(MediaSlot)
-class MediaSlotAdmin(admin.ModelAdmin):
+class MediaSlotAdmin(AutoImageAdminMixin, admin.ModelAdmin):
     """素材槽内容。槽位本身在 core/slots.py 声明，这里只管往里填图。"""
 
     list_display = ["preview", "key", "slot_label", "alt", "is_active", "updated_at", "updated_by"]

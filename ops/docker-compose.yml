@@ -4,6 +4,28 @@
 name: heuesta
 
 services:
+  honor-ai-worker:
+    profiles: [honor-ai]
+    build:
+      context: ..
+      dockerfile: ops/Dockerfile
+    entrypoint: ["python", "manage.py", "honor_ai_worker"]
+    restart: unless-stopped
+    env_file:
+      - /opt/heuesta/.env
+    environment:
+      POSTGRES_HOST: db
+    volumes:
+      - /srv/heuesta/media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    mem_limit: 220m
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
   app:
     build:
       context: ..

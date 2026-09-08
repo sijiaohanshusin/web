@@ -1,4 +1,5 @@
 from django import forms
+from core.image_uploads import AutoImageField
 
 from .models import Honor, Post
 
@@ -6,6 +7,7 @@ from .models import Honor, Post
 class PostForm(forms.ModelForm):
     class Meta:
         model = Post
+        field_classes = {'cover': AutoImageField}
         fields = ("title", "category", "cover", "min_level", "pinned", "is_published", "published_at", "body")
         widgets = {
             "body": forms.Textarea(attrs={"rows": 16, "id": "post-body"}),
@@ -30,6 +32,7 @@ class HonorForm(forms.ModelForm):
 
     class Meta:
         model = Honor
+        field_classes = {'certificate': AutoImageField}
         fields = ("title", "contest", "level", "year", "awardee", "note",
                   "certificate", "post", "is_public", "is_featured")
         widgets = {

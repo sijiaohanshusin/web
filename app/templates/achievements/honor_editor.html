@@ -1,7 +1,10 @@
 {% extends "achievements/base.html" %}
+{% load static %}
+{% block extra_head %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/honor-recognition.css' %}"><script src="{% static 'js/honor-recognition.js' %}" defer></script>{% endblock %}
 {% block achievement_content %}<header class="mw-heading"><div><p class="nf-eyebrow">EDIT / PREVIEW / PUBLISH</p><h1>记录一份荣誉。</h1><p>草稿只对本人可见。公开的是填写的署名，不是账号中的私人档案。</p></div><span class="mw-state">草稿 v{{ draft.version }}</span></header>
 {% if conflict %}<div class="mw-note" role="alert">检测到版本冲突，当前输入保留。<a href="{% url 'achievements:honor_edit' draft.pk %}" target="_blank" rel="noopener">另开标签页核对服务器版本</a>。</div>{% endif %}
-<div class="mw-editor-grid"><form method="post" enctype="multipart/form-data" class="panel mw-form">{% csrf_token %}{{ form.version }}
+{% include "achievements/recognition_panel.html" %}
+<div class="mw-editor-grid"><form method="post" enctype="multipart/form-data" class="panel mw-form" id="honor-form">{% csrf_token %}{{ form.version }}
 {% if form.errors or people.errors %}<div class="mw-errors" role="alert"><h2>请检查后再保存</h2>{{ form.non_field_errors }}{% for field in form %}{% for error in field.errors %}<p><a href="#{{ field.id_for_label }}">{{ field.label }}：{{ error }}</a></p>{% endfor %}{% endfor %}<p>参与者字段错误会显示在对应位置。未成功上传的文件需要重新选择。</p></div>{% endif %}
 <div class="mw-fields">{% for field in form %}{% if not field.is_hidden %}<div class="form-group {% if field.name == 'note' or field.name == 'title' or field.name == 'upload' %}mw-wide{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{{ field.errors }}<p class="form-help">{{ field.help_text }}</p></div>{% endif %}{% endfor %}</div>
 {% include "achievements/people_form.html" %}<div class="mw-savebar"><button class="btn btn-outline" name="action" value="save">保存草稿</button><button class="btn btn-primary" name="action" value="preview">保存并预览 →</button></div></form>

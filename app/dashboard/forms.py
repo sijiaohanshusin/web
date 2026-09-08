@@ -1,5 +1,6 @@
 from django import forms
 from django.core.files.uploadedfile import UploadedFile
+from core.image_uploads import AutoImageField
 
 from core.models import CarouselImage, MediaSlot, SiteConfig
 
@@ -39,6 +40,7 @@ class CarouselImageForm(forms.ModelForm):
     class Meta:
         model = CarouselImage
         fields = ["title", "caption", "image", "sort_order", "is_active"]
+        field_classes = {'image': AutoImageField}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -68,6 +70,7 @@ class MediaSlotForm(forms.ModelForm):
 
     class Meta:
         model = MediaSlot
+        field_classes = {'image': AutoImageField}
         fields = ["image", "video_mp4", "video_webm",
                   "alt", "caption", "credit", "focal_x", "focal_y", "is_active"]
         widgets = {

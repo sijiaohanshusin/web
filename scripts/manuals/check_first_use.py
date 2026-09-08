@@ -8,7 +8,7 @@ import shutil
 from docx import Document
 from docx.oxml.ns import qn
 from pypdf import PdfReader
-from build_first_use import edition_stem
+from build_first_use import edition_stem, load_manifest
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'docs/help/dist'
@@ -30,9 +30,9 @@ def release_boundary_errors(status, cover_text, body_text):
     return errors
 
 
-def run():
+def run(audiences=('recruit', 'member', 'admin')):
     results = []
-    for audience in ('recruit', 'member', 'admin'):
+    for audience in audiences:
         stem = edition_stem(MANIFEST, audience)
         source = OUT / f'{stem}.docx'
         rendered = ROOT / '.shots/documents' / stem
@@ -124,10 +124,18 @@ def run():
                   'pdf_sha256':hashlib.sha256(pdf.read_bytes()).hexdigest()}
         print(json.dumps(result,ensure_ascii=False))
         results.append(result)
+    (ROOT/'.shots/first-use').mkdir(parents=True, exist_ok=True)
     (ROOT/'.shots/first-use/structural-checks.json').write_text(json.dumps(results,ensure_ascii=False,indent=2),encoding='utf-8')
     if any(item['errors'] for item in results):
         raise SystemExit(1)
 
 
 if __name__=='__main__':
-    run()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--audience', choices=['recruit', 'member', 'admin'])
+    parser.add_argument('--variant', choices=['honor-ai'])
+    args = parser.parse_args()
+    MANIFEST = load_manifest(args.variant)
+    OUT = ROOT / 'docs/help/dist' / MANIFEST['verified']
+    run((args.audience,) if args.audience else ('recruit', 'member', 'admin'))

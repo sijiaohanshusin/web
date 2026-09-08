@@ -63,6 +63,27 @@ class HelpAccessTests(TestCase):
             self.assertContains(page, label)
         self.assertNotContains(page, '确认发布我的展示')
 
+    def test_honor_ai_candidate_manual_has_verified_sources_and_index(self):
+        import json
+        from django.conf import settings
+        variant = json.loads((settings.REPO_DIR / 'scripts/manuals/first_use_honor_ai.json').read_text(encoding='utf-8'))
+        member = variant['books']['member']
+        self.assertEqual(member['metadata']['release_status'], 'candidate')
+        self.assertIn('尚待联调', member['metadata']['release_note'])
+        article = next(item for item in content.articles() if item.key == 'member/achievements')
+        titles = {page['title'] for page in member['pages']}
+        self.assertEqual(titles, {'上传证书自动填写', '核对识别结果并发布'})
+        self.assertEqual(titles, {title for _, title in member['index']})
+        for page in member['pages']:
+            resolve(page['route'])
+            self.assertEqual(page['ref'], article.key)
+            self.assertIn(page['image'], article.screenshots)
+            for section, _ in page['sections']:
+                self.assertIn('## ' + section, article.body)
+        response = self.client.get(article.url)
+        for text in ('不会自动保存荣誉或公开证书', '不按同名自动绑定', '暂不支持上传截图', '识别失败与问题反馈'):
+            self.assertContains(response, text)
+
     def test_offline_guides_have_feedback_and_valid_quick_index(self):
         import json
         from django.conf import settings

@@ -114,3 +114,32 @@ class Certificate(models.Model):
     @property
     def public_url(self):
         return reverse('achievements:certificate', args=[self.pk])
+
+
+class RecognitionGate(models.Model):
+    """Singleton row serializes reservations and the worker lease across processes."""
+    blocked_for = models.CharField(max_length=64, blank=True)
+    blocked_reason = models.CharField(max_length=32, blank=True)
+    counters = models.JSONField(default=dict)
+    busy_until = models.DateTimeField(null=True)
+    lease = models.UUIDField(null=True)
+
+
+class RecognitionTask(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    certificate = models.ForeignKey(Certificate, on_delete=models.CASCADE, related_name='recognitions')
+    fingerprint = models.CharField(max_length=64)
+    config_hash = models.CharField(max_length=64)
+    model = models.CharField(max_length=80)
+    status = models.CharField(max_length=16, default='queued')
+    result = models.JSONField(default=dict)
+    usage = models.JSONField(default=dict)
+    error_code = models.CharField(max_length=32, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    started_at = models.DateTimeField(null=True)
+    finished_at = models.DateTimeField(null=True)
+
+    class Meta:
+        ordering = ['created_at', 'pk']
+        constraints = [models.UniqueConstraint(fields=['fingerprint'],
+            condition=models.Q(status__in=['queued', 'running', 'succeeded']), name='honor_recognition_dedup')]

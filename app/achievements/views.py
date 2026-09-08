@@ -184,7 +184,7 @@ def honor_create(request):
 def honor_edit(request, pk):
     draft = owned(request, pk)
     posted = request.POST if request.method == 'POST' else None
-    form = HonorForm(draft, posted, request.FILES or None, initial={'year': current_work_year(), 'level': 10, **draft.draft, 'version': draft.version})
+    form = HonorForm(draft, posted, request.FILES or None, initial={**draft.draft, 'version': draft.version})
     people = people_set(posted, draft.draft.get('contributors', []))
     status = 200
     if posted is not None:
@@ -198,7 +198,11 @@ def honor_edit(request, pk):
             except ValidationError as exc:
                 form.add_error(None, exc)
                 status = 409 if isinstance(exc, WorkConflict) else 200
-    return render(request, 'achievements/honor_editor.html', {'draft': draft, 'form': form, 'people': people, 'images': draft.images.all(), 'conflict': status == 409}, status=status)
+    from . import recognition
+    ai_reason = recognition.available()
+    return render(request, 'achievements/honor_editor.html', {'draft': draft, 'form': form, 'people': people,
+        'images': draft.images.all(), 'conflict': status == 409, 'ai_enabled': not ai_reason,
+        'ai_notice': recognition.ERRORS.get(ai_reason, '')}, status=status)
 
 
 @author_required

@@ -126,7 +126,7 @@
       panel("外部链接",links.map((link,i)=>'<div class="se-spaced"><div class="se-grid-two">'+field("content.links."+i+".label","链接名称",{max:40})+field("content.links."+i+".url","HTTPS 地址",{type:"url"})+'</div><div class="se-row se-spaced">'+orderControls("content.links",i,links.length)+btn("移除",'data-remove-item="content.links" data-index="'+i+'"',"se-subtle")+'</div><hr class="se-divider"></div>').join("")+(links.length?"":'<div class="se-empty">你的网站、代码仓库或其他公开主页。</div>')+help("请确认链接中没有密码、私人文件或个人敏感信息。"),btn("＋ 添加链接",'data-add-link '+(links.length>=6?"disabled":""),"se-subtle"));
   }
   const size = bytes => bytes==null?"体积未知":bytes<1048576?(bytes/1024).toFixed(0)+" KB":(bytes/1048576).toFixed(2)+" MB";
-  const uploadBox = () => '<div class="se-upload" data-dropzone>'+btn("＋ 上传图片",'data-upload-file',"se-primary")+' '+btn("复制账号头像",'data-copy-avatar',"se-subtle")+'<p>JPEG / PNG / WebP · 每张不超过 5 MB · 最大 8 MP</p><p>图片重新编码并移除 EXIF，原始文件不会保留。也可拖入文件。</p><input type="file" accept="image/jpeg,image/png,image/webp" data-file-input hidden></div>';
+  const uploadBox = () => '<div class="se-upload" data-dropzone>'+btn("＋ 上传图片",'data-upload-file',"se-primary")+' '+btn("复制账号头像",'data-copy-avatar',"se-subtle")+'<p>手机原图直接传，自动缩放、压缩与摆正。</p><p>静态 JPG / PNG / WebP / BMP / GIF · 原图最多 32 MB、6400 万像素。移除 EXIF，也可拖入文件。</p><input type="file" accept="image/jpeg,image/png,image/webp,image/bmp,image/gif" data-file-input hidden></div>';
   const assetTile = (a,picking=false) => '<button type="button" class="se-asset" '+(picking?'data-select-asset':'data-inspect-asset')+'="'+a.id+'" aria-pressed="'+(a.id===selectedAsset)+'"><img src="'+a.url+'" alt="'+esc(a.name)+'"><strong>'+esc(a.name)+'</strong><small>'+a.width+' × '+a.height+' · '+a.format+' · '+size(a.bytes)+'</small><small>'+esc(a.public_uses.length?"公开使用中":a.draft_uses.length?"已保存草稿使用中":"尚未保存引用")+'</small></button>';
   function library() {
     return heading("素材库","你的图片，一处管理，多处使用。","MY ASSETS / PRIVATE")+
@@ -230,8 +230,8 @@
     box.innerHTML='<strong>'+esc(error.message||"操作失败，请重试。")+'</strong>'+Object.entries(error.fields||{}).map(([path,messages])=>'<div><button type="button" data-error-field="'+esc(path)+'">'+esc(messages.join(" "))+' →</button></div>').join("");
     if(error.code==="conflict") recoverConflict();
   }
-  async function request(url, init={}) {
-    const timeout=new AbortController(), timer=setTimeout(()=>timeout.abort(),25000);
+  async function request(url, init={}, timeoutMs=25000) {
+    const timeout=new AbortController(), timer=setTimeout(()=>timeout.abort(),timeoutMs);
     const signal=init.signal?AbortSignal.any([init.signal,timeout.signal]):timeout.signal;
     try {
       const response=await fetch(url,{credentials:"same-origin",cache:"no-store",...init,signal,headers:{"X-CSRFToken":csrf,...init.headers}});
@@ -385,12 +385,12 @@
   }
   async function upload(file,copy=false){
     if(model.busy)return;
-    if(file&&file.size>5*1024*1024)return toast("单张图片不能超过 5 MB。");
+    if(file&&file.size>32*1024*1024)return toast("原图超过 32 MB 安全上限，请选择较小的原图；当前设计仍保留。");
     const data=new FormData();if(copy)data.append("copy_avatar","1");else data.append("image",file);
     model.busy=true;status("正在处理图片…");
     const before=new Set(model.server.assets.map(a=>a.id));
     try{
-      const response=await request(root.dataset.upload,{method:"POST",body:data});model.server.assets=response.assets;
+      const response=await request(root.dataset.upload,{method:"POST",body:data},120000);model.server.assets=response.assets;
       const added=response.assets.find(a=>!before.has(a.id));
       if(copy&&added&&section==="card-layout"&&!$("#asset-picker").open){model.set("content.avatar",added.id);touch();}
       selectedAsset=added?.id||selectedAsset;

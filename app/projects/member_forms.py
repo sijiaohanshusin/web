@@ -20,8 +20,8 @@ class WorkForm(forms.Form):
     gallery = forms.ModelMultipleChoiceField(label="过程图集", queryset=None, required=False,
                                              widget=forms.CheckboxSelectMultiple, help_text="最多 6 张，按上传顺序展示。")
     upload = forms.FileField(label="上传图片", required=False,
-                             widget=forms.FileInput(attrs={"accept": "image/jpeg,image/png,image/webp"}),
-                             help_text="每次一张：JPEG、PNG、WebP，最多 5MB / 800 万像素。上传后存为私有草稿。")
+                             widget=forms.FileInput(attrs={"accept": "image/jpeg,image/png,image/webp,image/bmp,image/gif"}),
+                             help_text="手机原图自动缩放、压缩与摆正，每次一张，静态图片最多32MB / 6400万像素。上传后存为私有草稿。")
     version = forms.IntegerField(min_value=0, widget=forms.HiddenInput)
 
     def __init__(self, work, *args, **kwargs):

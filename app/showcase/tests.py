@@ -506,7 +506,7 @@ class ShowcaseTests(TestCase):
                 self.assertFalse(image.getexif())
 
     def test_spoofed_svg_and_animation_rejected(self):
-        for upload in (SimpleUploadedFile("fake.png", b"<svg></svg>"), upload_image("fake.jpg")):
+        for upload in (SimpleUploadedFile("fake.png", b"<svg></svg>"),):
             with self.assertRaises(ValidationError):
                 add_asset(self.user, upload)
         buf = io.BytesIO()
@@ -515,10 +515,10 @@ class ShowcaseTests(TestCase):
             add_asset(self.user, SimpleUploadedFile("animated.webp", buf.getvalue()))
 
     def test_oversized_pixel_and_file_limits(self):
+        asset = add_asset(self.user, upload_image(size=(3000, 3000)))
+        self.assertLessEqual(max(asset.width, asset.height), 1600)
         with self.assertRaises(ValidationError):
-            add_asset(self.user, upload_image(size=(3000, 3000)))
-        with self.assertRaises(ValidationError):
-            add_asset(self.user, SimpleUploadedFile("big.png", b"x" * (5 * 1024 * 1024 + 1)))
+            add_asset(self.user, SimpleUploadedFile("big.png", b"x" * (32 * 1024 * 1024 + 1)))
 
     def test_twenty_asset_quota(self):
         ShowcaseAsset.objects.bulk_create([ShowcaseAsset(showcase=self.sc, image="showcase/fake.jpg", thumbnail="showcase/fake.jpg", width=1, height=1) for _ in range(20)])

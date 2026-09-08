@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.image_uploads import AutoImageAdminMixin
 
 from .models import Project, ProjectFile, ProjectFolder, ProjectMember, ProjectShot
 
@@ -9,7 +10,7 @@ class ProjectMemberInline(admin.TabularInline):
     raw_id_fields = ("user",)
 
 
-class ProjectShotInline(admin.TabularInline):
+class ProjectShotInline(AutoImageAdminMixin, admin.TabularInline):
     """作品图集。图集在 admin 里加，因为驾驶舱那张表单已经够长了。"""
 
     model = ProjectShot
@@ -18,7 +19,7 @@ class ProjectShotInline(admin.TabularInline):
 
 
 @admin.register(Project)
-class ProjectAdmin(admin.ModelAdmin):
+class ProjectAdmin(AutoImageAdminMixin, admin.ModelAdmin):
     list_display = ("id", "name", "department", "status", "is_public", "is_featured",
                     "created_by", "updated_at")
     list_filter = ("department", "status", "is_public", "is_featured")

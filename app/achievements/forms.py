@@ -41,20 +41,20 @@ class HonorForm(forms.Form):
     title = forms.CharField(label='奖项全称', max_length=120)
     contest = forms.CharField(label='赛事 / 赛道', max_length=80, required=False)
     year = forms.TypedChoiceField(label='获奖年份', coerce=int)
-    level = forms.TypedChoiceField(label='奖项级别', coerce=int, choices=Honor.Level.choices)
+    level = forms.TypedChoiceField(label='奖项级别', coerce=int, choices=[('', '请选择 / 待核对')] + list(Honor.Level.choices))
     awardee = forms.CharField(label='公开团队署名', max_length=120, help_text='准确填写队伍名或经同意的署名。同一团队同一奖项只录入一次。')
     note = forms.CharField(label='公开说明', max_length=200, required=False, widget=forms.Textarea(attrs={'rows': 3}),
                            help_text='请勿填写手机号、学号或未脱敏证书编号。')
     project = forms.ModelChoiceField(label='关联作品（可选）', queryset=Project.objects.none(), required=False,
                                      help_text='先发布作品，再选它关联奖项；同一作品可以获得多项荣誉。')
     certificate = forms.ModelChoiceField(label='展示证书（可选）', queryset=None, required=False, empty_label='不公开证书')
-    upload = forms.FileField(label='上传脱敏证书', required=False, widget=forms.FileInput(attrs={'accept': 'image/jpeg,image/png,image/webp'}),
-                             help_text='JPEG / PNG / WebP，5MB / 800 万像素以内。会去除 EXIF，但不会自动遮挡证书内容，请先脱敏。')
+    upload = forms.FileField(label='上传脱敏证书', required=False, widget=forms.FileInput(attrs={'accept': 'image/jpeg,image/png,image/webp,image/bmp,image/gif'}),
+                             help_text='原图自动缩放、压缩与摆正；静态图片最多32MB / 6400万像素。移除EXIF但不会自动遮挡内容，请先脱敏。')
     version = forms.IntegerField(min_value=0, widget=forms.HiddenInput)
 
     def __init__(self, draft, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['year'].choices = [(y, str(y)) for y in range(timezone.localdate().year, 1994, -1)]
+        self.fields['year'].choices = [('', '请选择获奖年份')] + [(y, str(y)) for y in range(timezone.localdate().year, 1994, -1)]
         self.fields['project'].queryset = Project.public()
         self.fields['certificate'].queryset = draft.images.all()
         for field in self.fields.values():

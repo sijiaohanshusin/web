@@ -1,0 +1,16 @@
+<section class="hr-panel" id="honor-recognition" data-upload="{% url 'achievements:certificate_upload' draft.pk %}" data-start="{% url 'achievements:recognition_start' draft.pk %}" data-enabled="{{ ai_enabled|yesno:'true,false' }}">
+  <div class="hr-heading"><span class="hr-icon" aria-hidden="true">✦</span><div><p class="hr-eyebrow">PHOTO → DETAILS → YOUR STORY</p><h2>上传证书，少填一点。</h2><p>让 AI 帮你整理，让每一份荣誉都准确。核对后再由你决定发布。</p></div><a href="#honor-form">直接手动填写 ↓</a></div>
+  <ol class="hr-steps" aria-label="识别流程"><li>01 上传证书</li><li>02 识别并核对</li><li>03 预览后发布</li></ol>
+  <div class="hr-controls" hidden>
+    <div class="hr-source"><label for="hr-file">选择一张证书照片</label><input type="file" id="hr-file" accept="image/jpeg,image/png,image/webp,image/bmp,image/gif"><p>手机原图直接上传，自动缩放、压缩与摆正。静态 JPG / PNG / WebP / BMP / GIF，原图最多32MB / 6400万像素。上传不等于公开。</p>
+      <label for="hr-image">或使用已上传证书</label><select id="hr-image"><option value="">请选择证书</option>{% for image in images %}<option value="{{ image.pk }}" data-url="{{ image.public_url }}">{{ image }}</option>{% endfor %}</select>
+    </div>
+    <div><label class="hr-consent"><input type="checkbox" id="hr-consent">我确认有权上传，将本张图片发送给阿里云作 AI 识别；请先遮挡学号、证件号及联系方式。</label>
+      <button type="button" class="btn btn-primary" id="hr-start" {% if not ai_enabled %}disabled{% endif %}>识别并自动填写</button>
+      <p id="hr-status" role="status" aria-live="polite">{% if ai_notice %}{{ ai_notice }}{% else %}仅填写有依据的信息，空白或冲突处会提醒你核对。{% endif %}</p>
+      <p class="hr-private">不自动关联同名账号，不自动保存或公开。展示证书需在下方另行选择。</p>
+    </div>
+  </div>
+  <noscript><p>AI 识别需要启用 JavaScript；下方手动填写、保存和预览仍可正常使用。</p></noscript>
+  <div class="hr-review" id="hr-review" hidden><details id="hr-photo"><summary>展开证书，对照核对</summary><img alt="本次识别的私有证书" id="hr-photo-img"></details><div><h3>识别建议 · 请逐项核对</h3><div id="hr-result"></div><button type="button" class="btn btn-outline" id="hr-undo" hidden>撤销本次自动填入</button></div></div>
+</section>

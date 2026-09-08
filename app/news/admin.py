@@ -1,10 +1,11 @@
 from django.contrib import admin
+from core.image_uploads import AutoImageAdminMixin
 
 from .models import Honor, Post
 
 
 @admin.register(Honor)
-class HonorAdmin(admin.ModelAdmin):
+class HonorAdmin(AutoImageAdminMixin, admin.ModelAdmin):
     """站务日常在 /dashboard/honors/ 录入（等级 4 没有 is_staff、进不来这里）。
     这个 admin 是给管理员批量整理历史记录用的。"""
 
@@ -19,7 +20,7 @@ class HonorAdmin(admin.ModelAdmin):
 
 
 @admin.register(Post)
-class PostAdmin(admin.ModelAdmin):
+class PostAdmin(AutoImageAdminMixin, admin.ModelAdmin):
     list_display = ("id", "title", "category", "min_level", "pinned", "is_published", "published_at", "author", "view_count")
     list_filter = ("category", "is_published", "pinned", "min_level")
     search_fields = ("title", "body")

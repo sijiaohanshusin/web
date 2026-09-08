@@ -4,6 +4,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UsernameField
 from django.core.validators import RegexValidator
+from core.image_uploads import AutoImageField
 
 from .choices import COLLEGE_CHOICES, cohort_choices
 from .models import ReturningMembershipRequest
@@ -272,6 +273,7 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = PROFILE_BASIC_FIELDS + PROFILE_TEAM_FIELDS
+        field_classes = {'avatar': AutoImageField}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
