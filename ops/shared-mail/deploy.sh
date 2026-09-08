@@ -35,8 +35,8 @@ p = Path('/etc/nginx/sites-available/heuesta.cn')
 s = p.read_text()
 needle = '    server_name heuesta.cn;'
 assert s.count(needle) == 2  # HTTPS virtual host first, HTTP redirect host second.
-assert 'heuesta-shared-mail.conf' not in s
-p.write_text(s.replace(needle, needle + '\n    include /etc/nginx/snippets/heuesta-shared-mail.conf;', 1))
+if 'include /etc/nginx/snippets/heuesta-shared-mail' not in s:
+    p.write_text(s.replace(needle, needle + '\n    include /etc/nginx/snippets/heuesta-shared-mail.conf;', 1))
 PY
 if ! nginx -t; then
   cp -a "$backup/heuesta.cn" /etc/nginx/sites-available/heuesta.cn
