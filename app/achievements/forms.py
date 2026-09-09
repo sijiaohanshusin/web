@@ -47,23 +47,38 @@ class HonorForm(forms.Form):
                            help_text='请勿填写手机号、学号或未脱敏证书编号。')
     project = forms.ModelChoiceField(label='关联作品（可选）', queryset=Project.objects.none(), required=False,
                                      help_text='先发布作品，再选它关联奖项；同一作品可以获得多项荣誉。')
-    certificate = forms.ModelChoiceField(label='展示证书（可选）', queryset=None, required=False, empty_label='不公开证书')
+    show_certificate = forms.BooleanField(label='展示证书', required=False,
+        help_text='新荣誉默认开启，可随时关闭。只有预览并确认发布后才对外展示；关闭后仍保留私有素材。')
+    certificate = forms.ModelChoiceField(label='展示哪张证书', queryset=None, required=False, empty_label='尚未选择证书')
     upload = forms.FileField(label='上传脱敏证书', required=False, widget=forms.FileInput(attrs={'accept': 'image/jpeg,image/png,image/webp,image/bmp,image/gif'}),
                              help_text='原图自动缩放、压缩与摆正；静态图片最多32MB / 6400万像素。移除EXIF但不会自动遮挡内容，请先脱敏。')
     version = forms.IntegerField(min_value=0, widget=forms.HiddenInput)
 
     def __init__(self, draft, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Old open forms have no checkbox; preserve their original selection semantics.
+        if self.is_bound and 'certificate_display_configured' not in self.data and 'show_certificate' not in self.data:
+            self.data = self.data.copy()
+            self.data['show_certificate'] = bool(self.data.get('certificate') or self.files.get('upload'))
+        if not self.is_bound:
+            self.initial.setdefault('show_certificate', draft.draft.get(
+                'show_certificate', bool(draft.draft.get('certificate')) if draft.draft else True))
+            if self.initial['show_certificate'] and not self.initial.get('certificate'):
+                image = draft.images.first()
+                if image:
+                    self.initial['certificate'] = str(image.pk)
         self.fields['year'].choices = [('', '请选择获奖年份')] + [(y, str(y)) for y in range(timezone.localdate().year, 1994, -1)]
         self.fields['project'].queryset = Project.public()
         self.fields['certificate'].queryset = draft.images.all()
         for field in self.fields.values():
-            field.widget.attrs['class'] = 'input'
+            if not isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs['class'] = 'input'
 
     def design(self):
         data = {key: self.cleaned_data[key] for key in ('title', 'contest', 'year', 'level', 'awardee', 'note')}
         data['project'] = self.cleaned_data['project'].pk if self.cleaned_data['project'] else None
-        data['certificate'] = str(self.cleaned_data['certificate'].pk) if self.cleaned_data['certificate'] else ''
+        data['show_certificate'] = self.cleaned_data['show_certificate']
+        data['certificate'] = str(self.cleaned_data['certificate'].pk) if data['show_certificate'] and self.cleaned_data['certificate'] else ''
         return data
 
 

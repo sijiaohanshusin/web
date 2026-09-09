@@ -8,7 +8,7 @@
     <div><label class="hr-consent"><input type="checkbox" id="hr-consent">我确认有权上传，将本张图片发送给阿里云作 AI 识别；请先遮挡学号、证件号及联系方式。</label>
       <button type="button" class="btn btn-primary" id="hr-start" {% if not ai_enabled %}disabled{% endif %}>识别并自动填写</button>
       <p id="hr-status" role="status" aria-live="polite">{% if ai_notice %}{{ ai_notice }}{% else %}仅填写有依据的信息，空白或冲突处会提醒你核对。{% endif %}</p>
-      <p class="hr-private">不自动关联同名账号，不自动保存或公开。展示证书需在下方另行选择。</p>
+      <p class="hr-private">不自动关联同名账号，不自动保存或公开。新荣誉默认选用上传的证书展示，可在下方关闭“展示证书”；确认发布后才会公开图片。</p>
     </div>
   </div>
   <noscript><p>AI 识别需要启用 JavaScript；下方手动填写、保存和预览仍可正常使用。</p></noscript>

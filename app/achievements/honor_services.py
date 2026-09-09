@@ -46,9 +46,11 @@ def save(user, pk, version, data, upload=None):
         with transaction.atomic():
             draft = locked(user, pk, version)
             data = deepcopy(data)
+            data.setdefault('show_certificate', bool(data.get('certificate') or upload))
             form = HonorForm(draft, {**data, 'version': version})
             if not form.is_valid():
                 raise ValidationError('奖项内容、关联作品或证书无效，请检查后保存。')
+            data.update(form.design())
             data['contributors'] = validate_people(data.get('contributors', []))
             if output:
                 if draft.images.count() >= 5:
@@ -57,7 +59,8 @@ def save(user, pk, version, data, upload=None):
                 image.image.save('certificate.jpg', ContentFile(output[0]), save=False)
                 written = image.image.storage, image.image.name
                 image.save()
-                data['certificate'] = str(image.pk)
+                if data['show_certificate']:
+                    data['certificate'] = str(image.pk)
             draft.draft, draft.version = data, draft.version + 1
             draft.save()
             return draft

@@ -90,6 +90,82 @@ class HonorPublicationTests(TestCase):
         honor_services.remove_image(self.owner, self.draft.pk, self.draft.version, image.pk)
         self.assertFalse(self.draft.images.exists())
 
+    def test_new_honor_defaults_to_certificate_display_without_saving(self):
+        response = self.client.get(reverse('achievements:honor_edit', args=[self.draft.pk]))
+        self.assertTrue(response.context['form']['show_certificate'].value())
+        self.assertContains(response, 'certificate_display_configured')
+        self.draft.refresh_from_db()
+        self.assertEqual(self.draft.draft, {})
+        self.assertIsNone(self.draft.published)
+
+    def test_legacy_hidden_certificate_is_not_opted_in(self):
+        self.save(upload=make_cover())
+        self.draft.draft.pop('show_certificate', None)
+        self.draft.draft['certificate'] = ''
+        self.draft.save()
+        response = self.client.get(reverse('achievements:honor_edit', args=[self.draft.pk]))
+        self.assertFalse(response.context['form']['show_certificate'].value())
+        self.assertFalse(response.context['form']['certificate'].value())
+        self.assertEqual(Client().get(self.draft.images.get().public_url).status_code, 404)
+
+    def test_legacy_selected_certificate_remains_selected(self):
+        self.save(upload=make_cover())
+        self.draft.draft.pop('show_certificate', None)
+        self.draft.save()
+        response = self.client.get(reverse('achievements:honor_edit', args=[self.draft.pk]))
+        self.assertTrue(response.context['form']['show_certificate'].value())
+        self.assertEqual(response.context['form']['certificate'].value(), self.draft.draft['certificate'])
+
+    def test_manual_upload_respects_explicit_display_off_and_reopens_off(self):
+        self.save(upload=make_cover(), show_certificate=False)
+        self.assertFalse(self.draft.draft['show_certificate'])
+        self.assertEqual(self.draft.draft['certificate'], '')
+        image = self.draft.images.get()
+        self.publish()
+        self.assertEqual(Client().get(image.public_url).status_code, 404)
+        response = self.client.get(reverse('achievements:honor_edit', args=[self.draft.pk]))
+        self.assertFalse(response.context['form']['show_certificate'].value())
+        self.assertFalse(response.context['form']['certificate'].value())
+
+    def test_explicit_display_on_selects_upload_but_does_not_publish(self):
+        self.save(upload=make_cover(), show_certificate=True)
+        image = self.draft.images.get()
+        self.assertEqual(self.draft.draft['certificate'], str(image.pk))
+        self.assertIsNone(self.draft.published)
+        self.assertEqual(Client().get(image.public_url).status_code, 404)
+
+    def test_unchecked_html_checkbox_clears_selection_without_javascript(self):
+        self.save(upload=make_cover())
+        image = self.draft.images.get()
+        payload = {**self.draft.draft, 'project': '', 'version': self.draft.version,
+                   'certificate_display_configured': '1'}
+        payload.pop('show_certificate', None)
+        response = self.client.post(reverse('achievements:honor_edit', args=[self.draft.pk]), payload)
+        self.assertEqual(response.status_code, 302)
+        self.draft.refresh_from_db()
+        self.assertFalse(self.draft.draft['show_certificate'])
+        self.assertEqual(self.draft.draft['certificate'], '')
+        self.assertTrue(self.draft.images.filter(pk=image.pk).exists())
+
+    def test_disabling_display_only_changes_public_image_after_republish(self):
+        self.save(upload=make_cover(), show_certificate=True)
+        image = self.draft.images.get()
+        self.publish()
+        self.save(show_certificate=False)
+        self.assertEqual(self.draft.draft['certificate'], '')
+        response = Client().get(image.public_url)
+        self.assertEqual(response.status_code, 200)
+        if response.streaming:
+            b''.join(response.streaming_content)
+        self.publish()
+        self.assertEqual(Client().get(image.public_url).status_code, 404)
+
+    def test_display_on_without_photo_is_optional(self):
+        self.save(show_certificate=True)
+        self.publish()
+        self.assertTrue(self.draft.published['show_certificate'])
+        self.assertEqual(self.draft.published['certificate'], '')
+
     def test_version_conflict_and_stale_preview(self):
         self.save()
         token = honor_services.token(self.draft)

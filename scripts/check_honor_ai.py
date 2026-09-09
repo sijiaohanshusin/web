@@ -47,6 +47,7 @@ def run(owner, draft):
         page=context.new_page();errors=[]
         page.on('pageerror',lambda err:errors.append(str(err)))
         page.goto(BASE+f'/achievements/honors/{draft.pk}/')
+        expect(page.locator('[name=show_certificate]')).to_be_checked()
         expect(page.locator('[name=year]')).to_have_value('')
         page.locator('[name=title]').fill('我手动填写的标题')
         page.locator('#hr-file').set_input_files(str(OUT/'test-certificate.png'))
@@ -62,11 +63,11 @@ def run(owner, draft):
         expect(page.locator('[name=contest]')).to_have_value('识别期间的新输入')
         expect(page.locator('[name=year]')).to_have_value('2026')
         expect(page.locator('[name=level]')).to_have_value('20')
-        expect(page.locator('[name=certificate]')).to_have_value('')
         expect(page.locator('[name=people-0-name]')).to_have_value('演示甲')
         expect(page.locator('[name=people-0-username]')).to_have_value('')
         db(draft.refresh_from_db);assert draft.draft == {} and draft.published is None
         image=db(draft.images.get)
+        expect(page.locator('[name=certificate]')).to_have_value(str(image.pk))
         visitor=browser.new_context()
         assert visitor.request.get(BASE+image.public_url).status == 404
         page.locator('#honor-recognition').screenshot(path=str(OUT/'manual-honor-ai-result.png'))
@@ -79,6 +80,13 @@ def run(owner, draft):
             page.screenshot(path=str(OUT/f'editor-{width}.png'),full_page=True)
             page.locator('#honor-recognition').scroll_into_view_if_needed()
             page.screenshot(path=str(OUT/f'editor-viewport-{width}.png'))
+            page.locator('.hc-display').scroll_into_view_if_needed()
+            page.screenshot(path=str(OUT/f'certificate-display-{width}.png'))
+        page.locator('[name=show_certificate]').uncheck()
+        expect(page.locator('[name=certificate]')).to_be_disabled()
+        expect(page.locator('[data-certificate-status]')).to_contain_text('已关闭')
+        page.locator('[name=show_certificate]').check()
+        expect(page.locator('[name=certificate]')).to_have_value(str(image.pk))
         page.locator('[name=awardee]').fill('后来修正的团队名')
         page.locator('#hr-undo').click()
         expect(page.locator('[name=awardee]')).to_have_value('后来修正的团队名')
@@ -123,6 +131,46 @@ def run(owner, draft):
         assert visitor.request.get(BASE+image.public_url).status==404
         results.append('real upload/job/poll + mocked model, input race, differences, undo, low-resolution name adoption, service failure recovery, publish/withdraw privacy')
 
+        # Keep the user's choice if it changes while the independent upload is in flight.
+        page.goto(BASE+f'/achievements/honors/{draft.pk}/')
+        uploaded = []
+        def upload_while_turning_off(route):
+            page.locator('[name=show_certificate]').uncheck()
+            route.continue_()
+        page.route('**/images/upload/', upload_while_turning_off)
+        page.route('**/recognize/', lambda route: route.fulfill(status=202, content_type='application/json',
+            body=json.dumps({'status':'succeeded','result':recognition.normalize_result(SAMPLE),'matches':[]})))
+        page.locator('#hr-file').set_input_files(str(OUT/'test-certificate.png'))
+        page.locator('#hr-consent').check()
+        with page.expect_response('**/images/upload/') as upload_response:
+            page.locator('#hr-start').click()
+        assert upload_response.value.status == 201
+        uploaded.append(upload_response.value.json()['image']['id'])
+        expect(page.locator('#hr-status')).to_contain_text('识别完成')
+        expect(page.locator('[name=show_certificate]')).not_to_be_checked()
+        expect(page.locator('[name=certificate]')).to_be_disabled()
+        expect(page.locator('[name=certificate]')).to_have_value(str(image.pk))
+        assert visitor.request.get(BASE+f'/achievements/certificates/{uploaded[-1]}/').status==404
+        page.unroute('**/images/upload/')
+
+        # Choosing a different existing photo during upload also wins over automatic selection.
+        page.locator('[name=show_certificate]').check()
+        def upload_while_choosing(route):
+            page.locator('[name=certificate]').select_option(uploaded[-1])
+            route.continue_()
+        page.route('**/images/upload/', upload_while_choosing)
+        page.locator('#hr-file').set_input_files(str(OUT/'test-certificate.png'))
+        page.locator('#hr-consent').check()
+        page.locator('#hr-start').click()
+        expect(page.locator('#hr-status')).to_contain_text('识别完成')
+        expect(page.locator('[name=certificate]')).to_have_value(uploaded[-1])
+        page.locator('[name=show_certificate]').uncheck()
+        page.get_by_role('button',name='保存草稿',exact=True).click()
+        expect(page.locator('[name=show_certificate]')).not_to_be_checked()
+        db(draft.refresh_from_db)
+        assert draft.draft['show_certificate'] is False and not draft.draft['certificate']
+        results.append('certificate defaults on; opt-out and explicit photo selection survive in-flight uploads; opt-out persists after saving')
+
         nojs=browser.new_context(java_script_enabled=False,viewport={'width':390,'height':844})
         do_login(nojs,BASE,owner.username+':'+PASSWORD)
         fallback=nojs.new_page();fallback.goto(BASE+f'/achievements/honors/{draft.pk}/')
@@ -131,8 +179,17 @@ def run(owner, draft):
         expect(fallback.locator('.hr-controls')).not_to_be_visible()
         expect(fallback.locator('#honor-recognition noscript p')).to_be_visible()
         expect(fallback.locator('#honor-recognition noscript p')).to_contain_text('手动填写')
+        expect(fallback.locator('[name=show_certificate]')).not_to_be_checked()
+        fallback.locator('[name=upload]').set_input_files(str(OUT/'test-certificate.png'))
+        fallback.get_by_role('button',name='保存并预览').click()
+        fallback.locator('[name=consent]').check()
+        fallback.get_by_role('button',name='确认发布荣誉',exact=True).click()
+        db(draft.refresh_from_db)
+        assert draft.published['show_certificate'] is False and not draft.published['certificate']
+        for url in db(lambda:list(draft.images.all())):
+            assert visitor.request.get(BASE+url.public_url).status==404
         assert not fallback.evaluate('document.documentElement.scrollWidth>innerWidth')
-        results.append('four-width honor editor, reduced motion, no-JS manual form and privacy-safe fallback')
+        results.append('four-width honor editor, reduced motion, no-JS manual upload with display off remains private after publication')
         assert not errors,errors
         browser.close()
     return results

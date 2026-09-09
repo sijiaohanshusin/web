@@ -12,6 +12,23 @@
   panel.querySelector('.hr-controls').hidden = false;
   $('#hr-photo').addEventListener('toggle', e=>review.classList.toggle('has-photo',e.target.open));
   const noteChange = (field) => { mutations.set(field, (mutations.get(field) || 0) + 1); changed = true; };
+  const display = form.elements.show_certificate, certificate = form.elements.certificate;
+  const manualUpload = form.elements.upload, certificateStatus = form.querySelector('[data-certificate-status]');
+  let certificateRevision = 0;
+  const syncCertificate = () => {
+    certificate.disabled = !display.checked;
+    form.querySelector('[data-certificate-choice]').hidden = !display.checked;
+    certificateStatus.textContent = !display.checked ? '已关闭：证书只作私有素材，不随本次荣誉发布。'
+      : manualUpload.files.length ? '保存时将选用本次新上传的证书；请在预览中核对。'
+      : certificate.value ? '已选中证书，预览并确认发布后展示。'
+      : '上传后默认选中证书；没有证书也可以继续填写。';
+  };
+  [display, certificate, manualUpload].forEach(field => field.addEventListener('change', () => {
+    ++certificateRevision;
+    if(field === display && display.checked && !certificate.value && certificate.options.length > 1) certificate.selectedIndex = 1;
+    syncCertificate();
+  }));
+  syncCertificate();
   form.addEventListener('input', (e) => noteChange(e.target));
   form.addEventListener('change', (e) => noteChange(e.target));
   window.addEventListener('beforeunload', (e) => { if(changed || busy){e.preventDefault();e.returnValue='';} });
@@ -103,6 +120,7 @@
     if(!$('#hr-consent').checked){status.textContent='请先确认将这张图片发送给阿里云识别。';$('#hr-consent').focus();return;}
     if(!image&&!file.files[0]){status.textContent='请先选择证书图片。';file.focus();return;}
     const ticket=++serial;
+    const uploadRevision=certificateRevision;
     const baseline=new Map(Array.from(form.elements).map(f=>[f,{value:f.value,revision:mutations.get(f)||0}]));
     setBusy(true);
     try {
@@ -113,8 +131,12 @@
         const previousVersion=form.elements.version.value;
         document.querySelectorAll('input[name="version"]').forEach(input=>{if(input.value===previousVersion)input.value=data.version;});
         const option=new Option(image.label,image.id);option.dataset.url=image.url;choice.add(option);choice.value=image.id;
-        form.elements.certificate.add(new Option(image.label,image.id));
-        // Do not select the public certificate or modify the saved draft's content.
+        certificate.add(new Option(image.label,image.id));
+        // Only change this unsaved selection; never override choices made during upload.
+        if(display.checked && certificateRevision===uploadRevision && !manualUpload.files.length){
+          certificate.value=image.id;changed=true;
+        }
+        syncCertificate();
         file.value='';
       }
       status.textContent='已上传，等待 AI 整理。你可以继续编辑下方字段。';
