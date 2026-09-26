@@ -1,4 +1,4 @@
-"""Touch navigation and readable guide content while an animation request stalls."""
+"""Touch navigation and readable guide content without an animation dependency."""
 import os
 import sys
 from pathlib import Path
@@ -30,7 +30,7 @@ def run():
         for engine in engines:
             browser = getattr(pw, engine).launch()
             options = dict(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
-            # A pending request must not prevent the guide body being parsed.
+            # The guide must render without requesting the optional animation.
             ctx = browser.new_context(**options)
             pending = []
             ctx.route("**/js/view-transitions*.js", lambda route: pending.append(route))
@@ -38,21 +38,31 @@ def run():
             page.goto(base + "/recruit/#hardware", wait_until="commit")
             expect(page.locator("#hardware h2")).to_be_visible(timeout=6000)
             expect(page.locator("#hardware .fold-body").first).to_be_visible()
+            page.wait_for_load_state("load")
+            assert not pending, "The guide must not request the transition script"
             for route in pending:
                 route.abort()
             ctx.close()
-            print(f"{engine}: guide remains readable with animation script pending", flush=True)
+            print(f"{engine}: guide readable without animation script", flush=True)
 
             for script_enabled in (True, False):
                 ctx = browser.new_context(**options, java_script_enabled=script_enabled)
                 if script_enabled:
-                    # Browser cancellation is valid during rapid navigation.
-                    ctx.add_init_script("""addEventListener('pagereveal', event => {
-                        if (event.viewTransition) event.viewTransition.skipTransition();
+                    # Outgoing transitions can be canceled without activation
+                    # details. The site's listener must handle that early exit.
+                    ctx.add_init_script("""addEventListener('pageswap', event => {
+                        if (event.viewTransition) {
+                            Object.defineProperty(event, 'activation', {value: null});
+                            event.viewTransition.skipTransition();
+                        }
                     });""")
                 page = ctx.new_page()
                 errors = []
-                page.on("pageerror", lambda error: errors.append(str(error)))
+                # With JS disabled Chromium still reports native CSS transition
+                # cancellations, but no site script can catch those promises.
+                # Check interaction/content there; check script errors with JS on.
+                if script_enabled:
+                    page.on("pageerror", lambda error, sink=errors: sink.append(str(error)))
                 for target in ("hardware", "software", "training"):
                     page.goto(base + "/", wait_until="load")
                     link = page.locator(f'.nf-dir-card[href$="#{target}"]')
