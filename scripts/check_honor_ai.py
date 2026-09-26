@@ -182,7 +182,8 @@ def run(owner, draft):
         expect(fallback.locator('[name=show_certificate]')).not_to_be_checked()
         fallback.locator('[name=upload]').set_input_files(str(OUT/'test-certificate.png'))
         fallback.get_by_role('button',name='保存并预览').click()
-        fallback.locator('[name=consent]').check()
+        # Script-free navigation must not leave a native transition over the form.
+        fallback.locator('[name=consent]').check(timeout=5000)
         fallback.get_by_role('button',name='确认发布荣誉',exact=True).click()
         db(draft.refresh_from_db)
         assert draft.published['show_certificate'] is False and not draft.published['certificate']

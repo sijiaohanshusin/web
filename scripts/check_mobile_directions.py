@@ -58,11 +58,7 @@ def run():
                     });""")
                 page = ctx.new_page()
                 errors = []
-                # With JS disabled Chromium still reports native CSS transition
-                # cancellations, but no site script can catch those promises.
-                # Check interaction/content there; check script errors with JS on.
-                if script_enabled:
-                    page.on("pageerror", lambda error, sink=errors: sink.append(str(error)))
+                page.on("pageerror", lambda error, sink=errors: sink.append(str(error)))
                 for target in ("hardware", "software", "training"):
                     page.goto(base + "/", wait_until="load")
                     link = page.locator(f'.nf-dir-card[href$="#{target}"]')

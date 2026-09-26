@@ -51,6 +51,8 @@
     脚本在 head 执行时只注册两个 window 事件监听，不碰 DOM。
     {% endcomment %}
     {% block transition_script %}<script src="{% static 'js/view-transitions.js' %}"></script>{% endblock %}
+    {# 无脚本时直接导航，避免原生转场快照遮挡下一页的表单和链接。 #}
+    <noscript><style>@view-transition { navigation: none; }</style></noscript>
     {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
