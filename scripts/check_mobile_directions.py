@@ -45,9 +45,9 @@ def run():
             ctx.close()
             print(f"{engine}: guide readable without animation script", flush=True)
 
-            for script_enabled in (True, False):
+            for script_enabled, cancel in ((True, False), (True, True), (False, False)):
                 ctx = browser.new_context(**options, java_script_enabled=script_enabled)
-                if script_enabled:
+                if cancel:
                     # Outgoing transitions can be canceled without activation
                     # details. The site's listener must handle that early exit.
                     ctx.add_init_script("""addEventListener('pageswap', event => {
@@ -59,7 +59,7 @@ def run():
                 page = ctx.new_page()
                 errors = []
                 page.on("pageerror", lambda error, sink=errors: sink.append(str(error)))
-                for target in ("hardware", "software", "training"):
+                for target in (("hardware",) if cancel else ("hardware", "software", "training")):
                     page.goto(base + "/", wait_until="load")
                     link = page.locator(f'.nf-dir-card[href$="#{target}"]')
                     link.scroll_into_view_if_needed()
@@ -72,8 +72,8 @@ def run():
                     expect(heading).to_be_in_viewport(timeout=10000)
                     expect(page.locator(f"#{target} .fold-body").first).to_be_visible()
                     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
-                    page.screenshot(path=str(SHOTS / f"{engine}-{target}-js{int(script_enabled)}.png"))
-                    print(f"{engine}: touch {target}, JS={script_enabled}, visible content", flush=True)
+                    page.screenshot(path=str(SHOTS / f"{engine}-{target}-js{int(script_enabled)}-cancel{int(cancel)}.png"))
+                    print(f"{engine}: touch {target}, JS={script_enabled}, canceled={cancel}, visible content", flush=True)
                 assert not errors, errors
                 ctx.close()
             browser.close()

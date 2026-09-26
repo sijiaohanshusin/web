@@ -97,6 +97,12 @@
         try {
             var to = e.activation && e.activation.entry && e.activation.entry.url;
             if (!to) return;
+            // The guide deliberately opts out. Skip on the outgoing document
+            // before Chromium creates an incoming transition it cannot expose.
+            if (/^\/recruit\/?$/.test(new URL(to, location.href).pathname)) {
+                e.viewTransition.skipTransition();
+                return;
+            }
             var card = cardFor(to);
             // 点了某张卡片 → 只给这一张命名；
             // 从详情页退回列表（点「返回」而不是卡片）→ 给自己那张大图命名。
