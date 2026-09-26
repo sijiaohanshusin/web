@@ -653,7 +653,7 @@ html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
    默认（无 WebGL / reduced-motion / 动效库没加载）就是一段普通区块：
    内联 SVG 会标 + 完整工艺清单，信息一条不少，高度也是自然高度。
 
-   只有在 html.motion-ready.has-webgl 且非 reduced-motion 时才升级成
+   只有在 3D 挂载成功、内容能完整放入视口且非 reduced-motion 时才升级成
    滚动分镜：区块拉高、内容用 position:sticky 钉住。刻意不用
    ScrollTrigger 的 pin —— 它要插 pin-spacer 改 DOM，和 Lenis 配合
    容易抖，sticky 是浏览器原生行为。
@@ -748,12 +748,12 @@ html.esta-pre-lock .nf-hero-scan { animation-play-state: paused; }
 }
 
 /* ---- 升级成滚动分镜 ---- */
-html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge {
+html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned {
     /* 340vh 给五道工序 + 通电留出擦洗行程；再长就显得拖沓 */
     height: 340vh; padding: 0;
 }
-html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-pin {
-    position: sticky; top: 0; height: 100vh;
+html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned .nf-forge-pin {
+    position: sticky; top: 0; height: 100vh; height: 100svh;
 }
 
 /* 单栏 + 钉住的组合下，内容必须塞进 100vh。
@@ -762,37 +762,38 @@ html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-pin {
    窄屏不是缩小桌面版，而是换一套构图：舞台放大居中当主角，工序清单压成一列
    只剩标题的进度条。说明文字是这里唯一可以牺牲的东西。 */
 @media (max-width: 1024px) {
-    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-pin {
+    html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned .nf-forge-pin {
         /* 固定导航是悬浮层，不占流；居中排布必须自己让出这段高度 */
         padding-top: 76px; align-items: center;
     }
-    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-grid {
+    html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned .nf-forge-grid {
         row-gap: 18px;
     }
-    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-copy .nf-display {
+    html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned .nf-forge-copy .nf-display {
         font-size: clamp(26px, 7.2vw, 40px); line-height: var(--lh-tight);
     }
     /* 用 vh 定宽（而不是靠 max-height 压）才能保持正方形：舞台一旦被
        max-height 截断就变成宽扁的，3D 里会标左右留一大片空 */
-    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-stage {
-        width: min(100%, 46vh); max-height: none;
+    html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned .nf-forge-stage {
+        width: min(100%, 46vh, max(120px, calc(100vh - 370px)));
+        width: min(100%, 46svh, max(120px, calc(100svh - 370px))); max-height: none;
     }
-    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-steps {
+    html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned .nf-forge-steps {
         padding-left: 26px;
     }
-    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-steps li {
+    html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned .nf-forge-steps li {
         padding: 5px 0;
     }
-    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-steps li::before {
+    html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned .nf-forge-steps li::before {
         top: 9px; width: 10px; height: 10px; left: -26px;
     }
-    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-steps b {
+    html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned .nf-forge-steps b {
         font-size: var(--fs-md);
     }
-    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge-steps span {
+    html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned .nf-forge-steps span {
         display: none;
     }
 }
 @media (max-width: 720px) {
-    html.motion-ready.has-webgl:not(.motion-reduced) .nf-forge { height: 300vh; }
+    html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned { height: 300vh; }
 }

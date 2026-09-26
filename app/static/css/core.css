@@ -179,9 +179,9 @@
 .nav-links .nav-group-menu a:hover { background: rgba(13, 169, 205, .12); color: #fff; }
 
 /* 白区反色（导航压在浅色分镜上时） */
-.site-nav.nav-on-light .nav-group > summary { color: rgba(14, 17, 22, .66); }
-.site-nav.nav-on-light .nav-group > summary:hover,
-.site-nav.nav-on-light .nav-group[open] > summary { color: var(--ink); }
+.site-nav.nav-on-light:not(.nav-open) .nav-group > summary { color: rgba(14, 17, 22, .66); }
+.site-nav.nav-on-light:not(.nav-open) .nav-group > summary:hover,
+.site-nav.nav-on-light:not(.nav-open) .nav-group[open] > summary { color: var(--ink); }
 
 /* 汉堡菜单接手的断点。**从 720px 提到 1024px**：实测顶层平铺时
    721~1090px 这一段宽度里导航会挤到换行，而那正是平板与小笔记本的宽度。
@@ -218,33 +218,36 @@ body:not(.page-home) .site-nav { background: rgba(5, 5, 6, 0.85); backdrop-filte
 
    过渡时长用 --t-base：比区块滚过的速度略快，读起来是"导航适应了背景"
    而不是"导航自己在变色"。 */
-.site-nav.nav-on-light {
+.site-nav.nav-on-light:not(.nav-open) {
     background: rgba(247, 248, 250, .82);
     border-bottom-color: var(--line-l);
 }
-.site-nav.nav-on-light,
-.site-nav.nav-on-light .nav-title strong,
-.site-nav.nav-on-light .nav-user,
-.site-nav.nav-on-light .nav-bell { color: var(--ink); }
-.site-nav.nav-on-light .nav-title small,
-.site-nav.nav-on-light .nav-links a { color: rgba(14, 17, 22, .66); }
-.site-nav.nav-on-light .nav-links a:hover,
-.site-nav.nav-on-light .nav-user:hover,
-.site-nav.nav-on-light .nav-bell:hover { color: var(--ink); }
-.site-nav.nav-on-light .nav-links:not(.has-pill) a:hover,
-.site-nav.nav-on-light .nav-user:hover,
-.site-nav.nav-on-light .nav-bell:hover { background: rgba(14, 17, 22, .07); }
-.site-nav.nav-on-light .nav-pill { background: rgba(14, 17, 22, .08); }
-.site-nav.nav-on-light .nav-hot { color: var(--accent) !important; }
-.site-nav.nav-on-light .btn-outline { color: var(--ink); border-color: rgba(14, 17, 22, .28); }
-.site-nav.nav-on-light .btn-outline:hover { color: var(--ink); border-color: var(--ink); }
-.site-nav.nav-on-light .btn-ghost { background: rgba(14, 17, 22, .06); color: var(--ink); }
-.site-nav.nav-on-light .btn-ghost:hover { background: rgba(14, 17, 22, .12); color: var(--ink); }
-.site-nav.nav-on-light .nav-burger span { background: var(--ink); }
+.site-nav.nav-on-light:not(.nav-open),
+.site-nav.nav-on-light:not(.nav-open) .nav-title strong,
+.site-nav.nav-on-light:not(.nav-open) .nav-user,
+.site-nav.nav-on-light:not(.nav-open) .nav-bell { color: var(--ink); }
+.site-nav.nav-on-light:not(.nav-open) .nav-title small,
+.site-nav.nav-on-light:not(.nav-open) .nav-links a { color: rgba(14, 17, 22, .66); }
+.site-nav.nav-on-light:not(.nav-open) .nav-links a:hover,
+.site-nav.nav-on-light:not(.nav-open) .nav-user:hover,
+.site-nav.nav-on-light:not(.nav-open) .nav-bell:hover { color: var(--ink); }
+.site-nav.nav-on-light:not(.nav-open) .nav-links:not(.has-pill) a:hover,
+.site-nav.nav-on-light:not(.nav-open) .nav-user:hover,
+.site-nav.nav-on-light:not(.nav-open) .nav-bell:hover { background: rgba(14, 17, 22, .07); }
+.site-nav.nav-on-light:not(.nav-open) .nav-pill { background: rgba(14, 17, 22, .08); }
+.site-nav.nav-on-light:not(.nav-open) .nav-hot { color: var(--accent) !important; }
+.site-nav.nav-on-light:not(.nav-open) .btn-outline { color: var(--ink); border-color: rgba(14, 17, 22, .28); }
+.site-nav.nav-on-light:not(.nav-open) .btn-outline:hover { color: var(--ink); border-color: var(--ink); }
+.site-nav.nav-on-light:not(.nav-open) .btn-ghost { background: rgba(14, 17, 22, .06); color: var(--ink); }
+.site-nav.nav-on-light:not(.nav-open) .btn-ghost:hover { background: rgba(14, 17, 22, .12); color: var(--ink); }
+.site-nav.nav-on-light:not(.nav-open) .nav-burger span { background: var(--ink); }
 /* 会标是内联 SVG，stroke 走 currentColor，所以反色只需给它一个 color。
    不用 filter: invert()——那会连带影响抗锯齿，也没法只翻其中一部分。 */
 .site-nav .nav-logo { color: #fff; }
-.site-nav.nav-on-light .nav-logo { color: var(--ink); }
+.site-nav.nav-on-light:not(.nav-open) .nav-logo { color: var(--ink); }
+/* 下拉菜单始终使用深色背景，文字不跟随页面底色变暗。 */
+.site-nav.nav-on-light:not(.nav-open) .nav-group-menu a { color: var(--text); }
+.site-nav.nav-on-light:not(.nav-open) .nav-group-menu a:hover { color: #fff; }
 .site-nav,
 .site-nav .nav-title strong, .site-nav .nav-title small, .site-nav .nav-links a,
 .site-nav .nav-user, .site-nav .nav-bell, .site-nav .nav-logo {
@@ -430,8 +433,8 @@ select.input option { background: var(--bg-2); }
    用 animation 而非 transition：入场动画与组件自身的 hover transition
    （方向卡/B站卡的 transform 过渡）互不抢占，延迟也不会残留到 hover 上。
    fill 只用 backwards：动画结束后元素回到自然样式，零残留。 */
-.reveal { opacity: 0; }
-.reveal:not(.is-visible) { will-change: opacity, transform; }
+.reveal { opacity: 1; }
+.reveal.reveal-pending { opacity: 0; will-change: opacity, transform; }
 .reveal.is-visible {
     opacity: 1;
     animation: reveal-up 1s var(--ease-out) backwards;

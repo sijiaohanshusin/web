@@ -40,17 +40,11 @@ admin.site.index_title = "站点管理"
 
 if settings.DEBUG:
     from showcase.demo import samples, photo, sample_detail
-    from django.views.static import serve
 
-    # 开发环境下模拟 nginx：直接服务 learn/ 学习中心与 media/
+    # 学习中心暂停公开访问；开发环境同样使用上面的暂停提示路由。
     urlpatterns += [
         path("team/design-demo/", samples),
         path("team/design-demo/photos/<slug:name>/", photo),
         path("team/design-demo/member-<int:index>/", sample_detail),
-        path(
-            "learn/<path:path>",
-            serve,
-            {"document_root": settings.REPO_DIR / "learn", "show_indexes": False},
-        ),
     ]
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

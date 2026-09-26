@@ -50,7 +50,7 @@
 
     脚本在 head 执行时只注册两个 window 事件监听，不碰 DOM。
     {% endcomment %}
-    <script src="{% static 'js/view-transitions.js' %}"></script>
+    {% block transition_script %}<script src="{% static 'js/view-transitions.js' %}"></script>{% endblock %}
     {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -112,7 +112,6 @@
             <details class="nav-group" data-nav-group>
                 <summary>学习资源</summary>
                 <div class="nav-group-menu">
-                    <a href="/learn/electronics/">电子学学习中心<small>27 章自编教材</small></a>
                     <a href="{% url 'files:list' %}">资料站<small>课件与竞赛资料</small></a>
                     {% if not user.is_authenticated or user.is_member %}
                     <a href="{{ forum_url }}" target="_blank" rel="noopener">会员论坛<small>提问与讨论 ↗</small></a>
@@ -218,7 +217,6 @@
             <a href="{% url 'works:wall' %}">作品墙</a>
             <a href="{% url 'team:wall' %}">协会成员</a>
             <a href="{% url 'core:recruit' %}">新生指南</a>
-            <a href="/learn/electronics/">电子学学习中心</a>
             <a href="{% url 'files:list' %}">资料站</a>
             {% if not user.is_authenticated or user.is_member %}<a href="{{ forum_url }}" target="_blank" rel="noopener">会员论坛</a>{% endif %}
             <a href="{% url 'accounts:register' %}">2026 招新注册</a>

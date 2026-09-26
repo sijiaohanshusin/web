@@ -139,7 +139,7 @@ nconf.defaults({
 
 强烈推荐阅读：[《提问的智慧》](https://github.com/ryanhanwu/How-To-Ask-Questions-The-Smart-Way/blob/main/README-zh_CN.md)
 
-配套自学资源：[电子学学习中心](https://heuesta.cn/learn/electronics/)（21 章 + 6 附录）、[资料站](https://heuesta.cn/resources/)`, true);
+配套自学资源：[新生指南](https://heuesta.cn/recruit/)、[资料站](https://heuesta.cn/resources/)`, true);
 
     await seedTopic('畅所欲言', '👋 新人报到楼：来这里刷个存在感！',
 `新同学看过来！回帖格式参考（不强制）：

@@ -99,9 +99,9 @@ nconf.defaults({
     await ensureTopic('模拟电路', '📚 模拟电路学习导航（教材 + 视频一站式）',
 `本版块配套资源索引，边学边讨论：
 
-**系统教材**（协会自编，21 章 + 6 附录）
-- [电子学学习中心](https://heuesta.cn/learn/electronics/)：从电路理论基础到数据转换器
-- 重点章节：第 2-4 章运放、第 8-12 章晶体管与放大器、第 17 章电源管理
+**入门与课件**
+- [新生指南](https://heuesta.cn/recruit/)：培训安排与硬件、软件学习建议
+- [资料站](https://heuesta.cn/resources/)：按会员等级开放的课件与竞赛资料
 
 **培训视频**（B 站）
 - [点击就送的运放知识](https://www.bilibili.com/video/BV1zDsRzPEAm)（第二次硬件培训）

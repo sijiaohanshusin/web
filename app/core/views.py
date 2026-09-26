@@ -6,6 +6,7 @@ from django.core.cache import cache
 from django.db.models import Count
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.cache import never_cache
 
 from accounts.roles import is_officer
 from news.models import Post
@@ -74,6 +75,13 @@ def home(request):
 
 def recruit(request):
     return render(request, "core/recruit.html")
+
+
+@never_cache
+def learning_paused(request):
+    response = render(request, "core/learning_paused.html")
+    response["X-Robots-Tag"] = "noindex, nofollow"
+    return response
 
 
 def privacy(request):

@@ -11,6 +11,7 @@
         entries.forEach(function (entry) {
             if (entry.isIntersecting) {
                 entry.target.classList.add("is-visible");
+                entry.target.classList.remove("reveal-pending");
                 // 区块里的数字跟着同一个触发源启动。分镜 02 的叙事是「扫描线扫过、
                 // 数值定格」，而扫描线是挂在 .is-visible 上的 CSS 动画 —— 如果数字
                 // 用另一个 IntersectionObserver（阈值还不一样）自己触发，两者的先后
@@ -21,6 +22,7 @@
         });
     }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
     document.querySelectorAll(".reveal").forEach(function (el, i) {
+        el.classList.add("reveal-pending");
         el.style.setProperty("--reveal-delay", Math.min(i % 5, 3) * 90 + "ms");
         revealObserver.observe(el);
     });

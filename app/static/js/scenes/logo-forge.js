@@ -34,6 +34,20 @@
         var steps = [].slice.call(section.querySelectorAll("[data-forge-step]"));
         var handle = null;
         var progress = 0;
+        var pin = section.querySelector(".nf-forge-pin");
+        var grid = section.querySelector(".nf-forge-grid");
+
+        // WebGL support does not prove the module loaded. Pin only a mounted
+        // scene whose content fits; short browser viewports keep natural flow.
+        function updateLayout() {
+            section.classList.add("is-pinned");
+            var style = getComputedStyle(pin);
+            var available = pin.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+            if (grid.getBoundingClientRect().height > available + 1) {
+                section.classList.remove("is-pinned");
+            }
+            m.ScrollTrigger.refresh();
+        }
 
         // 制造阶段占前 84%，最后 16% 留给通电
         var FORGE_END = 0.84;
@@ -109,6 +123,9 @@
         }).then(function (h) {
             handle = h;
             stage.classList.add("is-3d");
+            updateLayout();
+            window.addEventListener("resize", updateLayout);
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateLayout);
             apply(progress);            // 立刻对齐当前滚动位置，避免闪一下初始态
             m.ScrollTrigger.refresh();
         }).catch(function (err) {

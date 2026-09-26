@@ -5,6 +5,9 @@
 {% block title %}新生指南 | {{ site_config.site_name_en }}{% endblock %}
 {% block description %}电子科技协会新生扫盲指南：培训安排、硬件基础知识、软件基础知识与学习资源。{% endblock %}
 
+{# 指南没有需要配对的转场封面；慢网下先解析正文，避免动画脚本阻塞部门链接。 #}
+{% block transition_script %}<script src="{% static 'js/view-transitions.js' %}" defer></script>{% endblock %}
+
 {% block content %}
 {% load slots %}
 
@@ -619,7 +622,6 @@ core/slots.py 的「新生指南 · 现场照」组。
                         <li><a href="https://github.com/" target="_blank" rel="noopener">GitHub</a> —— 代码托管与开源项目</li>
                         <li><a href="https://www.runoob.com/" target="_blank" rel="noopener">菜鸟教程</a> —— 编程语言入门</li>
                         <li><a href="https://csdiy.wiki/" target="_blank" rel="noopener">CS 自学指南</a> —— 高质量计算机课程汇总</li>
-                        <li><a href="/learn/electronics/">协会电子学学习中心</a> —— 21 章 + 6 附录系统教材</li>
                     </ul>
                 </div>
             </details>

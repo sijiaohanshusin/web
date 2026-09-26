@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}学习资料整理中 | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}电子学学习资料正在校对，暂时停止公开访问。{% endblock %}
+{% block transition_script %}{% endblock %}
+
+{% block content %}
+<div class="container page-section legal-page">
+    <div class="page-head">
+        <p class="nf-eyebrow">// LEARNING RESOURCES</p>
+        <h1>学习资料整理中</h1>
+        <p>电子学资料的译文、公式和内容正在校对，暂时停止公开访问。</p>
+    </div>
+    <div class="panel md-body">
+        <h2>先从这里开始</h2>
+        <p>你可以阅读新生指南，了解培训安排与学习方向，也可以到资料站查找课件。</p>
+        <p><a class="btn btn-primary" href="{% url 'core:recruit' %}">阅读新生指南</a></p>
+        <p><a class="nf-link-more" href="{% url 'files:list' %}">浏览资料站 →</a></p>
+    </div>
+</div>
+{% endblock %}
