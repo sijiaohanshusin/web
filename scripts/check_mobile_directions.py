@@ -45,6 +45,11 @@ def run():
 
             for script_enabled in (True, False):
                 ctx = browser.new_context(**options, java_script_enabled=script_enabled)
+                if script_enabled:
+                    # Browser cancellation is valid during rapid navigation.
+                    ctx.add_init_script("""addEventListener('pagereveal', event => {
+                        if (event.viewTransition) event.viewTransition.skipTransition();
+                    });""")
                 page = ctx.new_page()
                 errors = []
                 page.on("pageerror", lambda error: errors.append(str(error)))

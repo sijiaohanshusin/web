@@ -76,6 +76,9 @@
 
     /** 转场结束就把名字摘掉。**留着会让下一次导航重名、整个转场被跳过。** */
     function cleanup(transition, tagged) {
+        // A skipped cross-document animation rejects ready even though the
+        // navigation succeeds. Handle that lifecycle before the empty-list exit.
+        if (transition && transition.ready) transition.ready.catch(function () {});
         if (!tagged.length) return;
         function drop() {
             tagged.forEach(function (el) { el.removeAttribute("data-vt-name"); });
