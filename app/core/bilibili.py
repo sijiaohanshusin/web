@@ -86,7 +86,7 @@ def _format_view(view: int) -> str:
 
 
 def get_stats(mid: str, *, refresh: bool = False) -> dict | None:
-    """账号统计：粉丝数、投稿数、获赞数。缓存 1 小时。"""
+    """账号统计的最近成功快照；刷新由后台每30分钟触发。"""
     cache_key = f"bili:stats:{mid}"
     stats = cache.get(cache_key)
     if not refresh:
@@ -108,7 +108,7 @@ def get_stats(mid: str, *, refresh: bool = False) -> dict | None:
 
 
 def get_latest_videos(mid: str, limit: int = 6, *, refresh: bool = False) -> list[dict]:
-    """最新投稿视频列表。缓存 1 小时。"""
+    """最新投稿视频列表的最近成功快照。"""
     cache_key = f"bili:videos:{mid}:{limit}"
     videos = cache.get(cache_key)
     if not refresh:
@@ -137,7 +137,7 @@ def get_latest_videos(mid: str, limit: int = 6, *, refresh: bool = False) -> lis
 
 
 def get_video_info(bvid: str, *, refresh: bool = False) -> dict | None:
-    """单个视频信息（标题 + 封面），用于招新视频占位封面。缓存 24 小时。"""
+    """视频标题与封面的最近成功快照。"""
     if not bvid:
         return None
     cache_key = f"bili:video:{bvid}"
