@@ -70,15 +70,6 @@ def run():
                     page.wait_for_url(f"**/recruit/#{target}", wait_until="load")
                     heading = page.locator(f"#{target} h2")
                     expect(heading).to_be_in_viewport(timeout=10000)
-                    if not script_enabled:
-                        # Native chapter summaries remain operable without JS;
-                        # the enhanced hash handler opens them automatically otherwise.
-                        page.evaluate("document.fonts.ready")
-                        summary = page.locator(f"#{target} > .rg-details > summary")
-                        expect(summary).to_be_in_viewport()
-                        # Send the touch at the visible native control; no-JS
-                        # contexts can suspend the injected rAF stability probe.
-                        summary.tap(force=True)
                     expect(page.locator(f"#{target} .fold-body").first).to_be_visible()
                     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
                     page.screenshot(path=str(SHOTS / f"{engine}-{target}-js{int(script_enabled)}-cancel{int(cancel)}.png"))

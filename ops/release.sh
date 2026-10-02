@@ -100,6 +100,10 @@ ready "$CANDIDATE_PORT"
 for path in / /recruit/ /resources/ /recruitment/ /accounts/register/ /sitemap.xml; do
     curl -fsS --max-time 15 -H "Host: $DOMAIN" "http://127.0.0.1:$CANDIDATE_PORT$path" -o /dev/null
 done
+if [[ "${HEUESTA_CANDIDATE_ONLY:-0}" == 1 ]]; then
+    echo "Candidate verified without switching production: $sha ($state)"
+    exit 0
+fi
 cleanup
 
 # Hash-named assets from the old release stay available for open tabs and rollback.
