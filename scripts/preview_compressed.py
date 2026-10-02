@@ -4,6 +4,7 @@ Use with check_launch_quality.py --base-url http://127.0.0.1:8886.
 This approximates transfer compression, not the production CDN or HTTP/2.
 """
 import gzip
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import requests
 from shoot import DevServer
@@ -33,7 +34,22 @@ class Proxy(BaseHTTPRequestHandler):
         pass
 
 
+class CompressedServer:
+    def __enter__(self):
+        self.dev = DevServer(8885).__enter__()
+        self.server = ThreadingHTTPServer(('127.0.0.1', 8886), Proxy)
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+        return self
+
+    def __exit__(self, *args):
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join(timeout=5)
+        self.dev.__exit__(*args)
+
+
 if __name__ == '__main__':
-    with DevServer(8885), ThreadingHTTPServer(('127.0.0.1', 8886), Proxy) as server:
+    with CompressedServer() as preview:
         print('GET-only gzip lab preview: http://127.0.0.1:8886', flush=True)
-        server.serve_forever()
+        preview.thread.join()

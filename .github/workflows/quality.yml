@@ -102,6 +102,7 @@ jobs:
       - run: python scripts/check_honor_ai.py
       - run: python scripts/manuals/capture_first_use.py
       - run: python scripts/check_register.py
+      - run: python scripts/check_launch_quality.py --compressed --perf-only
       - run: python scripts/check_perf.py
       - run: node --test scripts/showcase_editor_state.test.cjs
       - run: node scripts/showcase_wall_smoke.js
@@ -116,5 +117,6 @@ jobs:
           path: |
             .shots/**/*.png
             .shots/**/checks.json
+            .shots/launch-quality/*metrics.json
             .shots/*.png
           retention-days: 14

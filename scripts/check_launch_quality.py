@@ -20,11 +20,14 @@ def main():
     parser.add_argument('--base-url', default='')
     parser.add_argument('--engine', default='chromium')
     parser.add_argument('--perf-only', action='store_true')
+    parser.add_argument('--compressed', action='store_true')
     args=parser.parse_args()
     OUT.mkdir(parents=True,exist_ok=True)
-    base=args.base_url or 'http://127.0.0.1:8884'
+    base=args.base_url or ('http://127.0.0.1:8886' if args.compressed else 'http://127.0.0.1:8884')
     result=[]
-    with (nullcontext() if args.base_url else DevServer(8884)), sync_playwright() as pw:
+    from preview_compressed import CompressedServer
+    server = nullcontext() if args.base_url else CompressedServer() if args.compressed else DevServer(8884)
+    with server, sync_playwright() as pw:
         browser=getattr(pw,args.engine).launch()
         if not args.perf_only:
             for width in (320,390,768,1440):

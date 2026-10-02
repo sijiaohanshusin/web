@@ -819,9 +819,3 @@ html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned .nf-forge-pin {
  .nf-chapters { gap:4px 20px; }
  .nf-evidence-grid img { aspect-ratio:3/2; }
 }
-
-/* Keep offscreen editorial sections out of initial layout; the pinned 3D scene
-   retains its normal geometry. Browsers remember actual section height after visiting. */
-@supports (content-visibility: auto) {
- .page-home .nf-section { content-visibility: auto; contain-intrinsic-size: auto 850px; }
-}
