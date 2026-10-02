@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 
 {% block title %}资料站 | {{ site_config.site_name_en }}{% endblock %}
+{% block og_title %}资料站 | {{ site_config.site_name_en }}{% endblock %}
 {% block description %}哈尔滨工程大学电子科技协会培训课件、竞赛资料与常用工具下载。{% endblock %}
+{% block og_description %}哈尔滨工程大学电子科技协会培训课件、竞赛资料与常用工具下载。{% endblock %}
 {% block body_class %}page-resources{% endblock %}
 
 {% block content %}
@@ -12,15 +14,26 @@
         <p class="page-hero-sub">
             培训课件、竞赛资料与常用工具。带等级标记的资料需达到相应会员等级才能下载。
         </p>
-        <div class="page-stats">
+        {% if total_count %}<div class="page-stats">
             <span class="page-stat"><strong>{{ total_count }}</strong>份资料</span>
             <span class="page-stat-sep" aria-hidden="true"></span>
             <span class="page-stat"><strong>+{{ week_count }}</strong>本周新增</span>
-        </div>
+        </div>{% endif %}
     </div>
 </section>
 
+<section class="container learning-paths" aria-labelledby="learning-title">
+    <p class="nf-eyebrow">// START MAKING</p>
+    <h2 id="learning-title">先找到下一步，再开始动手</h2>
+    <p class="learning-lede">公开指南与协会培训回放可以直接学习。下面的顺序供入门参考，本届培训任务以正式通知为准；电子学教材仍在校对，暂未开放。</p>
+    <div class="learning-grid">
+    {% for item in learning_paths %}
+        <article class="learning-card"><span>{{ item.stage }}</span><h3>{{ item.title }}</h3><p class="learning-prereq">起点：{{ item.prerequisite }}</p><p>{{ item.summary }}</p><small>{{ item.access }}</small><a href="{{ item.url }}"{% if item.url|slice:':5' == 'https' %} target="_blank" rel="noopener"{% endif %}>{{ item.action }} →</a></article>
+    {% endfor %}
+    </div>
+</section>
 <div class="container page-section">
+    <h2>课件与文件下载</h2>
     <div class="filter-bar">
         <div class="pill-row">
             <a {% if not category %}class="pill is-current" aria-current="page"

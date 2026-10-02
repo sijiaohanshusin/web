@@ -11,15 +11,19 @@
     <meta property="og:site_name" content="{{ site_config.site_name }}">
     <meta property="og:title" content="{% block og_title %}{{ site_config.site_name }} | {{ site_config.site_name_en }}{% endblock %}">
     <meta property="og:description" content="{% block og_description %}招新信息、电子学培训、竞赛资料与学习资源。焊接每一个奇思妙想。{% endblock %}">
-    <meta property="og:url" content="{{ request.build_absolute_uri }}">
-    <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/og-card.png' %}">
+    <link rel="canonical" href="{{ canonical_url }}">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:image" content="{{ public_site_url }}{% static 'img/og-card.png' %}">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
     <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
     {# Only shared body weights are critical; decorative fonts load when CSS actually uses them. #}
-    <link rel="preload" href="{% static 'fonts/SourceHanSansCN-Regular-subset.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'fonts/SourceHanSansCN-Bold-subset.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{% static 'fonts/shards/sans-regular-critical.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{% static 'fonts/shards/sans-bold-critical.woff2' %}" as="font" type="font/woff2" crossorigin>
     {# 样式分三层：令牌基座 → 全站组件 →（各页按需）页面专属。顺序即层叠顺序，勿调换 #}
+    <link rel="stylesheet" href="{% static 'css/fonts-critical.css' %}">
+    <link rel="stylesheet" id="font-detail-styles" href="{% static 'css/fonts.css' %}" media="print">
+    <noscript><link rel="stylesheet" href="{% static 'css/fonts.css' %}"></noscript>
     <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
     {% if request.path|slice:':10' == '/accounts/' %}<link rel="stylesheet" href="{% static 'css/auth.css' %}">{% endif %}
     <link rel="stylesheet" href="{% static 'css/core.css' %}">
@@ -46,7 +50,7 @@
     `pagereveal` 在新文档「第一次有机会渲染之前」触发，而 defer 脚本的执行时机
     与它的先后没有保证 —— 慢一步监听器就没挂上，转场退回成整页淡入淡出，而且
     完全不报错、只是没有那个效果，查起来毫无线索。所以放在 head 里同步加载。
-    代价是不到 2KB 的阻塞解析，而本项目「首访可以慢」是明确写下的约束。
+    脚本保持小体积，避免额外阻塞首屏。
 
     脚本在 head 执行时只注册两个 window 事件监听，不碰 DOM。
     {% endcomment %}
@@ -56,6 +60,7 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
+<noscript><style>img[data-src] { display: none; }</style></noscript>
 
 {% comment %}
 跳到主要内容。必须是 <body> 里第一个可聚焦元素，否则它就没有意义了。
@@ -212,7 +217,7 @@
         这里必须用 {% comment %} 而不是 {# #}：**Django 的 {# #} 只支持单行**，
         跨行写的话整段会被当成正文渲染出来 —— 线上页脚上方真的显示过这段文字。
         {% endcomment %}
-        <div class="footer-col">
+        <div class="footer-col footer-shortcuts">
             <h2>快速入口</h2>
             <a href="{% url 'news:list' %}">公告</a>
             <a href="{% url 'events:list' %}">活动</a>
@@ -221,7 +226,7 @@
             <a href="{% url 'core:recruit' %}">新生指南</a>
             <a href="{% url 'files:list' %}">资料站</a>
             {% if not user.is_authenticated or user.is_member %}<a href="{{ forum_url }}" target="_blank" rel="noopener">会员论坛</a>{% endif %}
-            <a href="{% url 'accounts:register' %}">2026 招新注册</a>
+            <a href="{% url 'accounts:register' %}">招新与注册</a>
         </div>
         <div class="footer-col">
             <h2>联系我们</h2>
@@ -255,13 +260,14 @@ preloader.js 全站加载：没有遮罩的页面它会立即空转返回，代�
 这样做的好处是 ESTA.preload 这个契约在任何页面都存在，分镜可以无条件依赖它，
 不必到处写 if (ESTA.preload)。它必须排在 motion-core 之前。
 {% endcomment %}
-<script src="{% static 'js/preloader.js' %}" defer></script>
+{% block preloader_script %}<script src="{% static 'js/preloader.js' %}" defer></script>{% endblock %}
+<script src="{% static 'js/site.js' %}" defer></script>
 <script src="{% static 'vendor/gsap.min.js' %}" defer></script>
 <script src="{% static 'vendor/ScrollTrigger.min.js' %}" defer></script>
 <script src="{% static 'vendor/SplitText.min.js' %}" defer></script>
 <script src="{% static 'vendor/lenis.min.js' %}" defer></script>
 <script src="{% static 'js/motion-core.js' %}" defer></script>
-<script src="{% static 'js/site.js' %}" defer></script>
+
 {% comment %}
 视频槽的播放控制。放全站而不是只放首页：素材槽可以出现在任何页面，缺了这个
 脚本视频就静静停在封面帧上不播 —— 是个不报错、但也没人会发现的故障。

@@ -200,3 +200,23 @@
         });
     }
 })();
+
+// Explicit viewport loading prevents a transformed horizontal strip from fetching
+// all photos during the opening. Cloned tiles use the same observer contract.
+(function () {
+    var observer = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            var img = entry.target; img.src = img.dataset.src; img.removeAttribute('data-src'); observer.unobserve(img);
+        });
+    }, {rootMargin:'250px'}) : null;
+    function hydrate(root) {
+        root.querySelectorAll('img[data-src]').forEach(function (img) {
+            if (observer) observer.observe(img); else { img.src=img.dataset.src; img.removeAttribute('data-src'); }
+        });
+    }
+    window.ESTA = window.ESTA || {}; window.ESTA.loadDeferredImages=hydrate;
+    hydrate(document);
+})();
+
+document.documentElement.dataset.siteReady = "true";

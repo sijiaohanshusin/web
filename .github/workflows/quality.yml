@@ -74,6 +74,7 @@ jobs:
       # database is separate from the disposable PostgreSQL test database.
       - run: python manage.py migrate --noinput --settings=config.settings.dev
         working-directory: app
+      - run: python scripts/build_font_shards.py --check
       - run: python scripts/preflight.py --candidate
         env:
           BILIBILI_API_ENABLED: '0'

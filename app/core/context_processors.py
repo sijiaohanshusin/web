@@ -45,3 +45,8 @@ def site(request):
         "recruitment_name": state["name"],
         "recruitment_closes_at": state["closes_at"],
     }
+
+
+def seo(request):
+    origin = getattr(settings, "PUBLIC_SITE_URL", "https://heuesta.cn").rstrip("/")
+    return {"canonical_url": origin + request.path, "public_site_url": origin}

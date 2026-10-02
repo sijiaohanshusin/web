@@ -2,7 +2,9 @@
 {% load static %}
 
 {% block title %}{{ project.name }} | 作品墙 | {{ site_config.site_name_en }}{% endblock %}
+{% block og_title %}{{ project.name }} | 作品墙 | {{ site_config.site_name_en }}{% endblock %}
 {% block description %}{{ project.teaser|default:project.name }}{% endblock %}
+{% block og_description %}{{ project.teaser|default:project.name }}{% endblock %}
 {% block body_class %}page-works{% endblock %}
 
 {% block content %}

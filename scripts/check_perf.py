@@ -112,17 +112,17 @@ BUDGETS = {
     # 链路，逐条读 performance.getEntriesByType('resource')）量到 787KB —— 差的
     # 正好是整宽带那 107KB。两个数都对，问的是不同的问题。
     # 定基线按这里的数走，但**别把「预算没涨」读成「没多下东西」**。
-    "/": {"total": 6700, "js": 1150, "css": 245, "font": 4700},
-    "/news/": {"total": 5100, "js": 200, "css": 190, "font": 4700},
+    "/": {"total": 6700, "js": 1150, "css": 375, "font": 1500},
+    "/news/": {"total": 5100, "js": 200, "css": 320, "font": 1500},
     # 荣誉墙原来压根没有预算，而它恰好是最该有的一页：35 张证书照合起来 2.3MB，
     # 一次「多导入一批奖」就能把它顶上去，而页面照常渲染、没有任何东西会红。
     # 常显 10 张 + 其余折进 <details>（默认收起，但**图仍在 DOM 里**，
     # `loading="lazy"` 只在进视口时才下载 —— 所以这条预算量的是「首访实际下多少」，
     # 折叠能省下的正是这一部分）。数字按实测定，见下面那次 check_perf 的输出。
-    "/honors/": {"total": 6300, "js": 200, "css": 190, "font": 4700},
-    "/recruit/": {"total": 6800, "js": 220, "css": 190, "font": 4700},
-    "/works/": {"total": 5100, "js": 200, "css": 190, "font": 4700},
-    "/accounts/register/": {"total": 5100, "js": 210, "css": 190, "font": 4700},
+    "/honors/": {"total": 6300, "js": 200, "css": 320, "font": 1500},
+    "/recruit/": {"total": 6800, "js": 220, "css": 320, "font": 1500},
+    "/works/": {"total": 5100, "js": 200, "css": 320, "font": 1500},
+    "/accounts/register/": {"total": 5100, "js": 210, "css": 320, "font": 1500},
 }
 
 # 只有首页的分镜 01 会 import three。别的页面拉到它就是纯浪费。
@@ -228,11 +228,8 @@ def report_gzip():
         STATIC / "js" / "preloader.js", STATIC / "js" / "view-transitions.js",
         STATIC / "js" / "video-slots.js", STATIC / "js" / "home.js",
         STATIC / "js" / "hero-field.js",
-        STATIC / "fonts" / "JetBrainsMono-subset.woff2",
-        STATIC / "fonts" / "SmileySans-subset.woff2",
-        STATIC / "fonts" / "SourceHanSansCN-Regular-subset.woff2",
-        STATIC / "fonts" / "SourceHanSansCN-Bold-subset.woff2",
-        STATIC / "fonts" / "SourceHanSerifCN-SemiBold-subset.woff2",
+        STATIC / "css" / "fonts-critical.css",
+        *sorted((STATIC / "fonts" / "shards").glob("*-critical.woff2")),
         STATIC / "fonts" / "ESTADigits.woff2",
     ]
     missing = [p.name for p in always if not p.exists()]
@@ -247,8 +244,8 @@ def report_gzip():
     # 上调而不是删掉：它现在的职责是「别再无意中多拖进来一个大件」。
     # 3500 → 4200：正文字表扩到 GB2312 全集，字体 gzip 后从 2425 涨到 3856KB，
     # 这一项实测 4007KB。原因与取舍见上面 BUDGETS 里那段（同一次改动）。
-    check(total / 1024 <= 4200,
-          "首页首访「代码 + 字体」在 4200KB 预算内（不含图片与按需的 3D）",
+    check(total / 1024 <= 700,
+          "首页首访「代码 + 字体」在 700KB 预算内（不含图片与按需的 3D）",
           f"{total / 1024:.0f} KB")
 
 
@@ -284,17 +281,17 @@ def main() -> int:
         check(b["js"] == ["view-transitions.js"],
               "**head 里只有 view-transitions.js 一个阻塞脚本**"
               "（它刻意不 defer，pagereveal 等不起）", str(b["js"]))
-        check(not b["bodyBlocking"], "body 里的脚本全都 defer 了", str(b["bodyBlocking"]))
-        check(len(b["css"]) <= 4, "阻塞渲染的样式表不超过 4 张", str(b["css"]))
+        check(b["bodyBlocking"] == ["preloader.js"], "仅小型开场控制器先执行，避免库下载延迟交互", str(b["bodyBlocking"]))
+        check(len(b["css"]) <= 6, "阻塞渲染的样式表不超过 6 张（含字体分片声明）", str(b["css"]))
         fonts_pre = sorted(x["file"] for x in b["preloads"] if x["as"] == "font")
-        check(fonts_pre == ["SourceHanSansCN-Bold-subset.woff2", "SourceHanSansCN-Regular-subset.woff2"],
+        check(fonts_pre == ["sans-bold-critical.woff2", "sans-regular-critical.woff2"],
               "只有首屏通用正文两档字体强制预加载，装饰字体按实际使用加载",
               str(fonts_pre))
 
         # ---------------- 字体真的早早开始下 ----------------
         r = page.evaluate(RESOURCES)
         font_items = [i for i in r["items"] if i["kind"] == "font"]
-        check(len(font_items) <= 6, "字体请求未超出现有自托管字体集合", str([i["name"] for i in font_items]))
+        check(all("/shards/" in i["name"] or "ESTADigits" in i["name"] for i in font_items), "页面只加载按需分片与专属数字字体")
         for i in font_items:
             if i["name"].split("/")[-1] in fonts_pre:
                 check(i["init"] == "link", f"{i['name'].split('/')[-1]} 由 preload 提前加载", i["init"])
@@ -341,7 +338,7 @@ def main() -> int:
             # 字体是每页都要下的大件，顺手确认这一页真的把四个都下了 ——
             # 不然「font 在预算内」在缓存命中时会以 1KB 轻松通过、等于没测
             nfont = len([i for i in r["items"] if i["kind"] == "font"])
-            check(2 <= nfont <= 6, f"{url} 按实际文字使用加载字体（至少正文两档，不强制六档）",
+            check(2 <= nfont <= 64, f"{url} 按实际文字使用加载字体（至少正文两档，不强制六档）",
                   f"{nfont} 个")
             pctx.close()
 

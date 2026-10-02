@@ -3,7 +3,9 @@
 {% load brand %}
 
 {% block title %}新生指南 | {{ site_config.site_name_en }}{% endblock %}
+{% block og_title %}新生指南 | {{ site_config.site_name_en }}{% endblock %}
 {% block description %}电子科技协会新生扫盲指南：培训安排、硬件基础知识、软件基础知识与学习资源。{% endblock %}
+{% block og_description %}电子科技协会新生扫盲指南：培训安排、硬件基础知识、软件基础知识与学习资源。{% endblock %}
 
 {# 指南没有需要配对的转场封面，直接显示正文，不请求阻塞解析的动画脚本。 #}
 {% block transition_script %}<style>@view-transition { navigation: none; }</style>{% endblock %}
@@ -34,7 +36,7 @@ core/slots.py 的「新生指南 · 现场照」组。
     <div class="container">
         <p class="nf-eyebrow">// FRESHMAN GUIDE</p>
         <h1>新生指南 · 从零开始的电子之旅</h1>
-        <p>这份指南把大一一整年的路线摊开给你看：培训怎么排、要认哪些元件和工具、用什么软件、卡住了去哪查。看不懂没关系 —— 一年后回头看，你会惊讶自己走了多远。</p>
+        <p>先认识协会，再选择硬件或软件方向，找到第一份可以动手的学习资料。下面的章节可以按需展开；往届培训路线供参考，本届日程以正式通知为准。</p>
         <div class="rg-meta">
             <span class="rg-meta-item"><b>5</b> 章</span>
             <span class="rg-meta-sep"></span>
@@ -64,6 +66,9 @@ core/slots.py 的「新生指南 · 现场照」组。
         <section id="intro">
             <h2><span class="rg-no">01</span>协会简介</h2>
             <div class="sec-sub">// WHO WE ARE</div>
+<p class="rg-chapter-summary">硬件与软件两条方向，在制作、培训和比赛中相遇。</p>
+<details class="rg-details"><summary>认识协会</summary>
+
 
             {% comment %}
             开篇导语 + 三联画。这一页有一万多字，读者进来第一个念头是「这跟我有什么
@@ -76,7 +81,7 @@ core/slots.py 的「新生指南 · 现场照」组。
             风格孤立的单张插画在这套几何 + 真实材质的设计里会显得像贴上去的，
             所以 `check_artwork.py` 里有「三张尺寸一致 + 色相配比接近」的断言。
             {% endcomment %}
-            <p class="rg-lead">零基础进来，一年之后你会焊完自己的第一块板、让它真的跑起来、再带着它上赛场。这一页把这一年拆开讲清楚。</p>
+            <p class="rg-lead">从第一块电路板开始，逐步学习调试、协作和竞赛。你可以从感兴趣的章节开始阅读。</p>
 
             <ol class="rg-arc">
                 <li>
@@ -97,9 +102,9 @@ core/slots.py 的「新生指南 · 现场照」组。
             </ol>
 
             <p>电子科技协会成立于 1995 年，是哈尔滨工程大学信息与通信工程学院下的学生技术组织。我们做的事很具体：<strong>教一年，然后一起去比赛</strong>。</p>
-            <p>协会分<strong>硬件</strong>与<strong>软件</strong>两个方向，但不是两条互不相干的路 —— 大一下的合作任务（自制万用表）就要两边坐在一张桌子上。硬件从音乐盒、运放、滤波器开始；软件从 C 语言、STM32 的 GPIO 与定时器开始。所有培训免费，配套 27 章自编电子学教材。</p>
+            <p>协会分<strong>硬件</strong>与<strong>软件</strong>两个方向，但不是两条互不相干的路 —— 大一下的合作任务（自制万用表）就要两边坐在一张桌子上。硬件从音乐盒、运放、滤波器开始；软件从 C 语言、STM32 的 GPIO 与定时器开始。所有培训免费，现有培训视频可在 B 站观看，电子学教材正在校对，暂未开放。</p>
             <p>零基础完全可以，而且大部分人都是。真正缺的是时间和动手意愿，不是基础。</p>
-            <p>带培训的是上一届的学长学姐 —— <a href="{% url 'team:wall' %}">看看现在是谁在带 →</a></p>
+            <p>带培训的是上一届的学长学姐 —— <a href="{% url 'team:wall' %}">了解成员展示 →</a></p>
 
             {% comment %}
             成绩、保研、办赛这三段是**这一页唯一在自夸的地方**，所以每一条都带对照或
@@ -176,12 +181,17 @@ core/slots.py 的「新生指南 · 现场照」组。
             {% endcomment %}
             <h3>我们也自己办比赛</h3>
             <p>2024 年 12 月，协会承办了<strong>「红色电波」东北五校信通学科简易无线电报机制作比赛</strong>：赛题、器材、赛场组织都由科协成员负责。参赛的人亲手复刻了一台电报机，也顺带把「当年的人是怎么把信号发出去的」这件事弄懂了。</p>
-        </section>
+
+</details>
+</section>
 
         <!-- ================= 培训安排 ================= -->
         <section id="training">
             <h2><span class="rg-no">02</span>培训安排</h2>
             <div class="sec-sub">// TRAINING SCHEDULE</div>
+<p class="rg-chapter-summary">往届任务展示学习进阶方式，不能替代本届培训通知。</p>
+<details class="rg-details"><summary>查看往届培训路线</summary>
+
             <p>一学年 10+ 场培训，每场都带一个要交的任务。下面两张表是硬件部与软件部的完整进度，两条路在大一下合并成一个共同任务。</p>
             {% slot "recruit.training.session" css_class="rg-shot" %}
 
@@ -193,7 +203,7 @@ core/slots.py 的「新生指南 · 现场照」组。
             {% endcomment %}
             <h3>先把几件事说定</h3>
             <ul>
-                <li><strong>培训面向全体电子类大一新生</strong>，不是「先选人再培训」。实验室在这一年里对所有电子类大一新生开放。</li>
+                <li><strong>欢迎对电子技术感兴趣的同学了解培训</strong>，不是「先选人再培训」。实验室使用与本届培训安排以协会通知为准。</li>
                 <li><strong>上学期以兴趣为导向</strong>，硬件和软件都带你摸一遍；<strong>下学期转成小组形式的电赛专项训练</strong>。</li>
                 <li><strong>大一新生可以向科协任何一位学长学姐请教技术问题</strong> —— 这是协会内部的规定，被问到的人必须妥善回答，不是「看他心情」。</li>
                 <li>第一次硬件培训会把这一学年的<strong>培训、测评、面试流程与时间</strong>一次讲清，不会让你边走边猜。</li>
@@ -224,10 +234,10 @@ core/slots.py 的「新生指南 · 现场照」组。
                     <table class="table">
                         <thead><tr><th>进度</th><th>任务 / 说明</th></tr></thead>
                         <tbody>
-                        <tr><td>单片机学习前置任务</td><td>C 语言培训：第一组题目至少完成 80%（截至 11 月 31 日），并来到科协与学长交流后，可进入单片机的学习（即第二次任务）</td></tr>
+                        <tr><td>单片机学习前置任务</td><td>C 语言培训：第一组题目至少完成 80%（本届任务与截止时间以正式通知为准），并来到科协与学长交流后，可进入单片机的学习（即第二次任务）</td></tr>
                         <tr><td>大一上 第一次任务</td><td>自制音乐盒（全体参加）</td></tr>
                         <tr><td>大一上 第二次培训/任务</td><td>STM32 的 GPIO、时钟树</td></tr>
-                        <tr><td>大一上 第二次培训/任务</td><td>STM32 的定时器、中断</td></tr>
+                        <tr><td>GPIO 之后的进阶训练</td><td>STM32 的定时器、中断</td></tr>
                         <tr><td>大一上 第三次培训/任务</td><td>LCD 屏幕、串口</td></tr>
                         <tr><td>大一上 第四次培训/任务</td><td>STM32 的 ADC、DMA</td></tr>
                         <tr><td>大一上 第五次培训/任务</td><td>通信协议</td></tr>
@@ -238,12 +248,17 @@ core/slots.py 的「新生指南 · 现场照」组。
                     </table>
                 </div>
             </details>
-        </section>
+
+</details>
+</section>
 
         <!-- ================= 硬件基础知识 ================= -->
         <section id="hardware">
             <h2><span class="rg-no">03</span>硬件基础知识</h2>
             <div class="sec-sub">// HARDWARE 101</div>
+<p class="rg-chapter-summary">从认识元件、焊接与测量开始，再学习模拟电路和 PCB。</p>
+<details class="rg-details"><summary>展开硬件基础与工具</summary>
+
 
             <details class="fold" open>
                 <summary>常用电子元件</summary>
@@ -467,12 +482,17 @@ core/slots.py 的「新生指南 · 现场照」组。
                     </div>
                 </div>
             </details>
-        </section>
+
+</details>
+</section>
 
         <!-- ================= 软件基础知识 ================= -->
         <section id="software">
             <h2><span class="rg-no">04</span>软件基础知识</h2>
             <div class="sec-sub">// SOFTWARE 101</div>
+<p class="rg-chapter-summary">从 C 语言开始，逐步理解 GPIO、定时器、中断与通信。</p>
+<details class="rg-details"><summary>展开软件基础与工具</summary>
+
             <p>软件方向不是「只写代码」：写出来的东西最后要跑在一块自己焊的板子上。</p>
             {% slot "recruit.software.debug" css_class="rg-shot" %}
 
@@ -590,12 +610,17 @@ core/slots.py 的「新生指南 · 现场照」组。
                     </div>
                 </div>
             </details>
-        </section>
+
+</details>
+</section>
 
         <!-- ================= 学习资源 ================= -->
         <section id="resources">
             <h2><span class="rg-no">05</span>学习资源</h2>
             <div class="sec-sub">// RESOURCES</div>
+<p class="rg-chapter-summary">先看公开回放与入门指南，会员资料按页面标注的权限开放。</p>
+<details class="rg-details"><summary>展开学习资源</summary>
+
 
             <details class="fold" open>
                 <summary>推荐资源网站</summary>
@@ -651,7 +676,9 @@ core/slots.py 的「新生指南 · 现场照」组。
                     <strong>{{ site_config.recruit_qq_group }}</strong>
                 </div>
             </div>
-        </section>
+
+</details>
+</section>
     </div>
 </div>
 {% endblock %}

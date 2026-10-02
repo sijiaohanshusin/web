@@ -111,6 +111,7 @@
         });
 
         // 3D 按需加载。失败不影响页面：舞台不会加 .is-3d，内联 SVG 继续显示。
+        function loadScene() {
         import("esta/logo-3d").then(function (mod) {
             return mod.mountLogo3D(stage, {
                 // 会标 SVG 就在舞台里（作为兜底显示），直接拿它当几何来源，
@@ -133,5 +134,12 @@
                 console.warn("[logo-forge] 3D 会标加载失败，保留 SVG 兜底：", err);
             }
         });
+        }
+        var loader = new IntersectionObserver(function (entries) {
+            if (entries.some(function (entry) { return entry.isIntersecting; })) {
+                loader.disconnect(); loadScene();
+            }
+        }, { rootMargin: "600px" });
+        loader.observe(section);
     }, { needsWebGL: true });
 })();

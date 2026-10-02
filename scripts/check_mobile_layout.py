@@ -58,6 +58,7 @@ def run():
             ctx = browser.new_context(viewport={"width": 360, "height": 570}, is_mobile=True, has_touch=True)
             page = ctx.new_page()
             page.goto(f"http://127.0.0.1:{PORT}/", wait_until="load")
+            scroll_to(page, "#nf-forge", 0)
             page.wait_for_selector("#nf-forge-stage.is-3d", timeout=25000)
             page.wait_for_function("!document.documentElement.classList.contains('esta-pre-lock')")
             scroll_to(page, "#nf-forge", 300)

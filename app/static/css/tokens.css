@@ -9,95 +9,11 @@
    无构建链：直接编辑即可生效。
    ============================================================ */
 
-/* ---------- 自托管字体（scripts/build_fonts.py 产出） ----------
-   mono 数字是全站视觉主角，不依赖访客本机字体；
-   中文标题用真 Heavy 字重，告别微软雅黑伪加粗 */
-@font-face {
-    font-family: "JetBrains Mono";
-    src: url("../fonts/JetBrainsMono-subset.woff2") format("woff2");
-    font-weight: 100 800;
-    font-style: normal;
-    font-display: swap;
-}
-
-/* 标题字：得意黑（Smiley Sans，SIL OFL）。
-   为什么换掉思源黑体 Heavy：那是最中性的一款黑体，和微软雅黑、苹方同一类 ——
-   所以「自托管了标题字体，但看起来还是黑体」正是它造成的，用户一眼就说出来了。
-   得意黑是倾斜 + 紧缩的展示体，字形本身带态度；紧缩还让同样宽度能放更大的字。
-   按模板取字后 270KB，比思源 Heavy 的 333KB 还小。
-
-   **`font-weight` 必须声明成范围 `100 900`。** 这个家族只有一个字形，而 CSS 里
-   到处写着 `font-weight: 900`（标题）—— 如果这里只声明 400，浏览器会认为
-   「家族里没有 900」而**合成假粗**（把字形描粗），那正是这套设计要摆脱的东西。
-   声明成范围等于告诉浏览器「任何字重都用这一个字形」，于是不合成。 */
-@font-face {
-    font-family: "ESTA Display";
-    src: url("../fonts/SmileySans-subset.woff2") format("woff2");
-    font-weight: 100 900;
-    font-style: normal;
-    font-display: swap;
-}
-
-/* 正文的中文。**两档必须成对**：只自托管 Regular 的话，`<strong>` 和
-   `font-weight: 700` 会让浏览器把 Regular 描粗（合成假粗），而系统黑体本来有
-   真 Bold —— 自托管反倒变差。
-   字表不按模板取字，取 GB2312 一级字全集（3760 个，见 build_fonts.py 的说明）：
-   正文内容是站务以后随时写的，模板扫不到，而正文缺字比标题缺字难看得多。
-   代价是两档合计约 2MB。这是明确用体积换效果的地方（用户口径：展示效果优先，
-   重复访问有一年 immutable 缓存），如果哪天嫌重，下一步是按 unicode-range
-   切片，而不是砍字表。 */
-@font-face {
-    font-family: "ESTA Sans";
-    src: url("../fonts/SourceHanSansCN-Regular-subset.woff2") format("woff2");
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: "ESTA Sans";
-    src: url("../fonts/SourceHanSansCN-Bold-subset.woff2") format("woff2");
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-}
-
-/* ---------- 科协专属数字 ----------
-   自己设计的一套数字：每一笔是一段走线，笔画在空处收尾的地方是一个焊盘环，
-   转角只走 45°。几何与线宽跟会标同源（见 scripts/build_lettering.py）。
-
-   为什么做成字体而不是 SVG 图：站上的大数字大多是活的 —— 分镜 02 那个「31」由 JS
-   从 0 计上去、倒计时每秒重写、统计数字来自数据库。SVG 图参与不了这些。
-   整套只有 17 个字形，**2KB**。
-
-   **只用在 26px 以上的展示数字上。** 焊盘环外径是 0.168em，13px 的小字上只剩 2px，
-   缩成一个看不清的脏点；那些位置继续用 mono。 */
+/* Font faces are generated in fonts.css; all families retain their original glyphs. */
 @font-face {
     font-family: "ESTA Digits";
     src: url("../fonts/ESTADigits.woff2") format("woff2");
-    font-weight: 100 900;   /* 只有一个字形，声明成范围以免浏览器合成假粗 */
-    font-style: normal;
-    font-display: swap;
-}
-
-/* 第二声音：思源宋体 SemiBold。全站原来只有「几何无衬线 + 等宽」两种声音，
-   温度是平的 —— 加一个**种类**上的对比，比再加一档字号有效得多。
-
-   两条使用限制（不是风格偏好，是它会坏掉的条件）：
-   1. **只用在模板文案上。** 它的字表和标题字体一样是按模板取字的（按正文那份
-      GB2312 全集做出来是 1456KB，宋体轮廓复杂，多花 40%）。站务写的内容
-      （公告引用块、作品简介）里可能有子集外的字，那会在一段引文里混进黑体。
-   2. **只用在 18px 上下，不要拿去做小字。** 宋体的横画在纯黑底上本来就细，
-      小字号会发虚 —— 这也是只做 SemiBold 一档的原因（Regular 在暗底上撑不住）。
-      窄屏 15px 没问题：手机 DPR≥2，实际像素比 1x 桌面的 18px 还多。
-
-   现在用在哪（全是「导语」这一个角色）：`.page-hero-sub`（每页页头）、
-   `.recruit-hero p`、`.rec-hero-sub`、`.auth-lede`、`.nf-join-sub`。
-   **`.wk-detail-lede` 刻意不用** —— 它的文字来自数据库。 */
-@font-face {
-    font-family: "ESTA Serif";
-    src: url("../fonts/SourceHanSerifCN-SemiBold-subset.woff2") format("woff2");
-    font-weight: 600;
+    font-weight: 100 900;
     font-style: normal;
     font-display: swap;
 }

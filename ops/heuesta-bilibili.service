@@ -1,0 +1,8 @@
+[Unit]
+Description=Refresh HEU ESTA Bilibili snapshots
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flock -n /run/heuesta-bilibili.lock /usr/bin/docker exec heuesta-app-1 python manage.py refresh_bilibili
+TimeoutStartSec=120

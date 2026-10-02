@@ -106,6 +106,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.site",
+                "core.context_processors.seo",
                 "dashboard.context_processors.pending_members",
                 "notify.context_processors.unread",
             ],
@@ -160,3 +161,5 @@ HONOR_AI_FREE_TIER_CONFIRMED = os.environ.get('HONOR_AI_FREE_TIER_CONFIRMED', '0
 HONOR_AI_FREE_TIER_EXPIRES = os.environ.get('HONOR_AI_FREE_TIER_EXPIRES', '')
 HONOR_AI_USER_DAILY_LIMIT = int(os.environ.get('HONOR_AI_USER_DAILY_LIMIT', '20'))
 HONOR_AI_DAILY_LIMIT = int(os.environ.get('HONOR_AI_DAILY_LIMIT', '100'))
+
+PUBLIC_SITE_URL = os.environ.get("PUBLIC_SITE_URL", "https://heuesta.cn").rstrip("/")

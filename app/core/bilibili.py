@@ -1,5 +1,5 @@
 """
-B 站开放接口集成（只读、带缓存、失败优雅降级）。
+B 站信息快照：页面只读；refresh_bilibili 命令负责取数。
 
 - 账号统计：/x/web-interface/card
 - 视频列表：/x/series/recArchivesByKeywords
@@ -13,12 +13,13 @@ import logging
 import requests
 from django.conf import settings
 from django.core.cache import cache
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
 API_TIMEOUT = 6
-CACHE_TTL = 3600  # 1 小时
-NEGATIVE_TTL = 300  # 失败短缓存，避免每次请求都打 API
+# 成功快照不按时间过期。失败不覆盖；只有后台命令可以访问外部网络。
+# 快照被缓存清理后，页面先显示有效的 B 站入口，等待下一次后台刷新。
 
 # 请求头是这几个接口能不能通的唯一变量，改动前先看下面的实测记录。
 #
@@ -61,6 +62,11 @@ def _get_json(url: str, params: dict) -> dict | None:
         return None
 
 
+def _store_snapshot(key, value):
+    cache.set(key, value, timeout=None)
+    cache.set(key + ":refreshed", timezone.now().isoformat(), timeout=None)
+
+
 def _https(url: str) -> str:
     return url.replace("http://", "https://") if url else url
 
@@ -79,17 +85,16 @@ def _format_view(view: int) -> str:
     return str(view)
 
 
-def get_stats(mid: str) -> dict | None:
+def get_stats(mid: str, *, refresh: bool = False) -> dict | None:
     """账号统计：粉丝数、投稿数、获赞数。缓存 1 小时。"""
     cache_key = f"bili:stats:{mid}"
     stats = cache.get(cache_key)
-    if stats is not None:
+    if not refresh:
         return stats or None
 
     data = _get_json("https://api.bilibili.com/x/web-interface/card", {"mid": mid})
     if data is None:
-        cache.set(cache_key, {}, NEGATIVE_TTL)
-        return None
+        return cache.get(cache_key) or None
 
     stats = {
         "follower": data.get("follower", 0),
@@ -98,24 +103,23 @@ def get_stats(mid: str) -> dict | None:
         "name": (data.get("card") or {}).get("name", ""),
         "face": _https((data.get("card") or {}).get("face", "")),
     }
-    cache.set(cache_key, stats, CACHE_TTL)
+    _store_snapshot(cache_key, stats)
     return stats
 
 
-def get_latest_videos(mid: str, limit: int = 6) -> list[dict]:
+def get_latest_videos(mid: str, limit: int = 6, *, refresh: bool = False) -> list[dict]:
     """最新投稿视频列表。缓存 1 小时。"""
     cache_key = f"bili:videos:{mid}:{limit}"
     videos = cache.get(cache_key)
-    if videos is not None:
-        return videos
+    if not refresh:
+        return videos or []
 
     data = _get_json(
         "https://api.bilibili.com/x/series/recArchivesByKeywords",
         {"mid": mid, "keywords": "", "ps": limit, "pn": 1},
     )
     if data is None:
-        cache.set(cache_key, [], NEGATIVE_TTL)
-        return []
+        return cache.get(cache_key) or []
 
     videos = [
         {
@@ -128,23 +132,22 @@ def get_latest_videos(mid: str, limit: int = 6) -> list[dict]:
         }
         for item in (data.get("archives") or [])
     ]
-    cache.set(cache_key, videos, CACHE_TTL)
+    _store_snapshot(cache_key, videos)
     return videos
 
 
-def get_video_info(bvid: str) -> dict | None:
+def get_video_info(bvid: str, *, refresh: bool = False) -> dict | None:
     """单个视频信息（标题 + 封面），用于招新视频占位封面。缓存 24 小时。"""
     if not bvid:
         return None
     cache_key = f"bili:video:{bvid}"
     info = cache.get(cache_key)
-    if info is not None:
+    if not refresh:
         return info or None
 
     data = _get_json("https://api.bilibili.com/x/web-interface/view", {"bvid": bvid})
     if data is None:
-        cache.set(cache_key, {}, NEGATIVE_TTL)
-        return None
+        return cache.get(cache_key) or None
 
     info = {
         "bvid": bvid,
@@ -154,7 +157,7 @@ def get_video_info(bvid: str) -> dict | None:
         "view": _format_view((data.get("stat") or {}).get("view", 0)),
         "url": f"https://www.bilibili.com/video/{bvid}",
     }
-    cache.set(cache_key, info, 24 * 3600)
+    _store_snapshot(cache_key, info)
     return info
 
 

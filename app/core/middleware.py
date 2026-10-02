@@ -12,4 +12,6 @@ class DynamicPagesNoCacheMiddleware:
         response = self.get_response(request)
         if not response.has_header("Cache-Control"):
             response["Cache-Control"] = "private, no-cache"
+        if request.path.startswith(("/accounts/", "/admin/", "/dashboard/", "/notify/", "/projects/", "/showcase/", "/works/mine/", "/works/new/", "/works/manage/", "/shared-mail/", "/feedback/", "/health/")):
+            response["X-Robots-Tag"] = "noindex, nofollow"
         return response

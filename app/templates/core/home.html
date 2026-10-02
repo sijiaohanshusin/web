@@ -1,48 +1,39 @@
 {% extends "base.html" %}
-{# 模板标签库按模板加载，不从父模板继承 —— base.html 里 load 过也要再 load 一次 #}
+
 {% load static humanize brand slots %}
 
-{% block title %}2026 招新已开放 | 哈尔滨工程大学电子科技协会{% endblock %}
-{% block description %}哈尔滨工程大学电子科技协会 2026 秋季招新现已开放，欢迎对硬件、软件和电子设计感兴趣的同学报名。{% endblock %}
+{% block title %}哈尔滨工程大学电子科技协会 | HEU ESTA{% endblock %}
+{% block og_title %}哈尔滨工程大学电子科技协会 | HEU ESTA{% endblock %}
+{% block description %}探索电子科技协会的真实制作、学习路线、科协日常与荣誉记录，了解当季招新与报名安排。{% endblock %}
+{% block og_description %}探索电子科技协会的真实制作、学习路线、科协日常与荣誉记录，了解当季招新与报名安排。{% endblock %}
 {% block body_class %}page-home{% endblock %}
 
 {% block extra_head %}
-{# 首页分镜样式只在首页加载，内页不必为它付流量 #}
+
 <link rel="stylesheet" href="{% static 'css/home.css' %}">
 {% endblock %}
 
-{% block preloader %}{% include "includes/preloader.html" %}{% endblock %}
+{% block preloader %}{% include "includes/preloader.html" %}<script src="{% static 'js/preloader.js' %}"></script>{% endblock %}
+{% block preloader_script %}{% endblock %}
 
 {% block content %}
-
-<!-- ============ HERO：黑底 · 巨型排版 · 全屏粒子信号海洋 ============ -->
 <section class="nf-hero nf-dark" data-nav="dark" id="nf-hero">
     <canvas class="nf-hero-canvas" id="hero-canvas" aria-hidden="true"></canvas>
     <div class="nf-hero-overlay" aria-hidden="true"></div>
-    {% comment %}示波器时基扫描线，纯 CSS。装饰性，不进无障碍树{% endcomment %}
+
     <i class="nf-hero-scan" aria-hidden="true"></i>
     <div class="container nf-hero-inner">
         <div class="nf-hero-text">
             <p class="nf-eyebrow line-reveal">哈尔滨工程大学 · 电子科技协会 · EST. {{ site_config.founding_year }}</p>
-{% comment %}
-这里曾经加过两个「工艺层」记号，都已撤掉，别再加回来：
 
-  - `.plated`（横向阻焊开窗，一道细缝把字面切开）—— 读者的反馈是「有不明条纹」。
-    它在我这里的意图是工艺，在没有上下文的人眼里就是渲染故障。
-  - `.pad-out`（句尾焊盘环 + 引线）—— 读者的反馈是「句号和输入符号重合」。
-    一个圆环紧跟在句末，会被读成标点；再加一道横线就更像光标。
-
-结论：**装饰记号不要放进句子的读取路径里。** 同样的记号放在 eyebrow 那条
-丝印带上（刻度尺 + 尺寸线）没有人误读 —— 因为那里本来就是放记号的地方。
-{% endcomment %}
             <h1 class="nf-hero-title">
                 <span class="line-reveal">焊接每一个</span>
                 <span class="line-reveal accent">奇思妙想</span>
             </h1>
-            <p class="nf-hero-sub line-reveal">从点亮第一颗 LED，到站上全国大学生电子设计竞赛的领奖台。</p>
+            <p class="nf-hero-sub line-reveal">从制作电路到编写程序，在真实项目中一起成长。</p>
             <div class="nf-hero-cta line-reveal">
-                <a class="btn btn-primary btn-lg btn-magnet" href="#join">加入我们</a>
-                <a class="nf-link-more" href="{% url 'core:recruit' %}">新生指南 <span>→</span></a>
+                <a class="btn btn-primary btn-lg btn-magnet" href="#explore">探索科协</a>
+                <a class="nf-link-more" href="{% url 'recruitment:index' %}">查看招新 <span>→</span></a>
             </div>
         </div>
     </div>
@@ -51,30 +42,137 @@
         <div class="nf-scroll-cue"><span></span>SCROLL</div>
     </div>
 </section>
+<nav class="nf-chapters container" aria-label="首页章节"><a href="#explore">真实制作</a><a href="#nf-roadmap">成长路径</a><a href="#nf-forge">3D 会标</a><a href="#learning">学习入口</a><a href="#daily">科协日常</a><a href="#join">招新与联系</a></nav>
+{% if featured_works %}
+<section class="nf-section nf-dark nf-scope" data-nav="dark" id="nf-works">
 
-<!-- ============ 分镜 01：会标是一块真的电路板（滚动驱动逐层制造） ============ -->
-{% comment %}
-`surf-weave grain`：这一段讲的就是「从一块空基板开始逐层做出来」，所以底纹用
-裸基板的玻纤布纹 —— 观众看到的板子还没覆铜，背景先把材质说出来。
-表面只能有一层（见 tokens.css 的说明），所以这里不能再叠 .nf-scope。
-{% endcomment %}
+
+    <div class="container" id="explore">
+        <div class="nf-works-head reveal">
+            <div>
+                <p class="nf-eyebrow">// OUR WORK</p>
+                <h2 class="nf-display">做出来的东西</h2>
+            </div>
+            <a class="nf-link-more" href="{% url 'works:wall' %}">看全部作品 <span>→</span></a>
+        </div>
+        <div class="wk-grid reveal">
+            {% for project in featured_works %}
+                {% include "includes/work_card.html" with project=project %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% else %}
+<section class="nf-section nf-dark nf-evidence" id="explore" data-nav="dark">
+    <div class="container">
+        <div class="nf-section-head"><div><p class="nf-eyebrow">// MADE HERE</p><h2 class="nf-display">从实验台，走向<span class="accent">真实作品</span></h2></div><a class="nf-link-more" href="{% url 'core:recruit' %}">了解协会 →</a></div>
+        <div class="nf-evidence-grid">
+            <a href="{% url 'core:recruit' %}#hardware"><figure><img data-src="{% static 'img/photo/rf-modules-board.webp' %}" alt="开发板与自制射频模块连接成系统" loading="lazy" decoding="async" width="960" height="720"><noscript><img src="{% static 'img/photo/rf-modules-board.webp' %}" alt="开发板与自制射频模块连接成系统" loading="lazy" decoding="async" width="960" height="720"></noscript><figcaption><span>电路与系统</span><h3>把模块连接成一个想法</h3><p>射频模块、PCB 与系统互联 · 协会既有作品实拍</p></figcaption></figure></a>
+            <a href="{% url 'core:recruit' %}#software"><figure><img data-src="{% static 'img/photo/rf-amp-lcd.webp' %}" alt="带显示屏与指示灯的电子装置" loading="lazy" decoding="async" width="801" height="530"><noscript><img src="{% static 'img/photo/rf-amp-lcd.webp' %}" alt="带显示屏与指示灯的电子装置" loading="lazy" decoding="async" width="801" height="530"></noscript><figcaption><span>电路与交互</span><h3>让运行状态可以读出来</h3><p>显示屏与电路装置 · 协会既有作品实拍</p></figcaption></figure></a>
+        </div>
+    </div>
+</section>
+{% endif %}
+<section id="directions" class="nf-section nf-light surf-via grain" data-nav="light">
+
+    <div class="container">
+        <p class="nf-eyebrow reveal">// DIRECTIONS</p>
+        <h2 class="nf-display reveal">在这里，你可以<span class="accent">成为</span></h2>
+        <div class="nf-dir-grid">
+            <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#hardware">
+                <figure>
+
+
+                    <img data-src="{% static 'img/photo/bench-wide.webp' %}"
+                         alt="实验台上的自制电路板、焊台与测量工具"
+                         loading="lazy" decoding="async"><noscript><img src="{% static 'img/photo/bench-wide.webp' %}"
+                         alt="实验台上的自制电路板、焊台与测量工具"
+                         loading="lazy" decoding="async"></noscript>
+
+                    <span class="nf-dir-sym">{% include "includes/icon.html" with name="opamp" %}</span>
+                </figure>
+                <div class="nf-dir-body">
+                    <span class="nf-dir-index">01</span>
+                    <h3>硬件工程师</h3>
+                    <p>模拟电路 · 运算放大器 · 滤波器 · 电源 · PCB 设计</p>
+                    <span class="nf-link-more">了解硬件部 <span>→</span></span>
+                </div>
+            </a>
+            <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#software">
+                <figure>
+                    <img data-src="{% static 'img/photo/probe-fpga.webp' %}"
+                         alt="使用探头和示波器调试开发板上的信号"
+                         loading="lazy" decoding="async"><noscript><img src="{% static 'img/photo/probe-fpga.webp' %}"
+                         alt="使用探头和示波器调试开发板上的信号"
+                         loading="lazy" decoding="async"></noscript>
+                    <span class="nf-dir-sym">{% include "includes/icon.html" with name="mcu" %}</span>
+                </figure>
+                <div class="nf-dir-body">
+                    <span class="nf-dir-index">02</span>
+                    <h3>嵌入式开发者</h3>
+                    <p>C 语言 · STM32 / MSPM0 · 通信协议 · 边缘 AI</p>
+                    <span class="nf-link-more">了解软件部 <span>→</span></span>
+                </div>
+            </a>
+            <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#training">
+                <figure>
+                    <img data-src="{% static 'img/photo/contest-inspect.webp' %}"
+                         alt="电赛赛场上，两名队员在检视一块自制电路板"
+                         loading="lazy" decoding="async"><noscript><img src="{% static 'img/photo/contest-inspect.webp' %}"
+                         alt="电赛赛场上，两名队员在检视一块自制电路板"
+                         loading="lazy" decoding="async"></noscript>
+                    <span class="nf-dir-sym">{% include "includes/icon.html" with name="board" %}</span>
+                </figure>
+                <div class="nf-dir-body">
+                    <span class="nf-dir-index">03</span>
+                    <h3>电赛选手</h3>
+                    <p>真题训练 · 组队实战 · 暑期集训 · 国赛冲刺</p>
+                    <span class="nf-link-more">查看培养路线 <span>→</span></span>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
+<section class="nf-section nf-light surf-via" data-nav="light" id="nf-roadmap">
+
+
+    <div class="container">
+        <p class="nf-eyebrow reveal">// ROADMAP</p>
+        <h2 class="nf-display reveal">每一步都有<span class="accent">可以动手的事</span></h2>
+        <div class="nf-timeline">
+            <div class="nf-tl-line" aria-hidden="true"><i id="nf-tl-progress"></i></div>
+            <div class="nf-tl-item reveal">
+                <span class="nf-tl-num">01</span>
+                <h3>大一上 · 秋</h3>
+                <p>自制音乐盒（全员）、C 语言培训、运放与滤波器、STM32 入门</p>
+            </div>
+            <div class="nf-tl-item reveal">
+                <span class="nf-tl-num">02</span>
+                <h3>寒假</h3>
+                <p>软硬件组队合作任务，开学验收</p>
+            </div>
+            <div class="nf-tl-item reveal">
+                <span class="nf-tl-num">03</span>
+                <h3>大一下 · 春</h3>
+                <p>万用表制作、进阶培训、第一次面试选拔</p>
+            </div>
+            <div class="nf-tl-item reveal">
+                <span class="nf-tl-num">04</span>
+                <h3>暑假</h3>
+                <p>电赛封闭集训，向全国一等奖发起冲击</p>
+            </div>
+        </div>
+    </div>
+</section>
 <section class="nf-forge nf-dark surf-weave grain" data-nav="dark" id="nf-forge">
     <div class="nf-forge-pin">
         <div class="container nf-forge-grid">
-            {% comment %}
-            标题、舞台、工序清单是三个平级的栅格项，不要把清单塞回 .nf-forge-copy
-            里。窄屏要重排成「标题 → 舞台 → 清单」，清单若和标题同属一个容器就排
-            不到舞台下面（除了 display:contents 没别的办法，那个在无障碍树上有历史
-            包袱）。桌面两栏的位置由 grid-template-areas 指定，与 DOM 顺序无关。
-            {% endcomment %}
+
             <div class="nf-forge-copy">
-                <p class="nf-eyebrow">// 01 · 会标</p>
+                <p class="nf-eyebrow">// CRAFT · 把想法做出来</p>
                 <h2 class="nf-display">我们的标<br>是一块<span class="accent">真的电路板</span></h2>
             </div>
-            {% comment %}
-            舞台里的内联 SVG 有两个作用：WebGL 不可用时它就是会标本体，
-            3D 可用时它又是 SVGLoader 的几何来源（不必再发一次请求）。
-            {% endcomment %}
+
             <div class="nf-forge-stage" id="nf-forge-stage">
                 {% inline_svg "brand/logo-mark.svg" class="nf-forge-fallback" %}
             </div>
@@ -103,12 +201,147 @@
         </div>
     </div>
 </section>
+<section id="learning" class="nf-section nf-dark surf-hatch grain" data-nav="dark">
+    <div class="container">
+        <p class="nf-eyebrow reveal">// RESOURCES</p>
+        <h2 class="nf-display reveal">从这里，开始<span class="accent">下一次动手</span></h2>
 
-<!-- ============ 最新公告（有公告才显示） ============ -->
-{% comment %}
-`surf-via grain`：一条条公告读成一排孔位。这一段只有 100px 高，斜纹在这个高度会
-糊成一片灰，点阵不会 —— 表面选哪一种要看区块的高度，不只看语义。
-{% endcomment %}
+
+        <div class="nf-res-term reveal">
+            <div class="term-bar" aria-hidden="true">
+                <span class="term-prompt">esta@heuesta:~$</span> ls ./学习资源<span class="term-caret">▍</span>
+            </div>
+            <a class="nf-res-row" href="{% url 'files:list' %}">
+                <span class="res-branch" aria-hidden="true">├─</span>
+                <span class="res-name">资料站</span>
+                <span class="res-desc">培训课件、竞赛资料、工具软件；按会员等级开放，具体以资料页权限为准</span>
+                <span class="res-go">浏览资料 <span>→</span></span>
+            </a>
+            <a class="nf-res-row" href="{{ forum_url }}" target="_blank" rel="noopener">
+                <span class="res-branch" aria-hidden="true">├─</span>
+                <span class="res-name">会员论坛</span>
+
+                <span class="res-desc">{% if user.is_member %}提问、晒作品、找队友，主站账号直接登录{% else %}公开版块可浏览，一面通过后可参与讨论；新用户发帖需审核{% endif %}</span>
+                <span class="res-go">进入论坛 <span>→</span></span>
+            </a>
+            <a class="nf-res-row" href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">
+                <span class="res-branch" aria-hidden="true">└─</span>
+                <span class="res-name">B 站视频教程</span>
+                <span class="res-desc">STM32 系列教程、硬件培训回放、竞赛题解，持续更新</span>
+                <span class="res-go">前往 B 站 <span>→</span></span>
+            </a>
+        </div>
+
+        {% if bili_videos %}
+        <div class="nf-bili-head reveal">
+            <h3>精选培训视频</h3>
+            <a class="nf-link-more" href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">全部培训视频 <span>↗</span></a>
+        </div>
+        <div class="bili-grid">
+            {% for v in bili_videos %}
+            <a class="bili-card reveal" href="{{ v.url }}" target="_blank" rel="noopener">
+                <div class="bili-cover">
+                    <img src="{{ v.pic }}" alt="{{ v.title }}" loading="lazy" decoding="async"
+                         referrerpolicy="no-referrer">
+                    <span class="bili-duration">{{ v.duration }}</span>
+                </div>
+                <div class="bili-info">
+                    <h3>{{ v.title }}</h3>
+                    <span class="bili-views">▶ {{ v.view }} 次观看</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+<section class="nf-section nf-dark surf-hatch grain" data-nav="dark">
+
+    <div class="container">
+        <p class="nf-eyebrow nf-center reveal">// MOVIE</p>
+        <h2 class="nf-display nf-center reveal">镜头里的科协</h2>
+        <p class="nf-center nf-media-caption">2025 招新宣传视频 · 往届影像</p>
+        <div class="video-facade reveal" id="video-facade"
+             data-embed="//player.bilibili.com/player.html?bvid={{ site_config.recruit_video_bvid }}&autoplay=1&danmaku=0&high_quality=1">
+
+            {% static "img/og-card.png" as video_poster %}
+            {% slot "home.movie.teaser" css_class="video-facade-media" fallback_url=recruit_video.pic|default:video_poster show_cta=False %}
+            <div class="video-facade-overlay">
+
+                <button class="video-play-btn" type="button" data-video-play
+                        aria-label="播放招新宣传视频">
+                    <svg viewBox="0 0 24 24" width="34" height="34"><path fill="currentColor" d="M8 5.14v13.72L19 12z"/></svg>
+                </button>
+                <span class="video-facade-title">{{ recruit_video.title|default:"电子科技协会招新宣传视频" }}</span>
+                <span class="video-facade-hint">点击播放 · 视频由 B 站提供</span>
+            </div>
+        </div>
+    </div>
+</section>
+<section id="daily" class="nf-gallery-section nf-dark surf-weave grain" data-nav="dark">
+    <div class="container nf-gallery-head">
+        <div>
+            <p class="nf-eyebrow reveal">// GALLERY</p>
+            <h2 class="nf-display reveal">科协日常</h2>
+        </div>
+        <p class="nf-gallery-hint reveal">拖拽浏览 ⇄</p>
+    </div>
+
+    <div class="nf-strip" id="nf-strip">
+        <div class="nf-strip-track" id="nf-strip-track">
+            {% for key in gallery_slots %}
+                {% slot key css_class="nf-tile" deferred=True %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% if featured_honors %}
+<section class="nf-section nf-light surf-hatch" data-nav="light" id="nf-honors">
+    <div class="container">
+        <div class="nf-works-head reveal">
+            <div>
+                <p class="nf-eyebrow">// HONORS</p>
+                <h2 class="nf-display">拿过的奖</h2>
+                {% if honor_summary.total %}
+                <p class="nf-honors-sub">
+                    累计 {{ honor_summary.total }} 项，其中国家级 {{ honor_summary.national }} 项。
+                </p>
+                {% endif %}
+            </div>
+            <a class="nf-link-more" href="{% url 'honors:wall' %}">看全部荣誉 <span>→</span></a>
+        </div>
+        <div class="hn-year-list reveal">
+            {% for honor in featured_honors %}
+                {% include "includes/honor_row.html" with honor=honor show_year=True %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+<section id="history" class="nf-section nf-dark nf-scope nf-bignum-section" data-nav="dark">
+
+    <div class="container">
+        <p class="nf-eyebrow reveal">SINCE {{ site_config.founding_year }}</p>
+        <div class="nf-bignum reveal">
+            <span class="nf-bignum-value"><span class="counter" data-target="{{ years }}" data-delay="820">0</span></span>
+            <div class="nf-bignum-side">
+                <span class="nf-bignum-unit">年技术传承</span>
+                <span class="nf-bignum-desc">一届届学长学姐，把烙铁和示波器交到下一代手上</span>
+            </div>
+        </div>
+        <p class="nf-history-note">从 1995 年到今天，一届届成员留下作品、培训与比赛的记录。<a href="{% url 'honors:wall' %}">查看荣誉档案 →</a></p>
+    </div>
+
+    <div class="nf-legacy-band reveal">
+        {% slot "home.legacy.group" css_class="nf-legacy-photo" deferred=True %}
+        <div class="container">
+            <p class="nf-legacy-cap">
+                <span>往届科协成员合影</span>
+                <span class="nf-legacy-where">· 电工电子国家级实验教学示范中心</span>
+            </p>
+        </div>
+    </div>
+</section>
 {% if latest_posts %}
 <section class="nf-news-strip nf-dark surf-via grain" data-nav="dark">
     <div class="container">
@@ -132,452 +365,16 @@
     </div>
 </section>
 {% endif %}
-
-<!-- ============ 白色区：三个理由（照片卡骑跨黑白分界线） ============ -->
-{% comment %}
-`surf-hatch grain`：白区的覆铜（浅底走 CSS 斜纹，见 tokens.css）。
-和下面荣誉段同一种表面 —— 白区现在只有两种表面可选，而白区有四块，
-重复是必然的。浅底版覆铜纹交付之后这里换成它，两块白区才真正区分开。
-{% endcomment %}
-<section class="nf-section nf-light nf-bridge surf-hatch grain" data-nav="light">
-    {# 上面永远是黑区：公告条有则是它、无则是分镜 01，两者都是 nf-dark #}
-    {% include "includes/edge.html" with from="dark" %}
-    <div class="container">
-        <div class="nf-split">
-            <div class="nf-split-media">
-                <figure class="nf-photo-card tilt-card reveal" id="reason-photo">
-                    {% comment %}
-                    刻意不写 width/height：`.nf-photo-card img` 靠 CSS 的
-                    `aspect-ratio: 4/5` 占位，而 <img> 上宽高都给了确定值时
-                    `aspect-ratio` 会被忽略 —— 补这两个属性反而会把占位搞坏。
-                    这一张不 lazy：它在第二屏，是那一段的主体。
-                    {% endcomment %}
-                    {% comment %}
-                    这一格是全页视觉权重最高的一处（549x686、还骑跨黑白分界线）。
-                    原来放的是 `img/carousel/pcb.webp` —— 而那张同时是走廊第一格的
-                    兜底图，走廊又被 cloneNode 复制过一份，于是同一个文件在一屏
-                    首页上出现三次。换成协会实验台的实拍（4:5 竖裁，母图与裁切
-                    参数见 scripts/build_photos.py 的 bench-wide）。
-                    {% endcomment %}
-                    <img src="{% static 'img/photo/bench-wide.webp' %}"
-                         alt="协会实验台：焊台、示波器与一整套成员自制的射频模块"
-                         decoding="async">
-                    <figcaption>实验台一角 · 成员自制的射频链路</figcaption>
-                </figure>
-            </div>
-            <div class="nf-split-text">
-                <h2 class="nf-display reveal"><span class="accent">3 个理由</span><br>选择电子科技协会</h2>
-                <ol class="nf-reasons">
-                    <li class="reveal">
-                        <h3>真刀真枪的硬件实践</h3>
-                        <p>烙铁、示波器、信号发生器随你使用，从面包板到 PCB 打样，作品全部亲手完成。</p>
-                    </li>
-                    <li class="reveal">
-                        <h3>成体系的免费培训</h3>
-                        <p>C 语言、STM32、运放、滤波器——一学年 10+ 场培训与任务，配套 27 章自编电子学教材。</p>
-                    </li>
-                    {% comment %}
-                    第三条带一个可核对的数字。前两条是「我们提供什么」，第三条得是
-                    「结果如何」—— 否则整组读下来全是承诺。对照口径与出处在
-                    docs/荣誉数据来源.md，完整对照表在新生指南的协会简介一章。
-                    {% endcomment %}
-                    <li class="reveal">
-                        <h3>直通电赛的梯队培养</h3>
-                        <p>寒假合作任务、暑期封闭集训，学长学姐一对一带队。2025 年全国大学生电子设计竞赛，哈工程的两项全国一等奖都出自科协的队伍。</p>
-                    </li>
-                </ol>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ============ 黑色区：大数字 ============ -->
-{% comment %}
-分镜 02「数据」：示波器屏幕。.nf-scope 铺暗场网格（格距与白区坐标纸一致），
-扫描线扫过后大数字定格 —— data-delay 让计数在扫描线走到一半时才起跑，
-读起来是「扫描线把这个数写出来的」。
-{% endcomment %}
-<section class="nf-section nf-dark nf-scope nf-bignum-section" data-nav="dark">
-    {% include "includes/edge.html" with from="light" %}
-    <div class="container">
-        <p class="nf-eyebrow reveal">SINCE {{ site_config.founding_year }}</p>
-        <div class="nf-bignum reveal">
-            <span class="nf-bignum-value"><span class="counter" data-target="{{ years }}" data-delay="820">0</span></span>
-            <div class="nf-bignum-side">
-                <span class="nf-bignum-unit">年技术传承</span>
-                <span class="nf-bignum-desc">一届届学长学姐，把烙铁和示波器交到下一代手上</span>
-            </div>
-        </div>
-        <div class="nf-substats">
-            <div class="nf-substat reveal">
-                <strong><span class="counter" data-target="{% firstof bili_stats.follower 2933 %}">0</span>+</strong>
-                <span>B 站粉丝</span>
-            </div>
-            <div class="nf-substat reveal">
-                <strong><span class="counter" data-target="{% firstof bili_stats.videos 93 %}">0</span></strong>
-                <span>培训视频</span>
-            </div>
-            <div class="nf-substat reveal">
-                <strong><span class="counter" data-target="27">0</span></strong>
-                <span>教材章节</span>
-            </div>
-            <div class="nf-substat reveal">
-                <strong><span class="counter" data-target="{% firstof bili_stats.likes 2685 %}">0</span>+</strong>
-                <span>视频获赞</span>
-            </div>
-        </div>
-    </div>
-    {% comment %}
-    整宽合影带。刻意放在 `.container` **外面** —— `.nf-section` 的左右内边距是 0，
-    容器才有，所以 section 的直接子元素天生是全出血的。
-
-    这张照片原来是走廊里的一格。走廊是等高胶片条，一格只有 432 CSS px 宽，
-    60 个人挤进去每张脸约 7px —— 而这是招新页面最想让人看清的一张。搬到这里
-    是因为这一段讲的正是「一届届人」：大数字说了 31 年，照片说了这 31 年攒下
-    多少人。
-
-    **不压暗、不加底纹、图注不叠在照片上。** 图注要 4.5:1 的话，压在照片上就得
-    把照片亮度砍到两成，六十张脸全糊 —— 而这一格的全部内容就是那六十张脸。
-    所以图注放在照片下面的纯黑底上（--muted 在 --black 上是 7.82:1），照片保持
-    原亮度。这也是这一段没用 `.surf-*` 底纹的原因：`.nf-scope` 的示波器网格已经
-    占了 `::before`，一个区块只能有一层。
-    {% endcomment %}
-    <div class="nf-legacy-band reveal">
-        {% slot "home.legacy.group" css_class="nf-legacy-photo" %}
-        <div class="container">
-            <p class="nf-legacy-cap">
-                <span>科协全员合影</span>
-                <span class="nf-legacy-where">· 电工电子国家级实验教学示范中心</span>
-            </p>
-        </div>
-    </div>
-</section>
-
-<!-- ============ 白色区：三大方向 ============ -->
-{# `surf-via grain`：三个方向读成三组节点 #}
-<section class="nf-section nf-light surf-via grain" data-nav="light">
-    {% include "includes/edge.html" with from="dark" %}
-    <div class="container">
-        <p class="nf-eyebrow reveal">// DIRECTIONS</p>
-        <h2 class="nf-display reveal">在这里，你可以<span class="accent">成为</span></h2>
-        <div class="nf-dir-grid">
-            <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#hardware">
-                <figure>
-                    {# 占位靠 `.nf-dir-card figure` 的 aspect-ratio: 16/10，同样不写 width/height #}
-                    {% comment %}
-                    三张卡原来有两张用的是 `img/recruit/` 下的器材图鉴（元件棚拍与
-                    软件界面截图，同一文件在新生指南里当参考图），第三张和走廊的
-                    兜底图重复。而这一段讲的是「在这里，你可以成为」—— 配产品图
-                    说不了这件事。三张全换成协会自己拍的实物与赛场照。
-                    判据就是 core/slots.py 那条：「这里缺一张我们自己的照片吗」。
-                    {% endcomment %}
-                    <img src="{% static 'img/photo/rf-modules-board.webp' %}"
-                         alt="木板上的射频系统：TI 开发板与多块成员自制模块用 SMA 串起来"
-                         loading="lazy" decoding="async">
-                    {% comment %}
-                    元件符号：三张卡构成「元件 → 芯片 → 整板」的递进。
-                    hover 时描线自绘（和加载动画的会标同一种手法）。装饰性。
-                    {% endcomment %}
-                    <span class="nf-dir-sym">{% include "includes/icon.html" with name="opamp" %}</span>
-                </figure>
-                <div class="nf-dir-body">
-                    <span class="nf-dir-index">01</span>
-                    <h3>硬件工程师</h3>
-                    <p>模拟电路 · 运算放大器 · 滤波器 · 电源 · PCB 设计</p>
-                    <span class="nf-link-more">了解硬件部 <span>→</span></span>
-                </div>
-            </a>
-            <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#software">
-                <figure>
-                    <img src="{% static 'img/photo/rf-amp-lcd.webp' %}"
-                         alt="运行中的射频宽带放大器：屏上显示实时参数，一排指示灯亮着"
-                         loading="lazy" decoding="async">
-                    <span class="nf-dir-sym">{% include "includes/icon.html" with name="mcu" %}</span>
-                </figure>
-                <div class="nf-dir-body">
-                    <span class="nf-dir-index">02</span>
-                    <h3>嵌入式开发者</h3>
-                    <p>C 语言 · STM32 / MSPM0 · 通信协议 · 边缘 AI</p>
-                    <span class="nf-link-more">了解软件部 <span>→</span></span>
-                </div>
-            </a>
-            <a class="nf-dir-card reveal" href="{% url 'core:recruit' %}#training">
-                <figure>
-                    <img src="{% static 'img/photo/contest-inspect.webp' %}"
-                         alt="电赛赛场上，两名队员在检视一块自制电路板"
-                         loading="lazy" decoding="async">
-                    <span class="nf-dir-sym">{% include "includes/icon.html" with name="board" %}</span>
-                </figure>
-                <div class="nf-dir-body">
-                    <span class="nf-dir-index">03</span>
-                    <h3>电赛选手</h3>
-                    <p>真题训练 · 组队实战 · 暑期集训 · 国赛冲刺</p>
-                    <span class="nf-link-more">查看培养路线 <span>→</span></span>
-                </div>
-            </a>
-        </div>
-    </div>
-</section>
-
-<!-- ============ 黑色区：招新视频 ============ -->
-{# `surf-hatch grain`：暗区的覆铜是真实蚀刻纹照片（见 tokens.css） #}
-<section class="nf-section nf-dark surf-hatch grain" data-nav="dark">
-    {% include "includes/edge.html" with from="light" %}
-    <div class="container">
-        <p class="nf-eyebrow nf-center reveal">// MOVIE</p>
-        <h2 class="nf-display nf-center reveal">一分钟，认识科协</h2>
-        <div class="video-facade reveal" id="video-facade"
-             data-embed="//player.bilibili.com/player.html?bvid={{ site_config.recruit_video_bvid }}&autoplay=1&danmaku=0&high_quality=1">
-            {% comment %}
-            封面走素材槽。取用顺序：协会自己剪的循环片段 → 自己拍的封面帧 →
-            B 站接口给的封面 → 空焊盘占位。
-
-            原来只有「B 站封面」和「一块渐变」两种，而 B 站接口被风控拦下时
-            （412，实测常有）就只剩那块渐变，什么信息都没有。现在最差情况也是
-            一个写明「要剪一段什么片子」的占位框，站务看得懂、也补得上。
-
-            片段在这里是装饰性的：facade 自己那颗大播放按钮才是入口，点了去 B 站
-            看完整版，所以槽位内部的小播放按钮在 facade 里用 CSS 藏掉。
-            {% endcomment %}
-            {% slot "home.movie.teaser" css_class="video-facade-media" fallback_url=recruit_video.pic show_cta=False %}
-            <div class="video-facade-overlay">
-                {# type="button"：它在任何表单里都不该提交，写明了才不依赖上下文 #}
-                <button class="video-play-btn" type="button" data-video-play
-                        aria-label="播放招新宣传视频">
-                    <svg viewBox="0 0 24 24" width="34" height="34"><path fill="currentColor" d="M8 5.14v13.72L19 12z"/></svg>
-                </button>
-                <span class="video-facade-title">{{ recruit_video.title|default:"电子科技协会招新宣传视频" }}</span>
-                <span class="video-facade-hint">点击播放 · 视频由 B 站提供</span>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ============ 黑色区：图片走廊（可拖拽 · 自动漂移） ============ -->
-{% comment %}
-`surf-weave grain`：照片钉在裸基板上。和分镜 01 同一种表面是刻意的 ——
-那一段讲「从一块空板开始」，这一段是「板上后来贴了什么」。
-
-（这里原来写成跨两行的 `{# #}`，于是整段注释被当成正文渲染出来了 ——
-Django 的 `{# #}` **只支持单行**，跨行必须用 `{% comment %}`。截图才看出来的。）
-{% endcomment %}
-<section class="nf-gallery-section nf-dark surf-weave grain" data-nav="dark">
-    <div class="container nf-gallery-head">
-        <div>
-            <p class="nf-eyebrow reveal">// GALLERY</p>
-            <h2 class="nf-display reveal">科协日常</h2>
-        </div>
-        <p class="nf-gallery-hint reveal">拖拽浏览 ⇄</p>
-    </div>
-    {% comment %}
-    走廊的每一格都是独立的素材槽，登记在 core/slots.py。
-
-    这里不再遍历视图传下来的列表：原来的逻辑是「数据库里有轮播图就全用数据库
-    的，否则全用兜底列表」—— 上传一张就会把另外五格连带换掉，而且占位格永远
-    没法和真实照片混排。槽位是逐个独立的，填一个补一个。
-    {% endcomment %}
-    <div class="nf-strip" id="nf-strip">
-        <div class="nf-strip-track" id="nf-strip-track">
-            {% for key in gallery_slots %}
-                {% slot key css_class="nf-tile" eager=forloop.first %}
-            {% endfor %}
-        </div>
-    </div>
-</section>
-
-<!-- ============ 白色区：一年之路 ============ -->
-{# 一年之路用过孔阵列：一整年的节点像一排钻孔，和上面白区的坐标纸区分开 #}
-<section class="nf-section nf-light surf-via" data-nav="light" id="nf-roadmap">
-    {# 上面是走廊所在的黑区，所以孔取黑区底色 #}
-    {% include "includes/edge.html" with from="dark" %}
-    <div class="container">
-        <p class="nf-eyebrow reveal">// ROADMAP</p>
-        <h2 class="nf-display reveal">从萌新到大佬<span class="accent">的一年</span></h2>
-        <div class="nf-timeline">
-            <div class="nf-tl-line" aria-hidden="true"><i id="nf-tl-progress"></i></div>
-            <div class="nf-tl-item reveal">
-                <span class="nf-tl-num">01</span>
-                <h3>大一上 · 秋</h3>
-                <p>自制音乐盒（全员）、C 语言培训、运放与滤波器、STM32 入门</p>
-            </div>
-            <div class="nf-tl-item reveal">
-                <span class="nf-tl-num">02</span>
-                <h3>寒假</h3>
-                <p>软硬件组队合作任务，开学验收</p>
-            </div>
-            <div class="nf-tl-item reveal">
-                <span class="nf-tl-num">03</span>
-                <h3>大一下 · 春</h3>
-                <p>万用表制作、进阶培训、第一次面试选拔</p>
-            </div>
-            <div class="nf-tl-item reveal">
-                <span class="nf-tl-num">04</span>
-                <h3>暑假</h3>
-                <p>电赛封闭集训，向全国一等奖发起冲击</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ============ 分镜 07：作品（有精选作品才显示） ============ -->
-{% comment %}
-一件精选作品都没有时**整段不渲染**。空壳区块（一排占位框 + 「敬请期待」）比没有
-这一段更糟：它把「我们还什么都没有」放在了首页最显眼的叙事位上。同样的判断也
-用在上面的 B 站精选区。
-
-卡片本体走 includes/work_card.html —— 和作品墙、作品详情页底部是同一份实现。
-{% endcomment %}
-{% if featured_works %}
-<section class="nf-section nf-dark nf-scope" data-nav="dark" id="nf-works">
-    {# 上一个区块是白区（一年之路），所以孔取白区底色 #}
-    {% include "includes/edge.html" with from="light" %}
-    <div class="container">
-        <div class="nf-works-head reveal">
-            <div>
-                <p class="nf-eyebrow">// OUR WORK</p>
-                <h2 class="nf-display">做出来的东西</h2>
-            </div>
-            <a class="nf-link-more" href="{% url 'works:wall' %}">看全部作品 <span>→</span></a>
-        </div>
-        <div class="wk-grid reveal">
-            {% for project in featured_works %}
-                {% include "includes/work_card.html" with project=project %}
-            {% endfor %}
-        </div>
-    </div>
-</section>
-{% endif %}
-
-<!-- ============ 分镜 08：荣誉（有首页荣誉才显示） ============ -->
-{% comment %}
-和上面的 07 一样：一项都没有时整段不渲染。
-
-刻意**不用大数字**做主体 —— 分镜 02 已经是一屏大数字了，再来一屏会读成重复。
-这里是一小段清单：等级徽章 + 奖项名，节奏上更接近「一页名录」。行本体走
-includes/honor_row.html，和荣誉墙是同一份。
-{% endcomment %}
-{% if featured_honors %}
-{% comment %}
-用覆铜网格：铜是这一段的语义色，也把白区和上一段的坐标纸区分开。
-
-**刻意不加 edge 过渡件。** 它上面是「作品」还是「一年之路」取决于
-`featured_works` 有没有内容 —— 前者是黑区、后者是白区，明暗不定。写条件判断
-（`{% if featured_works %}from=dark{% else %}...`）能对，但那种「装饰件的参数
-依赖另一个区块的渲染条件」迟早会在加一个区块时悄悄错掉：方向写反的话孔和底色
-同色、整条看不见，而且不报错。下面那个「学习资源」黑区同理，它的上一个区块要
-看两个 if 的组合。这两处留白，比留一个会烂掉的条件好。
-{% endcomment %}
-<section class="nf-section nf-light surf-hatch" data-nav="light" id="nf-honors">
-    <div class="container">
-        <div class="nf-works-head reveal">
-            <div>
-                <p class="nf-eyebrow">// HONORS</p>
-                <h2 class="nf-display">拿过的奖</h2>
-                {% if honor_summary.total %}
-                <p class="nf-honors-sub">
-                    累计 {{ honor_summary.total }} 项，其中国家级 {{ honor_summary.national }} 项。
-                </p>
-                {% endif %}
-            </div>
-            <a class="nf-link-more" href="{% url 'honors:wall' %}">看全部荣誉 <span>→</span></a>
-        </div>
-        <div class="hn-year-list reveal">
-            {% for honor in featured_honors %}
-                {% include "includes/honor_row.html" with honor=honor show_year=True %}
-            {% endfor %}
-        </div>
-    </div>
-</section>
-{% endif %}
-
-<!-- ============ 黑色区：学习资源 + B站 ============ -->
-{# `surf-hatch grain`：暗区覆铜（真实蚀刻纹照片） #}
-<section class="nf-section nf-dark surf-hatch grain" data-nav="dark">
-    <div class="container">
-        <p class="nf-eyebrow reveal">// RESOURCES</p>
-        <h2 class="nf-display reveal">技术传承<span class="accent">从未停歇</span></h2>
-
-        <!-- 学习资源：终端目录清单 -->
-        <div class="nf-res-term reveal">
-            <div class="term-bar" aria-hidden="true">
-                <span class="term-prompt">esta@heuesta:~$</span> ls ./学习资源<span class="term-caret">▍</span>
-            </div>
-            <a class="nf-res-row" href="{% url 'files:list' %}">
-                <span class="res-branch" aria-hidden="true">├─</span>
-                <span class="res-name">资料站</span>
-                <span class="res-desc">培训课件、竞赛资料、工具软件；按会员等级开放，具体以资料页权限为准</span>
-                <span class="res-go">浏览资料 <span>→</span></span>
-            </a>
-            <a class="nf-res-row" href="{{ forum_url }}" target="_blank" rel="noopener">
-                <span class="res-branch" aria-hidden="true">├─</span>
-                <span class="res-name">会员论坛</span>
-                {% comment %}
-                判据与导航、页脚共用 `user.is_member`（= SSO 门槛 roles.is_member）。
-                原文案对所有人写「主站账号直接登录」，而招新成员（等级 1）拿不到
-                SSO Cookie —— 登录再跳回来仍然是游客，控制台干净、页面正常。
-                {% endcomment %}
-                <span class="res-desc">{% if user.is_member %}提问、晒作品、找队友，主站账号直接登录{% else %}公开版块可浏览，一面通过后可参与讨论；新用户发帖需审核{% endif %}</span>
-                <span class="res-go">进入论坛 <span>→</span></span>
-            </a>
-            <a class="nf-res-row" href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">
-                <span class="res-branch" aria-hidden="true">└─</span>
-                <span class="res-name">B 站视频教程</span>
-                <span class="res-desc">STM32 系列教程、硬件培训回放、竞赛题解，持续更新</span>
-                <span class="res-go">前往 B 站 <span>→</span></span>
-            </a>
-        </div>
-
-        {% if bili_videos %}
-        <div class="nf-bili-head reveal">
-            <h3>精选培训视频</h3>
-            <a class="nf-link-more" href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">全部 {% firstof bili_stats.videos 93 %} 个视频 <span>↗</span></a>
-        </div>
-        <div class="bili-grid">
-            {% for v in bili_videos %}
-            <a class="bili-card reveal" href="{{ v.url }}" target="_blank" rel="noopener">
-                <div class="bili-cover">
-                    <img src="{{ v.pic }}" alt="{{ v.title }}" loading="lazy" decoding="async"
-                         referrerpolicy="no-referrer">
-                    <span class="bili-duration">{{ v.duration }}</span>
-                </div>
-                <div class="bili-info">
-                    <h3>{{ v.title }}</h3>
-                    <span class="bili-views">▶ {{ v.view }} 次观看</span>
-                </div>
-            </a>
-            {% endfor %}
-        </div>
-        {% endif %}
-    </div>
-</section>
-
-<!-- ============ 加入我们 ============ -->
-{% comment %}
-`grain` + 一块 `.join-bg`（焊点微距）。和新生指南页末那个加入面板**共用同一份
-实现**（`.join-bg` 在 core.css）—— 两处说的是同一句话「来焊你的第一块板」，
-所以不该有第二份代码。那份 CSS 的取景全用 px 钉死（距底边 67px、距右边 123px），
-与容器尺寸无关，所以搬到这个高得多的区块上不用改一个数。
-
-这里**不加 `.surf-*`**：`.nf-join-halo` 已经是一层大面积的光，再叠一层底纹就是
-两层材质加颗粒 —— 那是噪音不是层次（见 tokens.css「一个区块只能有一层表面」）。
-{% endcomment %}
 <section class="nf-join nf-dark grain" id="join" data-nav="dark">
     <div class="nf-join-halo" aria-hidden="true"></div>
     <div class="join-bg" aria-hidden="true"></div>
     <div class="container nf-center">
         <p class="nf-eyebrow reveal">// JOIN US</p>
         <h2 class="nf-display reveal">准备好点亮<br>你的<span class="accent">第一颗 LED</span> 了吗？</h2>
-        <p class="nf-join-sub reveal">{% firstof recruitment_name "2026 秋季招新" %}现已开放，注册后即可提交报名</p>
+        <p class="nf-join-sub reveal">{% if recruitment_open %}{{ recruitment_name }}现已开放，注册并验证邮箱后即可报名{% else %}了解协会的学习与实践，招新安排以招新页正式通知为准{% endif %}</p>
 
         {% if recruitment_closes_at %}
-        {% comment %}
-        倒计时。渐进增强：截止日期本身是服务端渲染的静态文字，永远在（也是无障碍
-        树里那份权威信息）；滴答的数字是 JS 上去之后才显示的装饰，所以初始
-        hidden，脚本没跑起来就不会露出一排 "--"。
 
-        时钟标 aria-hidden：每秒变一次的数字对读屏软件是噪音，日期那行已经把
-        信息说清楚了。
-        {% endcomment %}
         <div class="nf-countdown reveal" data-countdown="{{ recruitment_closes_at|date:'c' }}">
             <span class="nf-countdown-static">
                 报名截止 <time datetime="{{ recruitment_closes_at|date:'c' }}">{{ recruitment_closes_at|date:"n 月 j 日 H:i" }}</time>
@@ -602,15 +399,11 @@ includes/honor_row.html，和荣誉墙是同一份。
         </div>
     </div>
 </section>
-
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/hero-field.js' %}" defer></script>
+<script src="{% static 'js/hero-field.js' %}" data-fallback-src="{% static 'js/hero-field-canvas.js' %}" defer></script>
 <script src="{% static 'js/home.js' %}" defer></script>
-{% comment %}
-分镜模块：通过 ESTA.motion.scene() 注册，内核负责 reduced-motion 跳过、
-WebGL 门控与错误隔离。必须排在 motion-core 之后（base.html 里已保证）。
-{% endcomment %}
+
 <script src="{% static 'js/scenes/logo-forge.js' %}" defer></script>
 {% endblock %}

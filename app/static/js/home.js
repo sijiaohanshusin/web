@@ -150,6 +150,8 @@
             window.ESTA.hydrateImageFades(track);
         }
 
+        if (window.ESTA.loadDeferredImages) window.ESTA.loadDeferredImages(track);
+
         var AUTO_V = reducedMotion ? 0 : -0.45;   // 自动漂移目标速度
         var x = 0;              // 当前位移
         var v = AUTO_V;         // 当前速度（惯性与自动漂移共用）

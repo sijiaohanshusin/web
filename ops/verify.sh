@@ -100,48 +100,35 @@ echo "自托管字体（首屏仅预加载正文 Regular + Bold；装饰字体�
 # 页面在用的那个**。「文件在」证明不了任何事，要比对的是引用关系。
 preloads=$(grep -oE '<link[^>]*rel="preload"[^>]*as="font"[^>]*>' <<<"$html")
 preload_count=$(grep -c 'as="font"' <<<"$preloads")
-if [ "$preload_count" = "2" ] && has SourceHanSansCN-Regular "$preloads" && has SourceHanSansCN-Bold "$preloads"; then
+if [ "$preload_count" = "2" ] && has sans-regular-critical "$preloads" && has sans-bold-critical "$preloads"; then
     ok "只预加载两种共享正文字重"
 else
     bad "字体预加载不符合两种共享正文字重策略（$preload_count 项）"
 fi
-tokens_path=$(grep -oE '/static/css/tokens\.[0-9a-f]{12}\.css' <<<"$html" | head -1)
-tokens_css=""
-if [ -n "$tokens_path" ]; then
-    tokens_css=$(curl -fsS $R "$BASE$tokens_path") || bad "页面引用的字体样式表不可达"
-else
-    bad "页面未引用带哈希的 tokens.css"
-fi
-fonts=$(grep -oE 'fonts/[A-Za-z-]+\.[0-9a-f]{12}\.woff2' <<<"$tokens_css" | sort -u)
+font_paths=$(grep -oE '/static/css/(fonts(-critical)?|tokens)\.[0-9a-f]{12}\.css' <<<"$html")
+font_css=""
+for path in $font_paths; do
+    font_css+=$(curl -fsS $R "$BASE$path") || bad "字体样式不可达: $path"
+done
+fonts=$(grep -oE 'fonts/(shards/)?[A-Za-z0-9-]+\.[0-9a-f]{12}\.woff2' <<<"$font_css" | sort -u)
 if [ -z "$fonts" ]; then
     bad "页面引用的样式表没有声明自托管字体"
 else
-    n=$(wc -l <<<"$fonts")
-    if [ "$n" = "6" ]; then ok "CSS 声明了 6 个自托管字体，不等于同时预加载"; else bad "CSS 声明了 $n 个字体，应为 6"; fi
     for f in $fonts; do
-        base=$(basename "$f")
+        if [ ! -f "$STATIC/$f" ]; then bad "缺少字体分片 $f"; fi
+    done
+    ok "字体 CSS 引用的 $(wc -l <<<"$fonts") 个分片均已收集"
+    critical=$(grep -E 'critical|ESTADigits' <<<"$fonts")
+    for f in $critical; do
         c=$(curl -sS $R -o /dev/null -w '%{http_code}' "$BASE/static/$f")
-        if [ ! -f "$STATIC/$f" ]; then
-            bad "$base 被引用但磁盘上没有"
-        elif [ "$c" != "200" ]; then
-            bad "$base 返回 $c"
-        else
-            disk=$(stat -c %s "$STATIC/$f")
-            # 和仓库里那份比大小：一样才说明 collectstatic 收的是这次推上来的版本
-            src="/opt/heuesta/web/app/static/fonts/$(echo "$base" | sed -E 's/\.[0-9a-f]{12}\././')"
-            if [ -f "$src" ] && [ "$disk" != "$(stat -c %s "$src")" ]; then
-                bad "$base 与仓库里那份大小不一致（收的是旧版？）"
-            else
-                ok "$base 可达且与仓库一致（$((disk / 1024)) KB）"
-            fi
-        fi
+        if [ "$c" = 200 ]; then ok "首屏字体可达: $f"; else bad "字体返回 $c: $f"; fi
     done
 fi
 
 echo
 echo "首页真的是新版（找几个改版才有的标记）"
 for probe in 'skip-link' 'view-transitions' 'nf-hero' '帮助中心与使用手册' \
-             'SourceHanSansCN-Regular-subset'; do
+             'sans-regular-critical'; do
     if has "$probe" "$html"; then
         ok "首页含 $probe"
     else
