@@ -45,8 +45,6 @@
                  {% if project.cover_w %}width="{{ project.cover_w }}" height="{{ project.cover_h }}"{% endif %}
                  decoding="async">
         </figure>
-        {% else %}
-        {% include "includes/empty_board.html" with label="还差一张封面" brief="4:3 横构图的成品照，能看清做出来的是什么。" ratio="4 / 3" css_class="wk-shot" %}
         {% endif %}
 
         {% if project.summary %}

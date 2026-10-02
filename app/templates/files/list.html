@@ -99,7 +99,7 @@
         {% if query %}
             {% include "includes/empty_state.html" with icon="tray" title="没有找到相关资料" body="换个关键词，或者先按分类翻一遍 —— 资料标题多用课件原名，未必和你想的叫法一样。" cta="看全部资料" cta_url="/resources/" %}
         {% elif not user.is_authenticated %}
-            {% include "includes/empty_state.html" with icon="tray" title="这里还没有公开资料" body="课件与竞赛资料大多只对会员开放。登录后能看到与你的会员等级对应的资料，也可以先阅读新生指南。" cta="读新生指南" cta_url="/recruit/" %}
+            {% include "includes/empty_state.html" with icon="tray" title="暂无公开下载文件" body="公开培训回放和入门路线已整理在上方。已发布文件按会员等级显示。" cta="读新生指南" cta_url="/recruit/" %}
         {% else %}
             {% include "includes/empty_state.html" with icon="tray" title="这个分类下还没有资料" body="换一个分类看看，或者先阅读新生指南中的学习建议。" cta="读新生指南" cta_url="/recruit/" %}
         {% endif %}
