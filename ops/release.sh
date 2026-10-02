@@ -109,8 +109,8 @@ if [[ ! -L "$REPO_DIR" ]]; then
     mv "$REPO_DIR" "$old_source"
     printf '%s\n' "$old_source" > "$state/previous-source"
 fi
-ln -sfn "$RELEASE" "$REPO_DIR"
 switched=1
+ln -sfn "$RELEASE" "$REPO_DIR"
 export HEUESTA_APP_IMAGE="$IMAGE"
 compose --profile honor-ai up -d --no-build --no-deps app honor-ai-worker
 ready "$APP_PORT"
