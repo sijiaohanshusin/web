@@ -2,7 +2,10 @@
 {% load static %}
 
 {% block title %}{{ project.name }} | 作品墙 | {{ site_config.site_name_en }}{% endblock %}
+{% block og_title %}{{ project.name }} | 作品墙 | {{ site_config.site_name_en }}{% endblock %}
 {% block description %}{{ project.teaser|default:project.name }}{% endblock %}
+{% block og_description %}{{ project.teaser|default:project.name }}{% endblock %}
+{% block og_image %}{% if project.cover %}{{ public_site_url }}{{ project.cover_url }}{% else %}{{ block.super }}{% endif %}{% endblock %}
 {% block body_class %}page-works{% endblock %}
 
 {% block content %}
@@ -42,8 +45,6 @@
                  {% if project.cover_w %}width="{{ project.cover_w }}" height="{{ project.cover_h }}"{% endif %}
                  decoding="async">
         </figure>
-        {% else %}
-        {% include "includes/empty_board.html" with label="还差一张封面" brief="4:3 横构图的成品照，能看清做出来的是什么。" ratio="4 / 3" css_class="wk-shot" %}
         {% endif %}
 
         {% if project.summary %}

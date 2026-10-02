@@ -13,6 +13,7 @@ from django.utils import timezone
 
 from accounts.roles import content_level, is_officer
 
+from core.learning import LEARNING_PATHS
 from .forms import ResourceUploadForm
 from .models import Resource
 
@@ -40,6 +41,7 @@ def resource_list(request):
     week_ago = timezone.now() - timedelta(days=7)
 
     context = {
+        "learning_paths": LEARNING_PATHS,
         "page": page,
         "query": query,
         "category": category,

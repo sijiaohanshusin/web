@@ -195,3 +195,16 @@ def feedback_detail(request, pk: int):
         "is_officer_viewer": is_officer(request.user),
     }
     return render(request, "core/feedback_detail.html", context)
+
+
+@never_cache
+def readiness(request):
+    """Nginx blocks public access; readiness never calls external services."""
+    from django.db import connection, DatabaseError
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except DatabaseError:
+        return JsonResponse({"status": "unavailable"}, status=503)
+    return JsonResponse({"status": "ok"})

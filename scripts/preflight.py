@@ -199,7 +199,7 @@ def check_deploy_files():
     needed = [
         "ops/docker-compose.yml", "ops/Dockerfile", "ops/entrypoint.sh",
         "ops/env.example", "ops/nginx/heuesta.cn.conf",
-        "ops/heuesta-backup.service", "ops/heuesta-backup.timer",
+        "ops/release.sh", "ops/rollback-release.sh", "ops/heuesta-bilibili.service", "ops/heuesta-bilibili.timer",
         "ops/heuesta-event-reminder.service", "ops/heuesta-event-reminder.timer",
         "ops/backup.sh", "learn",
     ]
@@ -299,9 +299,9 @@ MANUAL = [
     "部署后抽查 `curl -sI -H 'Accept-Encoding: gzip' https://heuesta.cn/static/js/"
     "motion-core.<hash>.js | grep -i content-encoding` 确认 JS 真的压缩了",
     "部署后抽查 `curl -I https://heuesta.cn/ | grep -i x-frame-options` 应为 SAMEORIGIN",
-    "先备份数据库再部署：ops/backup.sh（deploy.sh 不含备份）",
+    "按 docs/launch-release.md 核对候选、版本和代码回退；本轮备份维护按用户决定暂缓",
     "本机没有 Docker，镜像构建只能在服务器上验；构建就在 2 核 1.6G 上做，留出时间",
-    "站务在 /dashboard/media/ 补图后再对外宣传（现在多数位置是空焊盘占位）",
+    "核对 docs/content/2026-launch-review.md 的事实清单后，再发布作品与纪事草稿",
 ]
 
 
@@ -336,7 +336,7 @@ def main() -> int:
         for f in failures:
             print(f"  · {f}")
         return 1
-    print("候选版本本地检查通过；发布仍需 main 对齐、备份和公网验收。" if "--candidate" in sys.argv else "地面检查全部通过 —— 可以按 docs/2026改版计划.md 的上线步骤走")
+    print("候选版本本地检查通过；发布仍需版本核对和公网验收。" if "--candidate" in sys.argv else "地面检查全部通过 —— 按 docs/launch-release.md 执行发布验证")
     return 0
 
 

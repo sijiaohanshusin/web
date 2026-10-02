@@ -6,44 +6,52 @@ name: heuesta
 services:
   honor-ai-worker:
     profiles: [honor-ai]
+    image: ${HEUESTA_APP_IMAGE:-heuesta-app:latest}
     build:
       context: ..
       dockerfile: ops/Dockerfile
     entrypoint: ["python", "manage.py", "honor_ai_worker"]
     restart: unless-stopped
     env_file:
-      - /opt/heuesta/.env
+      - ${HEUESTA_ENV_FILE:-/opt/heuesta/.env}
     environment:
-      POSTGRES_HOST: db
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
     volumes:
-      - /srv/heuesta/media:/app/media
+      - ${HEUESTA_DATA_ROOT:-/srv/heuesta}/media:/app/media
     depends_on:
       db:
         condition: service_healthy
-    mem_limit: 220m
+    mem_limit: ${HONOR_WORKER_MEMORY:-220m}
     logging:
       driver: json-file
       options:
         max-size: "5m"
         max-file: "2"
   app:
+    image: ${HEUESTA_APP_IMAGE:-heuesta-app:latest}
     build:
       context: ..
       dockerfile: ops/Dockerfile
     restart: unless-stopped
     env_file:
-      - /opt/heuesta/.env
+      - ${HEUESTA_ENV_FILE:-/opt/heuesta/.env}
     environment:
-      POSTGRES_HOST: db
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
     ports:
-      - "127.0.0.1:8001:8000"
+      - "${HEUESTA_BIND:-127.0.0.1}:${HEUESTA_PORT:-8001}:8000"
     volumes:
-      - /srv/heuesta/static:/app/staticfiles
-      - /srv/heuesta/media:/app/media
+      - ${HEUESTA_DATA_ROOT:-/srv/heuesta}/static:/app/staticfiles
+      - ${HEUESTA_DATA_ROOT:-/srv/heuesta}/media:/app/media
     depends_on:
       db:
         condition: service_healthy
-    mem_limit: 450m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,os; r=urllib.request.Request('http://127.0.0.1:8000/health/ready/',headers={'Host':os.getenv('DJANGO_ALLOWED_HOSTS','heuesta.cn').split(',')[0]}); urllib.request.urlopen(r,timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+    mem_limit: ${APP_MEMORY:-450m}
     logging:
       driver: json-file
       options:
@@ -58,13 +66,13 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - /srv/heuesta/pgdata:/var/lib/postgresql/data
+      - ${HEUESTA_DATA_ROOT:-/srv/heuesta}/pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 4s
       retries: 12
-    mem_limit: 300m
+    mem_limit: ${DB_MEMORY:-300m}
     shm_size: 128mb
     logging:
       driver: json-file

@@ -7,9 +7,7 @@
      2. 加载完成 + 描线播完 后揭幕
      3. 同一会话内二次进入直接跳过
 
-   为什么进度要"真实"：用户明确说过首访可以慢，那就不能拿一个假的定时动画
-   糊弄——进度条走完了页面还没好，比没有进度条更糟。这里跟踪的是字体就绪、
-   window load，以及由页面自己登记的额外任务（例如 3D 会标就绪）。
+   跟踪首屏必要字体与描线动画；屏外字体、媒体和 3D 不阻塞阅读。
 
    对外接口：
      ESTA.preload.add(promise, label)  登记一个必须等的任务
@@ -29,6 +27,20 @@
     // 但仍要把 done 兑现，否则等它的分镜会一直挂着。
     var reduced = win.matchMedia && win.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    function loadDetailFonts() {
+        // Enabling a pending stylesheet before defer scripts execute blocks those
+        // scripts too. Let navigation bind and paint before starting more fonts.
+        function activate() {
+            requestAnimationFrame(function () { requestAnimationFrame(function () {
+                var styles = document.getElementById("font-detail-styles");
+                if (styles) styles.media = "all";
+            }); });
+        }
+        function afterOpeningPaint() { setTimeout(activate, el && !alreadySeen && !reduced ? 700 : 0); }
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", afterOpeningPaint, {once:true});
+        else afterOpeningPaint();
+    }
+
     var resolveDone;
     var donePromise = new Promise(function (res) { resolveDone = res; });
 
@@ -45,6 +57,7 @@
         if (el) el.parentNode.removeChild(el);
         html.classList.remove("esta-pre-lock");
         resolveDone();
+        loadDetailFonts();
         win.ESTA.preload = { add: function () {}, done: donePromise, skipped: true };
         return;
     }
@@ -96,6 +109,7 @@
 
     /** 登记一个按时间线性推进的任务（用于已知时长的动画）。 */
     function trackTimed(ms, label) {
+        if (ms <= 0) return Promise.resolve();
         var task = { label: label, progress: 0 };
         tasks.push(task);
         var start = performance.now();
@@ -106,22 +120,16 @@
         return new Promise(function (res) { setTimeout(res, ms); });
     }
 
-    /* ---------- 默认跟踪项 ---------- */
-    // 字体：中文标题用的是自托管子集，没就绪就揭幕会看到一次字体跳变
-    track(
-        document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve(),
-        "fonts"
-    );
-
-    // window load：图片、样式、脚本全部落地
-    track(new Promise(function (res) {
-        if (document.readyState === "complete") res();
-        else win.addEventListener("load", res, { once: true });
-    }), "load");
+    /* Only critical hero type is part of the opening. Below-fold fonts and
+       media never hold navigation or scrolling hostage. */
+    if (document.fonts && document.fonts.load) {
+        track(document.fonts.load('700 16px "ESTA Sans"', '电子科技协会'), 'brand');
+        track(document.fonts.load('900 48px "ESTA Display"', '焊接每一个奇思妙想'), 'title');
+    }
 
     // 描线动画本身也是"内容"，没播完就揭幕等于白做。
-    // 时长与内联 CSS 的最后一段（order=5，延迟 1.22s + 时长 1.05s）对齐。
-    var DRAW_MS = 2320;
+    // 与完整六段描线的最后一段（延迟 .76s + 时长 .65s）对齐。
+    var DRAW_MS = Math.max(0, Math.min(1450 - (performance.now() - (win.ESTAOpeningStarted || performance.now())), 2800 - performance.now()));
     trackTimed(DRAW_MS, "draw");
 
     paint();
@@ -149,10 +157,11 @@
                 el.classList.add("is-done");
                 html.classList.remove("esta-pre-lock");
                 resolveDone();
+                loadDetailFonts();
                 // 动画结束后从 DOM 移除，避免一个全屏元素常驻影响命中测试
                 setTimeout(function () {
                     if (el.parentNode) el.parentNode.removeChild(el);
-                }, 900);
+                }, 600);
             });
         });
     }
@@ -170,9 +179,10 @@
     };
     waitAll().then(lift);
 
-    // 硬超时：无论如何 7 秒必须放人进来。比内联 CSS 的 9 秒兜底更早，
-    // 所以正常路径下用户看到的是这条，兜底那条只在 JS 整体失效时生效。
-    setTimeout(lift, 7000);
+    // Critical resources have a bounded wait; the opening remains skippable.
+    setTimeout(lift, Math.max(0, 3000 - performance.now()));
+    var skip = document.getElementById("esta-pre-skip");
+    if (skip) skip.addEventListener("click", lift);
 
     win.ESTA.preload = { add: track, done: donePromise, skipped: false };
 })();

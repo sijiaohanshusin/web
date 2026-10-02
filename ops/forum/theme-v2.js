@@ -229,6 +229,9 @@ ul.category-children a i { margin-right: 4px; }
 /* ---------- 页脚 ---------- */
 #footer, [component="footer"] { color: #9db7dc; }
 
+/* ESTA launch: logo contrast */
+img[component="brand/logo"] { background:#061c20; border:1px solid #0bb3c7; padding:6px; border-radius:8px; object-fit:contain; }
+
 `;
 
 /* ============================ 帖子页装饰 JS（注入每页 head） ============================ */
@@ -341,7 +344,7 @@ const CUSTOM_HTML = `
     if (tpl === 'categories' && !container.querySelector('.esta-qq-bar')) {
       var bar = document.createElement('div');
       bar.className = 'esta-qq-bar';
-      bar.innerHTML = '2026 秋季招新现已开放 · QQ 群：<span class="esta-qq-num">1081376858</span>' +
+      bar.innerHTML = '招新安排请查看官网 · QQ 群：<span class="esta-qq-num">1081376858</span>' +
         '<span style="opacity:.75">丨官网 <a href="https://heuesta.cn/recruitment/">heuesta.cn/recruitment/</a></span>';
       var ref = container.querySelector('.esta-banner');
       if (ref && ref.nextSibling) { container.insertBefore(bar, ref.nextSibling); } else { container.insertBefore(bar, container.firstChild); }

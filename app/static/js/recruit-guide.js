@@ -118,3 +118,15 @@
     }
     update();
 })();
+
+// Hash links open the requested chapter before positioning it; old shared URLs survive.
+(function () {
+    function openChapter() {
+        var id; try { id = decodeURIComponent(location.hash.slice(1)); } catch (_) { return; }
+        var target = document.getElementById(id); if (!target) return;
+        var parent = target.closest('details'), inner = target.querySelector('.rg-details');
+        if (parent) parent.open = true; if (inner) inner.open = true;
+        requestAnimationFrame(function () { target.scrollIntoView({block:'start'}); });
+    }
+    window.addEventListener('hashchange', openChapter); openChapter();
+})();

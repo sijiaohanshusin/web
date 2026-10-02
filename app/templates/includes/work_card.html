@@ -5,8 +5,8 @@
   project  Project 实例
   eager    首屏那几张传 True，其余懒加载
 
-封面缺位时渲染空焊盘占位（includes/empty_board.html），**不是**换一张默认图 ——
-「这件作品还差一张照片」是有信息量的状态，一张不相干的默认图只会误导。
+封面缺位时使用空焊盘文字版式（includes/empty_board.html），以作品名称为标签。
+公开卡片不展示内部拍摄要求，也不使用无关照片。
 
 `data-vt-card` + `data-vt-part="cover"` 是跨页转场的标记（见 view-transitions.js）：
 点进详情页时这张封面会长成详情页顶部那张大图。只在**真有封面**时标 —— 占位框两边
@@ -20,7 +20,7 @@
              loading="{% if eager %}eager{% else %}lazy{% endif %}" decoding="async">
     </figure>
     {% else %}
-    {% include "includes/empty_board.html" with label="还差一张封面" brief="做完了记得拍一张 4:3 的成品照。" ratio="4 / 3" css_class="wk-cover" %}
+    {% include "includes/empty_board.html" with label=project.name brief="" ratio="4 / 3" css_class="wk-cover" %}
     {% endif %}
 
     <div class="wk-card-body">

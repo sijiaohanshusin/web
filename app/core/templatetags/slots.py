@@ -51,7 +51,7 @@ def _upload_url(key: str) -> str | None:
 
 @register.inclusion_tag("includes/slot.html", takes_context=True)
 def slot(context, key, ratio=None, css_class="", eager=False, show_cta=True,
-         fallback_url=""):
+         fallback_url="", deferred=False):
     """渲染一个素材槽。
 
     参数
@@ -85,6 +85,7 @@ def slot(context, key, ratio=None, css_class="", eager=False, show_cta=True,
 
     return {
         "spec": spec,
+        "deferred": deferred,
         "obj": filled,
         # 视频槽只有真的传了片段才走 <video>。只传封面时它就是一张静态图 ——
         # 视频槽是图片槽的超集，不需要为「还没剪好片子」单独准备降级素材。

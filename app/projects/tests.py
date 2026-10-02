@@ -351,7 +351,9 @@ class WorksCoverRenderTests(TestCase):
         resp = self.client.get(reverse("works:wall"))
         self.assertContains(resp, "slot is-empty")
         self.assertContains(resp, "slot-fid")
-        self.assertContains(resp, "还差一张封面")
+        self.assertContains(resp, '<strong class="slot-empty-label">没封面</strong>')
+        self.assertNotContains(resp, "还差一张封面")
+        self.assertNotContains(resp, "slot-empty-brief")
         # 绝不引一张不存在的图，也不换默认图糊过去
         self.assertNotContains(resp, "<img")
         self.assertEqual(p.tag_list, [])

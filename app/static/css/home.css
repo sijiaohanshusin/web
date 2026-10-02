@@ -797,3 +797,25 @@ html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned .nf-forge-pin {
 @media (max-width: 720px) {
     html.motion-ready:not(.motion-reduced) .nf-forge.is-pinned { height: 300vh; }
 }
+
+/* Launch edition: documentary content first, direct access to every complete scene. */
+.nf-chapters { display:flex; flex-wrap:wrap; gap:10px 24px; padding-top:22px; padding-bottom:22px; border-bottom:1px solid var(--line-d); }
+.nf-chapters a { font-size:14px; color:var(--muted); padding:6px 0; }
+.nf-chapters a:hover { color:var(--accent-2); }
+.nf-section { padding-block:clamp(56px,7vw,100px); }
+.nf-section-head { display:flex; align-items:end; justify-content:space-between; gap:24px; margin-bottom:32px; }
+.nf-evidence-grid { display:grid; grid-template-columns:1fr 1fr; gap:28px; }
+.nf-evidence-grid a { color:var(--text); }
+.nf-evidence-grid figure { margin:0; }
+.nf-evidence-grid img { display:block; width:100%; height:auto; aspect-ratio:4/3; object-fit:cover; border-radius:18px; }
+.nf-evidence-grid figcaption { padding:22px 0 0; }
+.nf-evidence-grid figcaption>span { color:var(--accent-2); font-size:13px; }
+.nf-evidence-grid h3 { font-size:clamp(21px,2.2vw,30px); margin:8px 0; }
+.nf-evidence-grid p,.nf-media-caption,.nf-history-note { color:var(--muted); font-size:15px; line-height:1.8; }
+.nf-gallery-section { padding-block:64px; }
+@media(max-width:600px) {
+ .nf-evidence-grid { grid-template-columns:1fr; gap:32px; }
+ .nf-section-head { align-items:start; flex-direction:column; gap:12px; }
+ .nf-chapters { gap:4px 20px; }
+ .nf-evidence-grid img { aspect-ratio:3/2; }
+}

@@ -90,17 +90,9 @@
     var reducedQuery = mq("(prefers-reduced-motion: reduce)");
 
     function probeWebGL() {
-        // 只探测能力，探完立刻释放上下文：某些移动 GPU 的并发上下文数很紧
-        try {
-            var c = document.createElement("canvas");
-            var gl = c.getContext("webgl2") || c.getContext("webgl");
-            if (!gl) return false;
-            var lose = gl.getExtension("WEBGL_lose_context");
-            if (lose) lose.loseContext();
-            return true;
-        } catch (e) {
-            return false;
-        }
+        // Context creation can synchronously stall mobile navigation. The real
+        // scene tests allocation when visible and already has an SVG fallback.
+        return !!(win.WebGL2RenderingContext || win.WebGLRenderingContext);
     }
 
     var caps = {

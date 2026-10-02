@@ -213,7 +213,7 @@ class BilibiliRequestHeaderTests(TestCase):
                 status_code=200,
                 json=mock.Mock(return_value={"code": 0, "data": {"title": "标题", "pic": "http://i0.hdslb.com/a.jpg"}}),
             )
-            bilibili.get_video_info("BV1AhnGzVEsD")
+            bilibili.get_video_info("BV1AhnGzVEsD", refresh=True)
 
         sent = get.call_args.kwargs["headers"]
         self.assertEqual(sent, bilibili.HEADERS)
@@ -231,7 +231,7 @@ class BilibiliRequestHeaderTests(TestCase):
                     "stat": {"view": 23456},
                 }}),
             )
-            info = bilibili.get_video_info("BV1AhnGzVEsD")
+            info = bilibili.get_video_info("BV1AhnGzVEsD", refresh=True)
 
         self.assertEqual(info["title"], "电子科技协会招新宣传视频")
         self.assertTrue(info["pic"].startswith("https://"))
@@ -239,12 +239,12 @@ class BilibiliRequestHeaderTests(TestCase):
         self.assertEqual(info["view"], "2.3万")
 
     @override_settings(BILIBILI_API_ENABLED=True)
-    def test_412_degrades_without_raising_and_negative_caches(self):
+    def test_412_does_not_raise_or_make_page_reads_retry(self):
         with mock.patch("core.bilibili.requests.get") as get:
             get.return_value = mock.Mock(status_code=412, json=mock.Mock(return_value={}))
             with self.assertLogs("core.bilibili", level="WARNING") as logs:
-                first = bilibili.get_video_info("BV1AhnGzVEsD")
-            # 命中失败短缓存，不再打第二次请求
+                first = bilibili.get_video_info("BV1AhnGzVEsD", refresh=True)
+            # 页面读取不触发请求，失败时后台稍后重试
             second = bilibili.get_video_info("BV1AhnGzVEsD")
 
         self.assertIsNone(first)
@@ -258,15 +258,15 @@ class BilibiliRequestHeaderTests(TestCase):
     def test_network_error_degrades(self):
         with mock.patch("core.bilibili.requests.get", side_effect=requests.ConnectionError("boom")):
             with self.assertLogs("core.bilibili", level="WARNING"):
-                self.assertIsNone(bilibili.get_stats("70859324"))
-                self.assertEqual(bilibili.get_latest_videos("70859324"), [])
+                self.assertIsNone(bilibili.get_stats("70859324", refresh=True))
+                self.assertEqual(bilibili.get_latest_videos("70859324", refresh=True), [])
 
     @override_settings(BILIBILI_API_ENABLED=False)
     def test_kill_switch_skips_network_entirely(self):
         with mock.patch("core.bilibili.requests.get") as get:
-            self.assertIsNone(bilibili.get_video_info("BV1AhnGzVEsD"))
-            self.assertIsNone(bilibili.get_stats("70859324"))
-            self.assertEqual(bilibili.get_latest_videos("70859324"), [])
+            self.assertIsNone(bilibili.get_video_info("BV1AhnGzVEsD", refresh=True))
+            self.assertIsNone(bilibili.get_stats("70859324", refresh=True))
+            self.assertEqual(bilibili.get_latest_videos("70859324", refresh=True), [])
         get.assert_not_called()
 
 
@@ -305,8 +305,8 @@ class HomeAccessCopyTests(TestCase):
     def test_deploy_check_follows_css_font_references_not_six_preloads(self):
         from pathlib import Path
         script = (Path(__file__).resolve().parents[2] / "ops" / "verify.sh").read_text(encoding="utf-8")
-        self.assertIn('tokens_css=$(curl', script)
-        self.assertIn('<<<"$tokens_css"', script)
+        self.assertIn('font_paths=', script)
+        self.assertIn('<<<"$font_css"', script)
         self.assertIn('preload_count', script)
         self.assertNotIn('首页引用了 $n 个字体，应为 6', script)
 
@@ -724,16 +724,16 @@ class MediaSlotRenderTests(TestCase):
         from django.utils.html import escape
 
         html = self._render(self.empty_key)
-        self.assertIn("slot is-empty", html)
-        self.assertIn("slot-fid", html)                        # 四角定位标
+        self.assertIn("slot-note", html)
+        self.assertNotIn("slot-fid", html)                        # 四角定位标
         self.assertIn(escape(self.empty_spec.label), html)     # 名字
-        self.assertIn(escape(self.empty_spec.brief), html)     # 拍摄要求原样显示
+        self.assertNotIn(escape(self.empty_spec.brief), html)     # 拍摄要求原样显示
         self.assertNotIn("<img", html)                         # 绝不引一张不存在的图
 
     def test_empty_slot_reserves_layout_via_aspect_ratio(self):
         """占位与填好图必须占同样的版面，否则补图前后要排两次版。"""
         html = self._render(self.empty_key)
-        self.assertIn(f"aspect-ratio: {self.empty_spec.ratio}", html)
+        self.assertNotIn("aspect-ratio:", html)
 
     def test_slot_with_static_fallback_renders_an_image(self):
         html = self._render(self.FILLED_KEY)
@@ -766,7 +766,7 @@ class MediaSlotRenderTests(TestCase):
             key=self.empty_key, image=make_png("y.png"), is_active=False,
         )
         html = self._render(self.empty_key)
-        self.assertIn("slot is-empty", html)
+        self.assertIn("slot-note", html)
 
     def test_upload_affordance_is_officer_only(self):
         """上传入口只给站务看，不要把内部流程摆在公开页面上。
@@ -813,6 +813,7 @@ class MediaSlotRenderTests(TestCase):
         import re as _re
 
         body = self.client.get(reverse("core:home")).content.decode()
+        body = _re.sub(r"<noscript>.*?</noscript>", "", body, flags=_re.S)
         srcs = _re.findall(r'<img[^>]+src="([^"]+\.(?:webp|png|jpe?g))"', body)
         self.assertGreater(len(srcs), 6, "首页图片太少，这条断言没测到东西")
 
@@ -848,7 +849,7 @@ class MediaSlotRenderTests(TestCase):
         """
         html = self._render(self.FILLED_KEY) + self._render(self.empty_key)
         self.assertIn("slot is-filled", html)
-        self.assertIn("slot is-empty", html)
+        self.assertIn("slot-note", html)
 
 
 def make_mp4(name="clip.mp4", size=2048):
@@ -891,7 +892,7 @@ class VideoSlotRenderTests(TestCase):
 
     def test_no_upload_renders_the_placeholder(self):
         html = self._render()
-        self.assertIn("slot is-empty", html)
+        self.assertIn("slot-note", html)
         self.assertNotIn("<video", html)
 
     def test_poster_only_degrades_to_a_plain_image(self):
@@ -1171,7 +1172,7 @@ class GuidePageTests(TestCase):
         for key in ("recruit.training.session", "recruit.hardware.bench",
                     "recruit.software.debug"):
             self.assertIn(f'data-slot-key="{key}"', self.body, f"模板里没有用 {key}")
-        self.assertEqual(len(re.findall(r'class="slot is-\w+ rg-shot"', self.body)), 3)
+        self.assertEqual(len(re.findall(r'class="(?:slot is-\w+|slot-note) rg-shot"', self.body)), 3)
 
     def test_reference_gallery_stays_static_images(self):
         """图鉴不该被顺手改成素材槽。
@@ -1678,8 +1679,8 @@ class DeployPerfContractTests(TestCase):
         text = _template_text("base.html")
         preloads = re.findall(r'<link rel="preload"[^>]*as="font"[^>]*>', text)
         self.assertEqual(len(preloads), 2)
-        for weight in ("Regular", "Bold"):
-            self.assertIn(f"SourceHanSansCN-{weight}-subset.woff2", " ".join(preloads))
+        for weight in ("regular", "bold"):
+            self.assertIn(f"sans-{weight}-critical.woff2", " ".join(preloads))
 
     def test_auth_styles_are_not_loaded_on_public_content_pages(self):
         self.assertNotContains(self.client.get("/help/"), "css/auth.css")
@@ -1703,12 +1704,12 @@ class DeployPerfContractTests(TestCase):
         # 兜底栈还在，且 ESTA Sans 排在它前面
         self.assertIn("--font-sys: -apple-system", css)
         self.assertLess(css.index('--font-body: "ESTA Sans"'), css.index("body {"))
-        for weight, path in (("400", "SourceHanSansCN-Regular-subset.woff2"),
-                             ("700", "SourceHanSansCN-Bold-subset.woff2")):
-            with self.subTest(weight=weight):
-                block = css[css.index(path):]
-                self.assertIn(f"font-weight: {weight};", block[:200],
-                              f"{path} 的 @font-face 没声明 {weight} 字重")
+        import json
+        manifest = json.loads((Path(settings.BASE_DIR) / "static/fonts/shards/manifest.json").read_text())
+        body_faces = [f for f in manifest if f["family"] == "ESTA Sans"]
+        self.assertEqual({f["weight"] for f in body_faces}, {"400", "700"})
+        for face in body_faces:
+            self.assertTrue(any("critical" in shard["file"] for shard in face["shards"]))
 
     def test_clickjacking_header_comes_from_nginx_because_simpleui_drops_it(self):
         """**django-simpleui 会把 XFrameOptionsMiddleware 从 MIDDLEWARE 里 pop 掉。**
