@@ -13,7 +13,7 @@
     <meta property="og:description" content="{% block og_description %}招新信息、电子学培训、竞赛资料与学习资源。焊接每一个奇思妙想。{% endblock %}">
     <link rel="canonical" href="{{ canonical_url }}">
     <meta property="og:url" content="{{ canonical_url }}">
-    <meta property="og:image" content="{{ public_site_url }}{% static 'img/og-card.png' %}">
+    <meta property="og:image" content="{% block og_image %}{{ public_site_url }}{% static 'img/og-card.png' %}{% endblock %}">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
     <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">

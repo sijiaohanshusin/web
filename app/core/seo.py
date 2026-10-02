@@ -12,7 +12,6 @@ def sitemap(request):
     from news.models import Post
     from events.models import Event
     from projects.models import Project
-    from showcase.models import Showcase
     ns = "http://www.sitemaps.org/schemas/sitemap/0.9"
     ET.register_namespace("", ns)
     root = ET.Element(f"{{{ns}}}urlset")
@@ -29,8 +28,8 @@ def sitemap(request):
         add(reverse("events:detail", args=[pk]))
     for pk in Project.public().values_list("pk", flat=True).iterator():
         add(reverse("works:detail", args=[pk]))
-    for public_id in Showcase.objects.visible().values_list("pk", flat=True).iterator():
-        add(reverse("team:detail", args=[public_id]))
+    # Member detail pages intentionally declare noindex even when voluntarily
+    # public. Keep their existing privacy choice out of search discovery.
     response = HttpResponse(ET.tostring(root, encoding="utf-8", xml_declaration=True), content_type="application/xml")
     response["Cache-Control"] = "no-store"
     return response

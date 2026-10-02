@@ -1,5 +1,6 @@
 {% extends 'helpcenter/base.html' %}
 {% block title %}帮助中心 | HEU ESTA{% endblock %}
+{% block og_title %}帮助中心 | HEU ESTA{% endblock %}
 {% block help_content %}
 <header class="hc-hero"><p class="hc-kicker">HEU ESTA / FIELD GUIDE</p><h1>把操作弄明白，<br><span>把时间留给创造。</span></h1><p>选择你的身份，找到眼前的任务。每篇都有步骤、截图和完成检查。</p>{% include 'helpcenter/search_form.html' %}</header>
 <div class="hc-guides">{% for item in guides %}<a class="hc-guide hc-guide--{{ item.key }}" href="{% url 'helpcenter:guide' item.key %}"><span class="hc-guide-number">0{{ forloop.counter }} / {{ item.tag }}</span><h2>{{ item.label }}</h2><p>{{ item.summary }}</p><span class="hc-guide-bottom">{{ item.count }} 个操作任务 <b aria-hidden="true">↗</b></span></a>{% endfor %}</div>

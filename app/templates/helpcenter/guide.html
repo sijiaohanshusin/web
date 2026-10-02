@@ -1,5 +1,6 @@
 {% extends 'helpcenter/base.html' %}
 {% block title %}{{ guide.title }} | HEU ESTA{% endblock %}
+{% block og_title %}{{ guide.title }} | HEU ESTA{% endblock %}
 {% block help_content %}
 <header class="hc-guide-hero"><div><p class="hc-kicker">{{ guide.tag }}{% if audience == 'admin' %} / 内部使用{% endif %}</p><h1>{{ guide.title }}</h1><p>{{ guide.summary }}</p></div><a class="hc-action" href="{{ guide.action }}">{% if audience == 'admin' %}进入管理驾驶舱{% elif audience == 'recruit' %}开始新会员注册{% else %}打开个人中心{% endif %} ↗</a></header>
 {% include 'helpcenter/search_form.html' %}

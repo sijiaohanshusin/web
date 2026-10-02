@@ -1,6 +1,8 @@
 """Visual, mobile and cold/warm lab evidence. Public GETs only when --base-url is set."""
 import argparse
 import json
+import ipaddress
+from urllib.parse import urlsplit
 from contextlib import nullcontext
 from pathlib import Path
 from playwright.sync_api import sync_playwright
@@ -21,6 +23,7 @@ def main():
     parser.add_argument('--engine', default='chromium')
     parser.add_argument('--perf-only', action='store_true')
     parser.add_argument('--compressed', action='store_true')
+    parser.add_argument('--resolve-ip', help='Chromium-only explicit origin/lab IP; never changes system DNS.')
     args=parser.parse_args()
     OUT.mkdir(parents=True,exist_ok=True)
     base=args.base_url or ('http://127.0.0.1:8886' if args.compressed else 'http://127.0.0.1:8884')
@@ -28,7 +31,12 @@ def main():
     from preview_compressed import CompressedServer
     server = nullcontext() if args.base_url else CompressedServer() if args.compressed else DevServer(8884)
     with server, sync_playwright() as pw:
-        browser=getattr(pw,args.engine).launch()
+        launch={}
+        if args.resolve_ip:
+            assert args.engine == 'chromium'
+            ip = str(ipaddress.ip_address(args.resolve_ip))
+            launch['args']=['--proxy-server=direct://', '--host-resolver-rules=MAP '+urlsplit(base).hostname+' '+ip]
+        browser=getattr(pw,args.engine).launch(**launch)
         if not args.perf_only:
             for width in (320,390,768,1440):
                 context=browser.new_context(viewport={'width':width,'height':844},device_scale_factor=1)
@@ -63,11 +71,16 @@ def main():
             for mode in ('cold','warm'):
                 page.goto(base+'/',wait_until='domcontentloaded',timeout=55000)
                 page.wait_for_function('window.__quality.uncovered>0',timeout=20000)
-                early=page.evaluate("()=>({bytes:performance.getEntriesByType('resource').reduce((s,r)=>s+r.transferSize,0),uncovered:window.__quality.uncovered})")
+                early=page.evaluate("()=>({bytes:performance.getEntriesByType('navigation')[0].transferSize+performance.getEntriesByType('resource').reduce((s,r)=>s+r.transferSize,0),uncovered:window.__quality.uncovered})")
                 page.wait_for_load_state('load',timeout=55000);page.wait_for_timeout(1000)
                 data=page.evaluate("()=>({...window.__quality,navigation:performance.getEntriesByType('navigation')[0].toJSON(),load:performance.getEntriesByType('navigation')[0].loadEventEnd,ttfb:performance.getEntriesByType('navigation')[0].responseStart,resources:performance.getEntriesByType('resource').map(r=>({name:r.name,bytes:r.transferSize,start:r.startTime,end:r.responseEnd,duration:r.duration})),renderer:document.querySelector('#hero-canvas').dataset.renderer})")
+                page.evaluate("()=>{document.getElementById('nav-burger').addEventListener('click',()=>{const start=performance.now();requestAnimationFrame(()=>requestAnimationFrame(()=>{window.__quality.menuPaint=performance.now()-start}))},{once:true})}")
+                page.locator('#nav-burger').tap()
+                page.wait_for_function("document.getElementById('site-nav').classList.contains('nav-open') && window.__quality.menuPaint>=0")
+                data['menu_paint_ms']=page.evaluate('window.__quality.menuPaint')
+                data['lab_profile']={'latency_ms':150,'download_bytes_per_second':200000,'cpu_slowdown':4,'viewport':'390x844','real_user_data':False}
                 data.update(mode=mode,early=early,base=base);result.append(data)
-                print(mode,json.dumps({k:data[k] for k in ('early','lcp','cls','load','renderer')},ensure_ascii=False),flush=True)
+                print(mode,json.dumps({k:data[k] for k in ('early','lcp','cls','load','renderer','menu_paint_ms')},ensure_ascii=False),flush=True)
             context.close()
         browser.close()
     (OUT/f'{args.engine}-metrics.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')

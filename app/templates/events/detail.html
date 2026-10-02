@@ -2,6 +2,8 @@
 
 {% block title %}{{ event.title }} | {{ site_config.site_name_en }}{% endblock %}
 {% block og_title %}{{ event.title }} | {{ site_config.site_name_en }}{% endblock %}
+{% block description %}{{ event.title }} · {{ event.start_at|date:"Y年n月j日" }}{% if event.location %} · {{ event.location }}{% endif %}{% endblock %}
+{% block og_description %}{{ event.title }} · {{ event.start_at|date:"Y年n月j日" }}{% if event.location %} · {{ event.location }}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="container page-section">

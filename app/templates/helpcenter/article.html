@@ -1,6 +1,8 @@
 {% extends 'helpcenter/base.html' %}
 {% block title %}{{ article.title }} | {{ guide.title }} | HEU ESTA{% endblock %}
+{% block og_title %}{{ article.title }} | {{ guide.title }} | HEU ESTA{% endblock %}
 {% block description %}{{ article.summary }}{% endblock %}
+{% block og_description %}{{ article.summary }}{% endblock %}
 {% block help_content %}
 <div class="hc-article-layout">
 <aside class="hc-sidebar"><details open><summary>本册任务目录</summary><nav aria-label="手册章节">{% for item in articles %}<a href="{{ item.url }}" {% if item.slug == article.slug %}aria-current="page"{% endif %}>{{ item.order|stringformat:'02d' }} <span>{{ item.title }}</span></a>{% endfor %}</nav></details></aside>

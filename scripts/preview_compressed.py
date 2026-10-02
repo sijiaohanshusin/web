@@ -28,7 +28,10 @@ class Proxy(BaseHTTPRequestHandler):
         self.send_header('Cache-Control', 'max-age=3600' if self.path.startswith('/static/') else 'no-store')
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+            pass  # Test context/navigation can close an in-flight optional asset.
 
     def log_message(self, *args):
         pass
