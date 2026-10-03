@@ -82,11 +82,11 @@
                                     <span class="badge badge-amber">{{ r.get_min_level_display }}</span>
                                 {% endif %}
                             </td>
-                            <td>{{ r.size|filesizeformat }}</td>
-                            <td>{{ r.download_count }}</td>
-                            <td>{{ r.uploader.display_name|default:"—" }}</td>
-                            <td>{{ r.created_at|date:"Y-m-d" }}</td>
-                            <td><a class="btn btn-outline btn-sm" href="{% url 'files:download' r.pk %}">下载</a></td>
+                            <td data-label="文件大小">{{ r.size|filesizeformat }}</td>
+                            <td data-label="下载次数">{{ r.download_count }}</td>
+                            <td data-label="上传者">{{ r.uploader.display_name|default:"—" }}</td>
+                            <td data-label="上传时间">{{ r.created_at|date:"Y-m-d" }}</td>
+                            <td><a class="btn btn-outline btn-sm" href="{% url 'files:download' r.pk %}">下载 {{ r.extension }}</a></td>
                         </tr>
                     {% endfor %}
                     </tbody>
