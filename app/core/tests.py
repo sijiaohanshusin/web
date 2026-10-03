@@ -299,7 +299,6 @@ class HomeAccessCopyTests(TestCase):
                 response = self.client.get(reverse("core:home"))
                 self.assertNotContains(response, "注册会员解锁全部内容")
                 self.assertContains(response, "按会员等级开放，具体以资料页权限为准")
-                if level in (None, 1):
                 self.assertContains(response, "注册并验证邮箱即可参与公共交流")
                 self.assertContains(response, "更高等级解锁相应内部板块")
 

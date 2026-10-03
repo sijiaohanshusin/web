@@ -41,6 +41,10 @@ exports.init = async () => {
         'groups:find', 'groups:read', 'groups:topics:read', 'groups:topics:create', 'groups:topics:reply',
     ], discussion.cid, ['招新成员', '预备会员', '科协会员', '站务管理', '系统管理员']);
     const checks = [];
+    const rankGroups = await require.main.require('./src/groups').getGroupsFields(
+        ['招新成员', '预备会员', '科协会员', '站务管理', '系统管理员'], ['private', 'disableJoinRequests']);
+    assert.ok(rankGroups.every(group => Number(group.private) === 1 && Number(group.disableJoinRequests) === 1));
+    checks.push('rank groups cannot be freely joined or requested by forum users');
     const cats = (await categories.getCategoriesData(await categories.getAllCidsFromSet('categories:cid'))).filter(Boolean);
     const tiers = [];
     const names = ['研习交流（预备会员及以上）', '内部事务（科协会员及以上）', '站务协作（站务及以上）'];
