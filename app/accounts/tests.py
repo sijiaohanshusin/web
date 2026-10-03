@@ -357,12 +357,43 @@ class SsoTests(TestCase):
         self.assertIn("科协会员", payload["groups"])
         self.assertIn("硬件主席", payload["groups"])
 
-    def test_recruit_member_gets_no_forum_cookie(self):
+    def test_recruit_member_gets_basic_forum_identity_and_visible_entry(self):
+        import jwt
+
         user = User.objects.create_user(username="recruit", password="Str0ngPass!2025")
         user.set_level(roles.LEVEL_APPLICANT)
         self.client.login(username="recruit", password="Str0ngPass!2025")
         resp = self.client.get(reverse("core:home"))
-        self.assertIsNone(resp.cookies.get("heuesta_sso"))
+        payload = jwt.decode(resp.cookies['heuesta_sso'].value, SSO_SECRET, algorithms=['HS256'])
+        self.assertEqual(payload['groups'], ['招新成员'])
+        self.assertContains(resp, '会员论坛')
+        self.assertContains(resp, '注册并验证邮箱即可参与公共交流')
+        self.assertEqual(self.client.get('/projects/').status_code, 403)
+
+    def test_pending_and_inactive_members_do_not_get_forum_identity(self):
+        from django.http import HttpResponse
+        from django.test import RequestFactory
+        from .sso import SsoCookieMiddleware
+
+        for level, active in [(0, True), (1, False), (3, False)]:
+            with self.subTest(level=level, active=active):
+                request = RequestFactory().get('/')
+                request.user = User(username='blocked', member_level=level, is_active=active)
+                request.COOKIES['heuesta_sso'] = 'previous-session'
+                response = SsoCookieMiddleware(lambda r: HttpResponse())(request)
+                self.assertEqual(response.cookies['heuesta_sso']['max-age'], 0)
+
+    def test_level_changes_refresh_the_forum_groups(self):
+        import jwt
+
+        user = User.objects.create_user(username='tier-change', member_level=1)
+        self.client.force_login(user)
+        for level, group in [(1, '招新成员'), (3, '科协会员'), (1, '招新成员')]:
+            user.member_level = level
+            user.save(update_fields=['member_level'])
+            response = self.client.get(reverse('accounts:profile'))
+            payload = jwt.decode(response.cookies['heuesta_sso'].value, SSO_SECRET, algorithms=['HS256'])
+            self.assertEqual(payload['groups'], [group])
 
 
 class MedalTests(TestCase):

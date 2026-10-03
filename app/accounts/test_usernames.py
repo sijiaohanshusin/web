@@ -59,19 +59,16 @@ class FlexibleUsernameTests(TestCase):
         self.assertEqual(User.find_by_identifier('林序.dev+'), [user])
 
     @override_settings(NODEBB_JWT_SECRET='isolated-username-sso-test-32-characters')
-    def test_sso_keeps_id_and_unicode_username_without_changing_eligibility(self):
+    def test_sso_keeps_id_and_unicode_username_for_new_members(self):
         user = User.objects.create_user(username='C++新手', member_level=1)
         self.client.force_login(user)
         response = self.client.get(reverse('accounts:profile'))
         from django.conf import settings
-        self.assertNotIn(settings.SSO_COOKIE_NAME, response.cookies)
-        user.member_level = 3
-        user.save(update_fields=['member_level'])
-        response = self.client.get(reverse('accounts:profile'))
         payload = jwt.decode(response.cookies[settings.SSO_COOKIE_NAME].value,
                              'isolated-username-sso-test-32-characters', algorithms=['HS256'])
         self.assertEqual(payload['username'], 'C++新手')
         self.assertEqual(payload['id'], user.pk)
+        self.assertEqual(payload['groups'], ['招新成员'])
 
     def test_both_register_pages_show_the_same_rule(self):
         for route in ('accounts:register_new', 'accounts:register_returning'):

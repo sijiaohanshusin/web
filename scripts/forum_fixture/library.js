@@ -39,8 +39,31 @@ exports.init = async () => {
     await privileges.categories.give(['groups:find', 'groups:read', 'groups:topics:read'], discussion.cid, ['guests']);
     await privileges.categories.give([
         'groups:find', 'groups:read', 'groups:topics:read', 'groups:topics:create', 'groups:topics:reply',
-    ], discussion.cid, ['预备会员', '科协会员', '站务管理', '系统管理员']);
+    ], discussion.cid, ['招新成员', '预备会员', '科协会员', '站务管理', '系统管理员']);
     const checks = [];
+    const rankGroups = await require.main.require('./src/groups').getGroupsFields(
+        ['招新成员', '预备会员', '科协会员', '站务管理', '系统管理员'], ['private', 'disableJoinRequests']);
+    assert.ok(rankGroups.every(group => Number(group.private) === 1 && Number(group.disableJoinRequests) === 1));
+    checks.push('rank groups cannot be freely joined or requested by forum users');
+    const cats = (await categories.getCategoriesData(await categories.getAllCidsFromSet('categories:cid'))).filter(Boolean);
+    const tiers = [];
+    const names = ['研习交流（预备会员及以上）', '内部事务（科协会员及以上）', '站务协作（站务及以上）'];
+    for (const [index, name] of names.entries()) {
+        const matches = cats.filter(cat => cat.name === name);
+        assert.equal(matches.length, 1, 'Tier setup must be idempotent');
+        const cat = matches[0];
+        const {topicData, postData} = await require.main.require('./src/topics').post({
+            uid: 1, cid: cat.cid, title: `TierSecret${index + 2} isolated discussion`,
+            content: `TierBody${index + 2} confidential fixture`,
+        });
+        tiers.push({cid: cat.cid, tid: topicData.tid, pid: postData.pid,
+            name, level: index + 2, title: topicData.title});
+        for (const key of ['find', 'read', 'topics:read', 'topics:create', 'topics:reply']) {
+            const members = await require.main.require('./src/groups').getMembers(`cid:${cat.cid}:privileges:groups:${key}`, 0, -1);
+            assert.deepEqual(members.sort(), ['招新成员', '预备会员', '科协会员', '站务管理', '系统管理员'].slice(index + 1).sort());
+        }
+    }
+    checks.push('idempotent production tier setup grants exact cumulative groups; no broad or legacy grants');
     const server = await new ImapTestServer().start();
     try {
         const createSync = () => new MailboxSynchronizer({
@@ -77,7 +100,7 @@ exports.init = async () => {
     assert.equal(Number(topic.scheduled || 0), 0);
     checks.push('future received timestamps do not schedule or hide the archived topic');
     fs.writeFileSync(target, JSON.stringify({
-        discussionCid: discussion.cid, mailboxCid: archive.categoryCid,
+        tiers, discussionCid: discussion.cid, mailboxCid: archive.categoryCid,
         mailboxTid: first.tid, mailboxPid: JSON.parse(first.pids)[0], previewToken: first.previewToken,
         checks: [...checks, 'real archive keeps senders in separate topics', 'same sender appends a reply'],
     }));

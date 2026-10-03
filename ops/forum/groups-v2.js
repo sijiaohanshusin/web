@@ -56,6 +56,8 @@ const LEGACY_GROUPS = ['报名会员', '正式会员', '干事', '管理员'];
             console.log('[groups-v2] 创建组: ' + g.name);
         } else {
             await Groups.update(g.name, {
+                private: 1,
+                disableJoinRequests: 1,
                 userTitleEnabled: 1,
                 labelColor: g.color,
                 textColor: '#ffffff',

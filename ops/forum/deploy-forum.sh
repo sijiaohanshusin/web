@@ -22,6 +22,7 @@ install -d -m 755 /srv/heuesta/forum/config /srv/heuesta/forum/uploads
 install -m 644 "$FORUM_DIR/groups-v2.js" /srv/heuesta/forum/config/groups-v2.js
 install -m 644 "$FORUM_DIR/categories-v2.js" /srv/heuesta/forum/config/categories-v2.js
 install -m 644 "$FORUM_DIR/internal-board.js" /srv/heuesta/forum/config/internal-board.js
+install -m 644 "$FORUM_DIR/tiered-access.js" /srv/heuesta/forum/config/tiered-access.js
 install -m 644 "$FORUM_DIR/theme-v2.js" /srv/heuesta/forum/config/theme-v2.js
 install -m 644 "$FORUM_DIR/formal-release.js" /srv/heuesta/forum/config/formal-release.js
 install -m 644 "$FORUM_DIR/banner.webp" /srv/heuesta/forum/config/banner.webp
@@ -53,7 +54,7 @@ wait_for_forum
 echo "==> 同步正式版用户组与私密版块权限"
 $COMPOSE exec -T forum node /opt/config/groups-v2.js
 $COMPOSE exec -T forum node /opt/config/categories-v2.js
-$COMPOSE exec -T forum node /opt/config/internal-board.js
+$COMPOSE exec -T forum node /opt/config/tiered-access.js --apply --snapshot "/opt/config/tier-acl-$(date -u +%Y%m%dT%H%M%SZ).json"
 
 echo "==> 启用公共邮箱插件并重建 NodeBB 模板"
 $COMPOSE exec -T forum ./nodebb activate nodebb-plugin-heuesta-mailbox

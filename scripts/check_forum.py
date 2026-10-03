@@ -133,14 +133,47 @@ def run():
                         if role != 'guest':
                             do_login(ctx, BASE, f'{users[role].username}:{password}')
                         cookie = next((c for c in ctx.cookies() if c['name'] == 'heuesta_sso'), None)
-                        assert bool(cookie) == (role not in ('guest', 'recruit')), role
+                        assert bool(cookie) == (role != 'guest'), role
                         page = ctx.new_page()
                         pages[role] = page
                         page.goto(FORUM + '/categories')
                         page.wait_for_function('window.app && app.user && window.config')
                         uid = page.evaluate('Number(app.user.uid)')
-                        assert (uid > 0) == (role not in ('guest', 'recruit')), role
+                        assert (uid > 0) == (role != 'guest'), role
                         checks.append(f'{role}: real main-site login and forum SSO eligibility')
+                        level = {'guest': 0, 'recruit': 1, 'preparatory': 2, 'member': 3, 'officer': 4, 'admin': 5}[role]
+                        for tier in fixture['tiers']:
+                            allowed = level >= tier['level']
+                            for path in (f"/api/category/{tier['cid']}", f"/api/topic/{tier['tid']}",
+                                         f"/api/v3/posts/{tier['pid']}"):
+                                result = api(page, path)
+                                assert (result['status'] == 200) == allowed, (role, path, result['status'])
+                                if not allowed:
+                                    assert 'TierSecret' not in result['text'] and 'TierBody' not in result['text']
+                            if not allowed and role != 'guest':
+                                for path, body in (
+                                    ('/api/v3/topics', {'cid': tier['cid'], 'title': 'Cannot publish', 'content': 'Must be rejected'}),
+                                    (f"/api/v3/topics/{tier['tid']}", {'content': 'Must be rejected'}),
+                                ):
+                                    result = api(page, path, 'POST', body)
+                                    assert result['status'] == 403, (role, path, result)
+                            for path in ('/api/categories', '/api/recent', '/api/popular', f"/api/search?term=TierSecret{tier['level']}"):
+                                result = api(page, path)
+                                if path.startswith('/api/search') and role == 'guest' and result['status'] in (401, 403):
+                                    # Some installations disable guest search globally.
+                                    continue
+                                assert result['status'] == 200, (role, path, result['status'])
+                                content = result['text']
+                                if path.startswith('/api/search'):
+                                    data = json.loads(content)
+                                    # The query itself is echoed in metadata even when no posts match.
+                                    content = json.dumps({'topics': data.get('topics'), 'posts': data.get('posts')})
+                                if allowed and path.startswith('/api/search'):
+                                    assert f"TierSecret{tier['level']}" in content, (role, path, 'search must actually find the allowed fixture')
+                                if not allowed:
+                                    assert f"TierSecret{tier['level']}" not in content, (role, path)
+                                    assert f"TierBody{tier['level']}" not in content, (role, path)
+                        checks.append(f'{role}: tier category/topic/post APIs, writing endpoints and listings obey level boundaries')
                         result = api(page, f"/api/category/{fixture['mailboxCid']}")
                         assert (result['status'] == 200) == (role in ('member', 'officer', 'admin')), (role, result['status'])
                         result = api(page, f"/api/topic/{fixture['mailboxTid']}")
@@ -157,6 +190,16 @@ def run():
                     assert admin.evaluate('app.user.isAdmin')
                     assert not pages['officer'].evaluate('app.user.isAdmin'), 'Main-site rank must not grant NodeBB administration'
                     checks.append('forum administration remains separately granted')
+                    recruit_main = contexts['recruit'].new_page()
+                    for level, allowed in ((3, True), (1, False)):
+                        users['recruit'].member_level = level
+                        users['recruit'].save(update_fields=['member_level'])
+                        recruit_main.goto(BASE + '/accounts/profile/')
+                        pages['recruit'].goto(FORUM + '/categories')
+                        result = api(pages['recruit'], f"/api/topic/{fixture['tiers'][1]['tid']}")
+                        assert (result['status'] == 200) == allowed, 'Existing session must synchronize promotion/demotion'
+                    recruit_main.close()
+                    checks.append('new-member promotion and downgrade update private topic access on existing forum session')
                     # Verify revocation before the writing journey, then restore only
                     # this disposable member so the remaining checks still run.
                     users['member'].member_level = 2
@@ -180,6 +223,8 @@ def run():
                     users['member'].save(update_fields=['member_level'])
                     do_login(contexts['member'], BASE, f'{users["member"].username}:{password}')
                     main.close()
+                    # A brand-new level-1 account must complete the actual public composer flow.
+                    member = pages['recruit']
                     member.goto(FORUM + f"/category/{fixture['discussionCid']}")
                     member.locator('[component="category/post"]').click()
                     member.locator('[component="composer"] input.title').fill('手册演示：第一次发帖')
@@ -196,7 +241,7 @@ def run():
                     topic_url = submit_and_review(member, admin, '/api/v3/topics', checks, 'topic')
                     member.goto(topic_url)
                     expect(member.locator('[component="post/content"]').first).to_contain_text('隔离环境中的演示帖子')
-                    checks.append('member creates a real topic through the composer')
+                    checks.append('new level-1 member creates a real public topic through the composer')
                     reply = pages['preparatory']
                     reply.goto(topic_url)
                     reply.locator('[component="topic/reply"]:visible').first.click()
@@ -209,6 +254,30 @@ def run():
                     expect(reply.locator('[component="post/content"]').last).to_contain_text('预备会员的演示回复')
                     capture(reply, 'forum-topic')
                     checks.append('preparatory member replies through the real composer')
+                    result = api(member, f'/api/v3/topics/{tid}', 'POST', {'content': '新会员无需面试即可回复，正常进入防垃圾审核。'})
+                    assert result['status'] == 200 and json.loads(result['text'])['response'].get('queued'), result
+                    checks.append('level-1 new member can submit a reply without membership interview approval')
+                    member = pages['member']
+                    private = fixture['tiers'][1]
+                    member.goto(FORUM + f"/category/{private['cid']}")
+                    member.locator('[component="category/post"]').click()
+                    member.locator('[component="composer"] input.title').fill('仅科协会员可见的演示主题')
+                    member.locator('[component="composer"] textarea.write').fill('PrivateComposerBody 隔离测试正文')
+                    inspect_composer(member, 'PrivateComposerBody', checks)
+                    capture(member, 'forum-private-compose')
+                    private_url = submit_and_review(member, admin, '/api/v3/topics', checks, 'private-topic')
+                    private_tid = private_url.rsplit('/', 1)[-1]
+                    for role in ('guest', 'recruit', 'preparatory', 'member', 'officer', 'admin'):
+                        page = pages[role]
+                        result = api(page, f'/api/topic/{private_tid}')
+                        assert (result['status'] == 200) == (role in ('member', 'officer', 'admin')), role
+                        if role in ('guest', 'recruit', 'preparatory'):
+                            assert 'PrivateComposerBody' not in result['text']
+                            response = page.goto(private_url)
+                            login_redirect = role == 'guest' and '/login' in urlsplit(page.url).path
+                            assert response.status in (403, 404) or login_redirect, (role, response.status, page.url)
+                            expect(page.locator('body')).not_to_contain_text('PrivateComposerBody')
+                    checks.append('member publishes into chosen private board; lower levels cannot open the resulting URL')
                     for role in ('member', 'officer'):
                         page = pages[role]
                         for path, method, body in (

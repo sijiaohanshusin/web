@@ -78,7 +78,7 @@ class SsoCookieMiddleware:
     def _forum_eligible(user) -> bool:
         from . import roles
 
-        return roles.effective_level(user) >= roles.LEVEL_PREPARATORY
+        return roles.effective_level(user) >= roles.LEVEL_APPLICANT
 
     @staticmethod
     def _token_valid(token: str | None, user, secret: str) -> bool:
