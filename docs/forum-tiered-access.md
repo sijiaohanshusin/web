@@ -21,7 +21,7 @@
 1. 先完成当前提交的 Django、浏览器及隔离 NodeBB/PostgreSQL 联调。
 2. 将 `groups-v2.js`、`tiered-access.js`、兼容入口 `internal-board.js` 安装到论坛 `/opt/config` 挂载目录。
 3. 在论坛容器执行 `node /opt/config/tiered-access.js` 预览，再执行 `node /opt/config/groups-v2.js` 与 `node /opt/config/tiered-access.js --apply --snapshot /opt/config/tier-acl-<时间>.json`。保留权限变更前记录，重启论坛清除进程缓存。已有“内部事务”保留 cid、帖子及回复；新板块先以禁用状态建立，撤销默认授权后才启用。
-4. 使用 `ops/release.sh <完整提交号>` 发布主站，核对实际版本和就绪状态。先落实论坛 ACL，再开放新会员 SSO。
+4. 使用 `ops/release.sh <完整提交号>` 发布主站，核对实际版本和就绪状态，再执行 `python manage.py update_forum_copy --apply`，只替换启用招新批次中已知的旧权限说明，不覆盖其他文案。先落实论坛 ACL，再开放新会员 SSO。
 5. 运行 `launch-content.js --apply --snapshot <独立路径>` 更新协会自己发布的使用说明，保留主题链接及原回复。检查帮助页、公开列表和实际 ACL。
 
 `deploy-forum.sh` 已使用同一权限脚本，重复执行不会创建重复板块；遇到同名歧义或原本非公开的公共板块立即停止。不要对公共邮箱运行此脚本的权限重置逻辑。回退主站使用发布流程保留的镜像与源码；需要回退论坛 ACL 时先禁用新板块，再依据权限快照恢复既有板块名称和授权，不删除帖子。

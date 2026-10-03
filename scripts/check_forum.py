@@ -157,8 +157,11 @@ def run():
                                 ):
                                     result = api(page, path, 'POST', body)
                                     assert result['status'] == 403, (role, path, result)
-                            for path in ('/api/categories', '/api/recent', '/api/popular', '/api/search?term=TierSecret'):
+                            for path in ('/api/categories', '/api/recent', '/api/popular', f"/api/search?term=TierSecret{tier['level']}"):
                                 result = api(page, path)
+                                assert result['status'] == 200, (role, path, result['status'])
+                                if allowed and path.startswith('/api/search'):
+                                    assert f"TierSecret{tier['level']}" in result['text'], (role, path, 'search must actually find the allowed fixture')
                                 if not allowed:
                                     assert f"TierSecret{tier['level']}" not in result['text'], (role, path)
                                     assert f"TierBody{tier['level']}" not in result['text'], (role, path)
@@ -263,7 +266,8 @@ def run():
                         if role in ('guest', 'recruit', 'preparatory'):
                             assert 'PrivateComposerBody' not in result['text']
                             response = page.goto(private_url)
-                            assert response.status in (403, 404)
+                            login_redirect = role == 'guest' and '/login' in urlsplit(page.url).path
+                            assert response.status in (403, 404) or login_redirect, (role, response.status, page.url)
                             expect(page.locator('body')).not_to_contain_text('PrivateComposerBody')
                     checks.append('member publishes into chosen private board; lower levels cannot open the resulting URL')
                     for role in ('member', 'officer'):
