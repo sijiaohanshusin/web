@@ -2504,7 +2504,7 @@ div.proj-card { display: flex; }
 .slot-note p { color:var(--text); margin:0 0 8px; }
 .learning-paths { padding-top:48px; }
 /* Public file titles and download actions stay readable on narrow screens. */
-@media (max-width: 720px) {
+@media (max-width: 1024px) {
     .page-resources .table-panel { padding: 0; border: 0; background: transparent; box-shadow: none; }
     .page-resources .table-wrap { overflow: visible; }
     .page-resources .table { display: block; }
