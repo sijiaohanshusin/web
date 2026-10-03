@@ -2503,6 +2503,29 @@ div.proj-card { display: flex; }
 .slot-note { padding:20px 24px; border-left:2px solid var(--accent); color:var(--muted); background:rgba(13,169,205,.05); }
 .slot-note p { color:var(--text); margin:0 0 8px; }
 .learning-paths { padding-top:48px; }
+/* Public file titles and download actions stay readable on narrow screens. */
+@media (max-width: 1024px) {
+    .page-resources .table-panel { padding: 0; border: 0; background: transparent; box-shadow: none; }
+    .page-resources .table-wrap { overflow: visible; }
+    .page-resources .table { display: block; }
+    .page-resources .table thead {
+        position: absolute; width: 1px; height: 1px; padding: 0;
+        overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+    }
+    .page-resources .table tbody { display: grid; gap: 16px; }
+    .page-resources .table tr {
+        display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 12px 16px; padding: 20px; border: 1px solid var(--line-d);
+        border-radius: 16px; background: var(--black-2);
+    }
+    .page-resources .table td { display: block; min-width: 0; padding: 0; border: 0; overflow-wrap: anywhere; }
+    .page-resources .table td:first-child, .page-resources .table td:last-child { grid-column: 1 / -1; }
+    .page-resources .table td:first-child strong { font-size: 18px; line-height: 1.6; }
+    .page-resources .table-sub { margin-top: 8px; font-size: 14px; line-height: 1.8; }
+    .page-resources .table td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 3px; color: var(--muted); font-size: 12px; }
+    .page-resources .table .badge { white-space: nowrap; }
+    .page-resources .table td:last-child .btn { display: flex; width: 100%; min-height: 44px; justify-content: center; margin-top: 4px; }
+}
 .learning-lede { color:var(--muted); max-width:760px; line-height:1.8; margin:16px 0 28px; }
 .learning-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
 .learning-card { display:flex; flex-direction:column; align-items:start; padding:26px; background:var(--black-2); border:1px solid var(--line-d); border-radius:16px; }
