@@ -58,8 +58,11 @@ def main():
     # hash migration assumes an old mapping exists if a secret is already set.
     # Schema only: never upgrade pinned dependencies/plugins as part of a test.
     run(['node', 'nodebb', 'upgrade', '--schema'], APP)
-    for script in ('localize.js', 'groups-v2.js'):
+    for script in ('localize.js', 'groups-v2.js', 'categories-v2.js'):
         run(['node', str(ROOT / 'ops/forum' / script)], APP)
+    for attempt in range(2):
+        run(['node', str(ROOT / 'ops/forum/tiered-access.js'), '--apply', '--snapshot',
+             str(OUT / f'tier-acl-{attempt}.private.json')], APP)
     shutil.copyfile(ROOT / 'scripts/forum_fixture/configure.cjs', APP / 'heuesta-audit.cjs')
     run(['node', 'heuesta-audit.cjs'], APP)
     run(['node', 'nodebb', 'build'], APP)

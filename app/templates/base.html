@@ -120,9 +120,7 @@
                 <summary>学习资源</summary>
                 <div class="nav-group-menu">
                     <a href="{% url 'files:list' %}">资料站<small>课件与竞赛资料</small></a>
-                    {% if not user.is_authenticated or user.is_member %}
                     <a href="{{ forum_url }}" target="_blank" rel="noopener">会员论坛<small>提问与讨论 ↗</small></a>
-                    {% endif %}
                     <a href="{{ site_config.bilibili_space_url }}" target="_blank" rel="noopener">B 站频道<small>培训视频 ↗</small></a>
                 </div>
             </details>
@@ -225,7 +223,7 @@
             <a href="{% url 'team:wall' %}">协会成员</a>
             <a href="{% url 'core:recruit' %}">新生指南</a>
             <a href="{% url 'files:list' %}">资料站</a>
-            {% if not user.is_authenticated or user.is_member %}<a href="{{ forum_url }}" target="_blank" rel="noopener">会员论坛</a>{% endif %}
+            <a href="{{ forum_url }}" target="_blank" rel="noopener">会员论坛</a>
             <a href="{% url 'accounts:register' %}">招新与注册</a>
         </div>
         <div class="footer-col">

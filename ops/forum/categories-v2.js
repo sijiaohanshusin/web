@@ -2,7 +2,7 @@
 /* 版块体系 v2：6 大分区 + 14 子版块（幂等，带帖迁移不丢数据）
    docker exec -w /usr/src/app heuesta-forum-forum-1 node /opt/config/categories-v2.js
 */
-const APP = '/usr/src/app';
+const APP = process.env.NODEBB_APP_DIR || '/usr/src/app';
 const nconf = require(APP + '/node_modules/nconf');
 
 nconf.file({ file: APP + '/config.json' });
